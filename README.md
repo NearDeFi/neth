@@ -1,7 +1,6 @@
-# React 17, Parcel, Sass with useContext and useReducer
+# React 17, Parcel with useContext and useReducer
 - Bundled with Parcel 2.0 (@next) && eslint
 - *Minimal all-in-one state management with async/await support*
-- Sass included
 
 ## Getting Started: State Store & useContext
 

@@ -12,8 +12,7 @@
   },
   "devDependencies": {
     "eslint": "^7.14.0",
-    "rimraf": "^3.0.2",
-    "sass": "^1.29.0"
+    "rimraf": "^3.0.2"
   },
   "browserslist": [
     "last 2 Chrome versions"

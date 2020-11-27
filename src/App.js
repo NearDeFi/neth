@@ -2,7 +2,7 @@ import React, { useContext, useEffect } from 'react';
 
 import { store, onAppMount } from './state/app';
 
-import './App.scss';
+import './App.css';
 
 const App = () => {
 	const { state, dispatch, update } = useContext(store);
