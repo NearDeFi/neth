@@ -8,7 +8,7 @@
 >The following steps are already done, but describe how to use `src/utils/state` to create and use your own `store` and `StateProvider`.
 
 1. Create a file e.g. `/state/app.js` and add the following code
-```
+```js
 import { State } from '../utils/state';
 
 // example
@@ -21,7 +21,7 @@ const initialState = {
 export const { store, StateProvider } = State(initialState);
 ```
 2. Now in your `index.js` wrap your `App` component with the `StateProvider`
-```
+```js
 ReactDOM.render(
     <StateProvider>
         <App />
@@ -30,23 +30,23 @@ ReactDOM.render(
 );
 ```
 3. Finally in `App.js` you can `useContext(store)`
-```
+```js
 const { state, dispatch, update } = useContext(store);
 ```
 
 ## Usage in Components
 ### Print out state values
-```
+```js
 <p>Hello {state.foo && state.foo.bar.hello}</p>
 ```
 ### Update state directly in component functions
-```
+```js
 const handleClick = () => {
     update('clicked', !state.clicked);
 };
 ```
 ### Dispatch a state update function (action listener) with context
-```
+```js
 const onMount = () => {
     dispatch(onAppMount('world'));
 };
@@ -54,7 +54,7 @@ useEffect(onMount, []);
 ```
 
 > All updates and dispatch methods are async and can be awaited, for example:
-```
+```js
 export const onAppMount = (message) => async ({ update, getState, dispatch }) => {
 	update('app', { mounted: true });
 	update('clicked', false);
