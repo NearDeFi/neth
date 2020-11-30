@@ -97,8 +97,42 @@ The default names the `State` factory method returns are `store` and `Provider`.
 export const { appStore, AppProvider } = State(initialState, 'app');
 ```
 
+## Performance and memo
 
-Reference: https://reactjs.org/docs/context.html
+The updating of a single store, even several levels down, is quite quick. If you're worried about components re-rendering, use `memo`:
+```js
+import React, { memo } from 'react';
+
+const HelloMessage = memo(({ message }) => {
+	console.log('rendered message');
+	return <p>Hello { message }</p>;
+});
+
+export default HelloMessage;
+```
+Higher up the component hierarchy you might have:
+```js
+const App = () => {
+	const { state, dispatch, update } = useContext(appStore);
+    ...
+	const handleClick = () => {
+		update('clicked', !state.clicked);
+	};
+
+	return (
+		<div className="root">
+			<HelloMessage message={state.foo && state.foo.bar.hello} />
+			<p>clicked: {JSON.stringify(state.clicked)}</p>
+			<button onClick={handleClick}>Click Me</button>
+		</div>
+	);
+};
+```
+When the button is clicked, the component HelloMessage will not re-render, it's value has been memoized (cached). Using this method you can easily prevent performance intensive state updates in further down components until they are neccessary.
+
+Reference:
+- https://reactjs.org/docs/context.html
+- https://dmitripavlutin.com/use-react-memo-wisely/
 
 
 

@@ -2,6 +2,8 @@ import React, { useContext, useEffect } from 'react';
 
 import { appStore, onAppMount } from './state/app';
 
+import HelloMessage from './HelloMessage';
+
 import './App.css';
 
 const App = () => {
@@ -20,7 +22,7 @@ const App = () => {
 
 	return (
 		<div className="root">
-			<p>Hello {state.foo && state.foo.bar.hello}</p>
+			<HelloMessage message={state.foo && state.foo.bar.hello} />
 			<p>clicked: {JSON.stringify(state.clicked)}</p>
 			<button onClick={handleClick}>Click Me</button>
 		</div>
