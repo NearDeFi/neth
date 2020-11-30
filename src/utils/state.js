@@ -52,12 +52,12 @@ export const State = (initialState, prefix) => {
 		return <InnerProvider value={{ update, state, dispatch: wrappedDispatch }}>{children}</InnerProvider>;
 	};
 
-    if (prefix) {
-        return {
-            [prefix + 'Store']: store,
-            [prefix.substr(0, 1).toUpperCase() + prefix.substr(1) + 'Provider']: Provider,
-        }
-    }
+	if (prefix) {
+		return {
+			[prefix + 'Store']: store,
+			[prefix.substr(0, 1).toUpperCase() + prefix.substr(1) + 'Provider']: Provider,
+		};
+	}
     
 	return { store, Provider };
 };

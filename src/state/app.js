@@ -1,6 +1,6 @@
 import { State } from '../utils/state';
 
-import { helloWorld } from './hello'
+import { helloWorld } from './hello';
 
 // example
 const initialState = {

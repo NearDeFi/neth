@@ -17,14 +17,16 @@ const initialState = {
 	}
 };
 
-export const { store, StateProvider } = State(initialState);
+export const { store, Provider } = State(initialState);
 ```
 2. Now in your `index.js` wrap your `App` component with the `StateProvider`
 ```js
+import { Provider } from './state/app';
+
 ReactDOM.render(
-    <StateProvider>
+    <Provider>
         <App />
-    </StateProvider>,
+    </Provider>,
     document.getElementById('root')
 );
 ```
@@ -44,16 +46,28 @@ const handleClick = () => {
     update('clicked', !state.clicked);
 };
 ```
-### Dispatch a state update function (action listener) with context
+### Dispatch a state update function (action listener)
 ```js
 const onMount = () => {
     dispatch(onAppMount('world'));
 };
 useEffect(onMount, []);
 ```
+## Dispatched Functions with context (update, getState, dispatch)
 
-> All updates and dispatch methods are async and can be awaited, for example:
+When a function is called using dispatch, it expects arguments passed in to the outer function and the inner function returned to be async with the following json args: `{ update, getState, dispatch }`
+
+Example of a call:
 ```js
+dispatch(onAppMount('world'));
+```
+
+All dispatched methods **and** update calls are async and can be awaited. It also doesn't matter what file/module the functions are in, since the json args provide all the context needed for updates to state.
+
+For example:
+```js
+import { helloWorld } from './hello';
+
 export const onAppMount = (message) => async ({ update, getState, dispatch }) => {
 	update('app', { mounted: true });
 	update('clicked', false);
@@ -74,11 +88,15 @@ export const onAppMount = (message) => async ({ update, getState, dispatch }) =>
 
 	dispatch(helloWorld(message));
 };
-
-export const helloWorld = (message) => async ({ update }) => {
-	update('foo.bar.hello', message);
-};
 ```
+## Prefixing store and Provider
+
+The default names the `State` factory method returns are `store` and `Provider`. However, if you want multiple stores and provider contexts you can pass an additional `prefix` argument to disambiguate.
+
+```js
+export const { appStore, AppProvider } = State(initialState, 'app');
+```
+
 
 Reference: https://reactjs.org/docs/context.html
 
