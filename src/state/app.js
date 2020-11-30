@@ -1,5 +1,7 @@
 import { State } from '../utils/state';
 
+import { helloWorld } from './hello'
+
 // example
 const initialState = {
 	app: {
@@ -7,7 +9,7 @@ const initialState = {
 	}
 };
 
-export const { store, StateProvider } = State(initialState);
+export const { appStore, AppProvider } = State(initialState, 'app');
 
 // example app function
 export const onAppMount = (message) => async ({ update, getState, dispatch }) => {
@@ -29,8 +31,4 @@ export const onAppMount = (message) => async ({ update, getState, dispatch }) =>
 	}, 2000));
 
 	dispatch(helloWorld(message));
-};
-
-export const helloWorld = (message) => async ({ update }) => {
-	update('foo.bar.hello', message);
 };

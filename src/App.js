@@ -1,11 +1,11 @@
 import React, { useContext, useEffect } from 'react';
 
-import { store, onAppMount } from './state/app';
+import { appStore, onAppMount } from './state/app';
 
 import './App.css';
 
 const App = () => {
-	const { state, dispatch, update } = useContext(store);
+	const { state, dispatch, update } = useContext(appStore);
 
 	console.log('state', state);
 

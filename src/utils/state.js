@@ -1,10 +1,10 @@
 import React, { createContext, useReducer } from 'react';
 
-export const State = (initialState) => {
+export const State = (initialState, prefix) => {
 	let updatedState;
 	const getState = () => updatedState;
 	const store = createContext(initialState);
-	const { Provider } = store;
+	const { Provider: InnerProvider } = store;
 
 	const updateState = (state, path = '', newState = {}) => {
 		// console.log('updateState', state, path, newState) // debugging
@@ -34,7 +34,7 @@ export const State = (initialState) => {
 		return state;
 	};
 
-	const StateProvider = ({ children }) => {
+	const Provider = ({ children }) => {
 		const [state, dispatch] = useReducer((state, payload) => {
 			const { path, newState } = payload;
 			if (path === undefined) {
@@ -49,8 +49,15 @@ export const State = (initialState) => {
 		};
 		const wrappedDispatch = (fn) => fn({ update, getState, dispatch: wrappedDispatch });
 
-		return <Provider value={{ update, state, dispatch: wrappedDispatch }}>{children}</Provider>;
+		return <InnerProvider value={{ update, state, dispatch: wrappedDispatch }}>{children}</InnerProvider>;
 	};
 
-	return { store, StateProvider };
+    if (prefix) {
+        return {
+            [prefix + 'Store']: store,
+            [prefix.substr(0, 1).toUpperCase() + prefix.substr(1) + 'Provider']: Provider,
+        }
+    }
+    
+	return { store, Provider };
 };
