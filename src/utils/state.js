@@ -6,28 +6,26 @@ export const State = (initialState, prefix) => {
 	const store = createContext(initialState);
 	const { Provider: InnerProvider } = store;
 
-	const updateState = (state, path = '', newState = {}) => {
+	const updateState = (state, newState, path = '') => {
 		// console.log('updateState', state, path, newState) // debugging
-
 		if (path.length === 0) {
 			return { ...state, ...newState };
 		}
 		const pathArr = path.split('.');
 		const first = pathArr[0];
-    
 		state = { ...state };
 		if (!state[first]) {
 			state[first] = {};
 		}
 		if (pathArr.length === 1) {
-			state[first] = typeof newState === 'object' ? {
+			state[first] = !!newState && typeof newState === 'object' ? {
 				...state[first],
 				...newState
 			} : newState;
 		} else {
 			state[first] = {
 				...state[first],
-				...updateState(state[first], pathArr.slice(1).join('.'), newState)
+				...updateState(state[first], newState, pathArr.slice(1).join('.'))
 			};
 		}
 
@@ -40,7 +38,7 @@ export const State = (initialState, prefix) => {
 			if (path === undefined) {
 				return state;
 			}
-			updatedState = updateState(state, path, newState);
+			updatedState = updateState(state, newState, path);
 			return updatedState;
 		}, initialState);
 

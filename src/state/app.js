@@ -18,6 +18,12 @@ export const onAppMount = (message) => async ({ update, getState, dispatch }) =>
 	update('data', { mounted: true });
 	await update('', { data: { mounted: false } });
 
+    console.log('getState', getState());
+    
+    // testing undefined, null
+	await update('clicked', undefined);
+	console.log('getState', getState());
+	await update('clicked', null);
 	console.log('getState', getState());
 
 	update('foo.bar', { hello: true });
