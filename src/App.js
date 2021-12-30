@@ -4,7 +4,7 @@ import { appStore, onAppMount } from './state/app';
 
 import HelloMessage from './HelloMessage';
 
-import './App.css';
+import './App.scss';
 
 const App = () => {
 	const { state, dispatch, update } = useContext(appStore);
