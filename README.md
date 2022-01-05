@@ -1,5 +1,5 @@
 # React 17, Parcel with useContext and useReducer
-- Bundled with Parcel 2.0 (@next) && eslint
+- Bundled with Parcel 2.0.1
 - *Minimal all-in-one state management with async/await support*
 
 ## Getting Started: State Store & useContext
