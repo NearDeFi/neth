@@ -1,7 +1,7 @@
 import React, { createContext, useReducer } from 'react';
 
 export const State = (initialState, prefix) => {
-	let updatedState;
+	let updatedState = initialState;
 	const getState = () => updatedState;
 	const store = createContext(initialState);
 	const { Provider: InnerProvider } = store;
