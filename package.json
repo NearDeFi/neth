@@ -29,6 +29,7 @@
 		"build-contract": "cd contract && ./build.sh && cd ..",
 		"patch-config": "node ./utils/patch-config.js",
 		"dev-deploy": "rm -rf neardev && (near dev-deploy || exit 0) && yarn patch-config",
+		"test-build": "yarn build-contract && yarn test",
 		"test-deploy": "yarn build-contract && yarn dev-deploy && yarn test",
 		"test": "ava test/contract.test.js -vs --timeout=5m",
 		"fix": "eslint test/ --fix"

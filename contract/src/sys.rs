@@ -1,0 +1,82 @@
+const REGISTER_ID: u64 = 0;
+
+use alloc::vec;
+use alloc::vec::Vec;
+
+pub unsafe fn log(message: &str) {
+    log_utf8(message.len() as _, message.as_ptr() as _);
+}
+
+pub unsafe fn sread(key: &str) -> (usize, Vec<u8>) {
+	// let res = 
+	storage_read(
+		key.len() as u64,
+		key.as_ptr() as u64,
+		REGISTER_ID,
+	);
+	// if res == 1 {
+	// 	log("storage read success")
+	// } else {
+	// 	log("storage read fail")
+	// }
+	rread(REGISTER_ID)
+}
+
+pub unsafe fn rread(id: u64) -> (usize, Vec<u8>) {
+	let len = register_len(id) as usize;
+	let data = vec![0u8; len];
+	read_register(id, data.as_ptr() as u64);
+	(len, data)
+}
+
+#[allow(dead_code)]
+extern "C" {
+    pub fn read_register(register_id: u64, ptr: u64);
+    pub fn write_register(register_id: u64, data_len: u64, data_ptr: u64);
+    pub fn register_len(register_id: u64) -> u64;
+    pub fn current_account_id(register_id: u64);
+    pub fn predecessor_account_id(register_id: u64);
+    pub fn input(register_id: u64);
+    pub fn panic();
+    pub fn log_utf8(len: u64, ptr: u64);
+    pub fn promise_batch_create(account_id_len: u64, account_id_ptr: u64) -> u64;
+    pub fn promise_batch_action_function_call(
+        promise_index: u64,
+        method_name_len: u64,
+        method_name_ptr: u64,
+        arguments_len: u64,
+        arguments_ptr: u64,
+        amount_ptr: u64,
+        gas: u64,
+    );
+    pub fn promise_batch_action_deploy_contract(promise_index: u64, code_len: u64, code_ptr: u64);
+    pub fn promise_batch_action_transfer(promise_index: u64, amount_ptr: u64);
+
+	pub fn ecrecover(
+		hash_len: u64,
+        hash_ptr: u64,
+        sig_len: u64,
+        sig_ptr: u64,
+        v: u64,
+        malleability_flag: u64,
+        register_id: u64,
+	) -> u64;
+
+	pub fn keccak256(value_len: u64, value_ptr: u64, register_id: u64);
+
+	pub fn storage_write(
+		key_len: u64, 
+		key_ptr: u64, 
+		value_len: u64, 
+		value_ptr: u64, 
+		register_id: u64
+	) -> u64;
+
+	pub fn storage_read(
+		key_len: u64, 
+		key_ptr: u64, 
+		register_id: u64
+	) -> u64;
+
+    pub fn value_return(value_len: u64, value_ptr: u64);
+}

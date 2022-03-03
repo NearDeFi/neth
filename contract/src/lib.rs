@@ -2,13 +2,25 @@
 #![feature(core_intrinsics)]
 #![feature(alloc_error_handler)]
 
+const ECRECOVER_MESSAGE_SIZE: u64 = 32;
+const ECRECOVER_SIGNATURE_LENGTH: u64 = 64;
+const ECRECOVER_MALLEABILITY_FLAG: u64 = 1;
+const ADDRESS_KEY: &str = "a";
+const DOUBLE_QUOTE_BYTE: u8 = "\"".as_bytes()[0];
+const INPUT_REGISTER_ID: u64 = 0;
+const OUTPUT_REGISTER_1: u64 = 1;
+const OUTPUT_REGISTER_2: u64 = 2;
+
 extern crate alloc;
 
+use alloc::str::from_utf8_unchecked;
 use alloc::vec;
 use alloc::vec::Vec;
 
+mod sys;
+use sys::*;
 mod parse;
-use parse::{ get_string };
+use parse::*;
 
 #[global_allocator]
 static ALLOC: wee_alloc::WeeAlloc = wee_alloc::WeeAlloc::INIT;
@@ -25,120 +37,110 @@ pub unsafe fn on_alloc_error(_: core::alloc::Layout) -> ! {
     ::core::intrinsics::abort();
 }
 
-const ECRECOVER_MESSAGE_SIZE: u64 = 32;
-const ECRECOVER_SIGNATURE_LENGTH: u64 = 64;
-const ECRECOVER_MALLEABILITY_FLAG: u64 = 1;
-const INPUT_REGISTER_ID: u64 = 0;
-const RECOVER_REGISTER_ID: u64 = 1;
-const KECCACK_REGISTER_ID: u64 = 2;
-
-#[allow(dead_code)]
-extern "C" {
-    fn read_register(register_id: u64, ptr: u64);
-    fn write_register(register_id: u64, data_len: u64, data_ptr: u64);
-    fn register_len(register_id: u64) -> u64;
-    fn current_account_id(register_id: u64);
-    fn predecessor_account_id(register_id: u64);
-    fn input(register_id: u64);
-    fn panic();
-    fn log_utf8(len: u64, ptr: u64);
-    fn promise_batch_create(account_id_len: u64, account_id_ptr: u64) -> u64;
-    fn promise_batch_action_function_call(
-        promise_index: u64,
-        method_name_len: u64,
-        method_name_ptr: u64,
-        arguments_len: u64,
-        arguments_ptr: u64,
-        amount_ptr: u64,
-        gas: u64,
-    );
-    fn promise_batch_action_deploy_contract(promise_index: u64, code_len: u64, code_ptr: u64);
-    fn promise_batch_action_transfer(promise_index: u64, amount_ptr: u64);
-
-	fn ecrecover(
-		hash_len: u64,
-        hash_ptr: u64,
-        sig_len: u64,
-        sig_ptr: u64,
-        v: u64,
-        malleability_flag: u64,
-        register_id: u64,
-	) -> u64;
-
-	fn keccak256(value_len: u64, value_ptr: u64, register_id: u64);
-}
-
-#[allow(dead_code)]
-fn log(message: &str) {
-    unsafe {
-        log_utf8(message.len() as _, message.as_ptr() as _);
-    }
-}
-
 /// Checks that sig of keccak("\x19Ethereum Signed Message:\n32", keccak(msg)) matches ethereum pubkey and returns msg bytes
-fn assert_owner() -> Vec<u8> {
-    unsafe {
-        input(INPUT_REGISTER_ID);
-		let len = register_len(INPUT_REGISTER_ID) as usize;
-        let data = vec![0u8; len];
-        read_register(INPUT_REGISTER_ID, data.as_ptr() as *const u64 as u64);
+unsafe fn assert_owner() -> Vec<u8> {
+	input(INPUT_REGISTER_ID);
+	let (len, data) = rread(INPUT_REGISTER_ID);
 
-		let mut sig_bytes = hex::decode(&data[10..140]).unwrap();
-		sig_bytes[64] = sig_bytes[64] - 27;
-		let msg = &data[148..len - 1];
-		// log(&msg);
+	let mut sig_bytes = hex::decode(&data[10..140]).unwrap();
+	sig_bytes[64] = sig_bytes[64] - 27;
+	let msg = &data[148..len - 1];
+	// log(&msg);
 
-		// create ethereum signed message hash
-		let mut msg_wrapped = Vec::new();
-		msg_wrapped.extend_from_slice("\x19Ethereum Signed Message:\n32".as_bytes());
-		
-		write_register(INPUT_REGISTER_ID, msg.len() as u64, msg.as_ptr() as u64);
-		keccak256(u64::MAX, INPUT_REGISTER_ID, KECCACK_REGISTER_ID);
-		let keccak_hash_1 = [0u8; 32];
-		read_register(KECCACK_REGISTER_ID, keccak_hash_1.as_ptr() as u64);
-		
-		msg_wrapped.extend_from_slice(keccak_hash_1.as_slice());
-		
-		write_register(INPUT_REGISTER_ID, msg_wrapped.len() as u64, msg_wrapped.as_ptr() as u64);
-		keccak256(u64::MAX, INPUT_REGISTER_ID, KECCACK_REGISTER_ID);
-		let keccak_hash_2 = [0u8; 32];
-		read_register(KECCACK_REGISTER_ID, keccak_hash_2.as_ptr() as u64);
-        
-        let result = ecrecover(
-            ECRECOVER_MESSAGE_SIZE,
-            keccak_hash_2.as_ptr() as u64,
-            ECRECOVER_SIGNATURE_LENGTH,
-            sig_bytes.as_ptr() as u64,
-            sig_bytes[64] as u64,
-            ECRECOVER_MALLEABILITY_FLAG,
-            RECOVER_REGISTER_ID,
-        );
+	// create ethereum signed message hash
+	let mut msg_wrapped = Vec::new();
+	msg_wrapped.extend_from_slice("\x19Ethereum Signed Message:\n32".as_bytes());
+	
+	write_register(INPUT_REGISTER_ID, msg.len() as u64, msg.as_ptr() as u64);
+	keccak256(u64::MAX, INPUT_REGISTER_ID, OUTPUT_REGISTER_2);
+	let (_, keccak_hash_1) = rread(OUTPUT_REGISTER_2);
+	
+	msg_wrapped.extend_from_slice(keccak_hash_1.as_slice());
+	
+	write_register(INPUT_REGISTER_ID, msg_wrapped.len() as u64, msg_wrapped.as_ptr() as u64);
+	keccak256(u64::MAX, INPUT_REGISTER_ID, OUTPUT_REGISTER_2);
+	let (_, keccak_hash_2) = rread(OUTPUT_REGISTER_2);
+	
+	let result = ecrecover(
+		ECRECOVER_MESSAGE_SIZE,
+		keccak_hash_2.as_ptr() as u64,
+		ECRECOVER_SIGNATURE_LENGTH,
+		sig_bytes.as_ptr() as u64,
+		sig_bytes[64] as u64,
+		ECRECOVER_MALLEABILITY_FLAG,
+		OUTPUT_REGISTER_1,
+	);
 
-        if result == (true as u64) {
-            keccak256(u64::MAX, RECOVER_REGISTER_ID, KECCACK_REGISTER_ID);
-            let keccak_hash_bytes = [0u8; 32];
-            read_register(KECCACK_REGISTER_ID, keccak_hash_bytes.as_ptr() as u64);
-            let address = hex::encode(&keccak_hash_bytes[12..]);
+	if result == (true as u64) {
+		keccak256(u64::MAX, OUTPUT_REGISTER_1, OUTPUT_REGISTER_2);
+		let (_, keccak_hash_bytes) = rread(OUTPUT_REGISTER_2);
+		let address_bytes = keccak_hash_bytes[12..].to_vec();
+		let (_, address_bytes_storage) = sread(ADDRESS_KEY);
 
-			// TODO store owner in contract and check address matches
-			log(&address);
-
-			Vec::from(msg)
-        } else {
+		if address_bytes != address_bytes_storage {
 			panic();
-			vec![]
 		}
-    }
+
+		Vec::from(msg)
+	} else {
+		panic();
+		vec![]
+	}
 }
 
 #[no_mangle]
-pub extern "C" fn test() {
-	let message_bytes = assert_owner();
-	
-	let action = get_string(&message_bytes, "action");
-	
-	log(&action);
+pub unsafe fn set_address() {
+	input(INPUT_REGISTER_ID);
+
+	let (_, data) = rread(INPUT_REGISTER_ID);
+	let address = get_string(&data, "address");
+	let address_bytes = hex::decode(&address).unwrap();
+
+	storage_write(
+		ADDRESS_KEY.len() as u64,
+		ADDRESS_KEY.as_ptr() as u64,
+		address_bytes.len() as u64,
+		address_bytes.as_ptr() as u64,
+		OUTPUT_REGISTER_1
+	);
 }
+
+#[no_mangle]
+pub unsafe fn get_address() {
+	let (_, data) = sread(ADDRESS_KEY);
+	// let data = "testing".as_bytes();
+	let mut ret_data = vec![DOUBLE_QUOTE_BYTE];
+	ret_data.extend_from_slice(hex::encode(data).as_bytes());
+	ret_data.push(DOUBLE_QUOTE_BYTE);
+	value_return(ret_data.len() as u64, ret_data.as_ptr() as u64);
+}
+
+#[no_mangle]
+pub unsafe fn execute() {
+	let data = assert_owner();
+
+	let receiver_id = get_string(&data, "receiver_id");
+	let actions = get_actions(&data);
+
+	log(&from_utf8_unchecked(&receiver_id));
+	let id = promise_batch_create(receiver_id.len() as u64, receiver_id.as_ptr() as u64);
+	
+	for action in actions {
+		match from_utf8_unchecked(&get_string(&action, "type")) {
+			"Transfer" => {
+				let amount = u128::from_str_radix(from_utf8_unchecked(&get_string(&action, "amount")), 10).unwrap();
+				promise_batch_action_transfer(id, amount.to_le_bytes().as_ptr() as u64)
+			},
+			_ => {
+
+			}
+		};
+	}
+}
+
+
+
+
 
 // fn assert_predecessor() {
 //     unsafe {

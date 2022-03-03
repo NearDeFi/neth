@@ -4,7 +4,7 @@ const { generateSeedPhrase } = require('near-seed-phrase')
 const nearAPI = require('near-api-js')
 const {
 	KeyPair,
-	transactions: { deployContract },
+	transactions: { deployContract, functionCall },
 	utils: { PublicKey }
 } = nearAPI
 const {
@@ -29,18 +29,23 @@ const {
 const { ethers } = require("ethers");
 
 /// ETH Account Setup (assume this is the MetaMask user)
-let privateKey = '0x0123456789012345678901234567890123456789012345678901234567890123';
-let wallet = new ethers.Wallet(privateKey);
+const privateKey = '0x0123456789012345678901234567890123456789012345678901234567890123';
+const wallet = new ethers.Wallet(privateKey);
+
+const privateKey2 = '0x1111111111111111111111111111111111111111111111111111111111111111';
+const wallet2 = new ethers.Wallet(privateKey2);
+
+const address = wallet.address.substring(2)
 // "0x14791697260E4c9A71f18484C9f997B308e59325"
-console.log('ETH ADDRESS:', wallet.address.substring(2));
+console.log('ETH ADDRESS:', address);
 
 /// helper gens the args for each call
-const gen_args = async (msg) => {
+const gen_args = async (msg, w = wallet) => {
 	console.log('\nargs\n', JSON.stringify(msg), '\n')
 
 	const messageHash = ethers.utils.id(JSON.stringify(msg));
 	const messageHashBytes = ethers.utils.arrayify(messageHash)
-	const flatSig = await wallet.signMessage(messageHashBytes);
+	const flatSig = await w.signMessage(messageHashBytes);
 
 	const args = {
 		sig: flatSig,
@@ -51,20 +56,20 @@ const gen_args = async (msg) => {
 
 const DELETE_EXISTING = false
 
-let account
-test('create implicit account with private key from signature', async (t) => {
-	const { sig, msg } = await gen_args({
+let accountId, account
+test('implicit account w/ entropy from signature; set_address', async (t) => {
+	const { sig } = await gen_args({
 		NEAR_ETH_PRIVATE_KEY: 'DO NOT SIGN THIS IF YOU HAVE ALREADY SET UP YOUR NEAR ACCOUNT USING THIS ETHEREUM ADDRESS'
 	})
 	let sigHash = ethers.utils.id(sig);
 	/// use 32 bytes of entropy from the signature of the above message to create a NEAR keyPair
 	const { seedPhrase, secretKey, publicKey } = generateSeedPhrase(sigHash.substring(2, 34))
 
-	const accountId = PublicKey.fromString(publicKey).data.hexSlice()
+	accountId = PublicKey.fromString(publicKey).data.hexSlice()
 	account = new nearAPI.Account(connection, accountId);
 	const newKeyPair = KeyPair.fromString(secretKey);
 	await keyStore.setKey(networkId, accountId, newKeyPair);
-	
+
 	if (DELETE_EXISTING) {
 		const exists = await accountExists(accountId)
 		if (exists) {
@@ -76,39 +81,80 @@ test('create implicit account with private key from signature', async (t) => {
 	}
 
 	const contractBytes = fs.readFileSync('./out/main.wasm');
-	console.log('deploying contract');
+	console.log('deploying contract and calling set_address');
+	console.log({ address })
 	const actions = [
 		deployContract(contractBytes),
+		functionCall(
+			'set_address',
+			{ address },
+			gas
+		),
 	];
 	// const state = await account.state()
 	// if (state.code_hash === '11111111111111111111111111111111') {
 	// 	actions.push(functionCall('new', { linkdrop_contract: network }, GAS))
 	// }
 	await account.signAndSendTransaction({ receiverId: accountId, actions });
-	
+
 	t.true(true)
 });
 
-test('test', async (t) => {
+test('get_address', async (t) => {
+	const res = await account.viewFunction(
+		accountId,
+		'get_address'
+	)
+	console.log('get_address', res)
+	t.is(res.toUpperCase(), address.toUpperCase());
+});
 
-	const msg = {
+test('execute fail with wallet2', async (t) => {
+	const args = await gen_args({
+		receiver_id: 'testnet',
 		action: 'hello',
-		args: {
-			world: 'world',
+	}, wallet2)
+
+	try {
+		await account.functionCall({
+			contractId: accountId,
+			methodName: 'execute',
+			args,
+			gas,
+		})
+		t.true(false);
+	} catch (e) {
+		if (!/explicit guest panic/.test(e)) {
+			throw e
 		}
+		t.true(true);
 	}
-	const args = await gen_args(msg)
+});
+
+test('execute actions', async (t) => {
+	const args = await gen_args({
+		receiver_id: 'testnet',
+		actions: [
+			{
+				type: 'Transfer',
+				amount: '1',
+			},
+			{
+				type: 'Transfer',
+				amount: '1',
+			}
+		]
+	})
 
 	const res = await account.functionCall({
-		contractId,
-		methodName: 'test',
+		contractId: accountId,
+		methodName: 'execute',
 		args,
 		gas,
 	})
-	
+
 	t.true(true);
 });
-
 
 
 // test.beforeEach((t) => {
