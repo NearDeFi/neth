@@ -127,16 +127,7 @@ pub unsafe fn execute() {
 	for action in actions {
 		match from_utf8_unchecked(&get_string(&action, "type")) {
 			"Transfer" => {
-				
-				let amount_bytes: Vec<u8> = get_string(&action, "amount");
-				let len = amount_bytes.len() - 1;
-				let mut amount: u128 = 0;
-				for (i, byte) in amount_bytes.iter().enumerate() {
-					amount += (*byte - 48) as u128 * 10u128.pow((len - i) as u32);
-					// log(&amount.to_string());
-				}
-				// parse and from_str_radix add bloat
-				// let amount = from_utf8_unchecked(&get_string(&action, "amount")).parse::<u128>().unwrap();
+				let amount = get_u128(&action, "amount");
 				promise_batch_action_transfer(id, amount.to_le_bytes().as_ptr() as u64)
 			},
 			_ => {
