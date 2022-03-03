@@ -1,4 +1,5 @@
 const REGISTER_ID: u64 = 0;
+const DOUBLE_QUOTE_BYTE: u8 = "\"".as_bytes()[0];
 
 use alloc::vec;
 use alloc::vec::Vec;
@@ -7,7 +8,24 @@ pub unsafe fn log(message: &str) {
     log_utf8(message.len() as _, message.as_ptr() as _);
 }
 
-pub unsafe fn sread(key: &str) -> (usize, Vec<u8>) {
+pub unsafe fn return_bytes(bytes: &[u8]) {
+	let mut ret_data = vec![DOUBLE_QUOTE_BYTE];
+	ret_data.extend_from_slice(bytes);
+	ret_data.push(DOUBLE_QUOTE_BYTE);
+	value_return(ret_data.len() as u64, ret_data.as_ptr() as u64);
+}
+
+pub unsafe fn swrite(key: &str, val: Vec<u8>) {
+	storage_write(
+		key.len() as u64,
+		key.as_ptr() as u64,
+		val.len() as u64,
+		val.as_ptr() as u64,
+		REGISTER_ID
+	);
+}
+
+pub unsafe fn sread(key: &str) -> Vec<u8> {
 	// let res = 
 	storage_read(
 		key.len() as u64,
@@ -19,7 +37,19 @@ pub unsafe fn sread(key: &str) -> (usize, Vec<u8>) {
 	// } else {
 	// 	log("storage read fail")
 	// }
-	rread(REGISTER_ID)
+	let (_, data) = rread(REGISTER_ID);
+	data
+}
+
+pub unsafe fn sread_u64(key: &str) -> u64 {
+	let data = sread(key);
+	slice_to_u64(&data)
+}
+
+fn slice_to_u64(s: &[u8]) -> u64 {
+    let mut word = [0u8; 8];
+    word.copy_from_slice(s);
+    u64::from_le_bytes(word)
 }
 
 pub unsafe fn rread(id: u64) -> (usize, Vec<u8>) {

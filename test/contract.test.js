@@ -59,7 +59,9 @@ const gen_args = async (msg, w = wallet) => {
 
 const DELETE_EXISTING = false
 
-let accountId, account
+/// all tests
+let accountId, account, nonce
+
 test('implicit account w/ entropy from signature; set_address', async (t) => {
 	const { sig } = await gen_args({
 		NEAR_ETH_PRIVATE_KEY: 'DO NOT SIGN THIS IF YOU HAVE ALREADY SET UP YOUR NEAR ACCOUNT USING THIS ETHEREUM ADDRESS'
@@ -112,9 +114,19 @@ test('get_address', async (t) => {
 	t.is(res.toUpperCase(), address.toUpperCase());
 });
 
-test('execute fail with wallet2', async (t) => {
+test('get_nonce', async (t) => {
+	nonce = parseInt(await account.viewFunction(
+		accountId,
+		'get_nonce'
+	), 16).toString()
+	console.log('get_nonce', nonce)
+	t.is(nonce, '0');
+});
+
+test('execute fail wallet2', async (t) => {
 	const args = await gen_args({
 		receiver_id: 'testnet',
+		nonce,
 		action: 'hello',
 	}, wallet2)
 
@@ -134,9 +146,37 @@ test('execute fail with wallet2', async (t) => {
 	}
 });
 
-test('execute actions', async (t) => {
+test('execute actions fail incorrect nonce', async (t) => {
 	const args = await gen_args({
 		receiver_id: 'testnet',
+		nonce: '1',
+		action: 'hello',
+	})
+
+	try {
+		await account.functionCall({
+			contractId: accountId,
+			methodName: 'execute',
+			args,
+			gas,
+		})
+		t.true(false);
+	} catch (e) {
+		if (!/explicit guest panic/.test(e)) {
+			throw e
+		}
+		t.true(true);
+	}
+});
+
+
+test('execute actions', async (t) => {
+
+	/// nonce will not have incremented because the above txs failed
+
+	const args = await gen_args({
+		receiver_id: 'testnet',
+		nonce,
 		actions: [
 			{
 				type: 'Transfer',
@@ -158,6 +198,19 @@ test('execute actions', async (t) => {
 
 	t.true(true);
 });
+
+test('get_nonce 2', async (t) => {
+	nonce = parseInt(await account.viewFunction(
+		accountId,
+		'get_nonce'
+	), 16).toString()
+	console.log('get_nonce', nonce)
+	t.is(nonce, '1');
+});
+
+
+
+
 
 
 // test.beforeEach((t) => {

@@ -6,7 +6,7 @@ const ECRECOVER_MESSAGE_SIZE: u64 = 32;
 const ECRECOVER_SIGNATURE_LENGTH: u64 = 64;
 const ECRECOVER_MALLEABILITY_FLAG: u64 = 1;
 const ADDRESS_KEY: &str = "a";
-const DOUBLE_QUOTE_BYTE: u8 = "\"".as_bytes()[0];
+const NONCE_KEY: &str = "n";
 const INPUT_REGISTER_ID: u64 = 0;
 const OUTPUT_REGISTER_1: u64 = 1;
 const OUTPUT_REGISTER_2: u64 = 2;
@@ -38,7 +38,7 @@ pub unsafe fn on_alloc_error(_: core::alloc::Layout) -> ! {
 }
 
 /// Checks that sig of keccak("\x19Ethereum Signed Message:\n32", keccak(msg)) matches ethereum pubkey and returns msg bytes
-unsafe fn assert_owner() -> Vec<u8> {
+unsafe fn assert_owner(nonce: u64) -> Vec<u8> {
 	input(INPUT_REGISTER_ID);
 	let (len, data) = rread(INPUT_REGISTER_ID);
 
@@ -75,9 +75,13 @@ unsafe fn assert_owner() -> Vec<u8> {
 		keccak256(u64::MAX, OUTPUT_REGISTER_1, OUTPUT_REGISTER_2);
 		let (_, keccak_hash_bytes) = rread(OUTPUT_REGISTER_2);
 		let address_bytes = keccak_hash_bytes[12..].to_vec();
-		let (_, address_bytes_storage) = sread(ADDRESS_KEY);
-
+		let address_bytes_storage = sread(ADDRESS_KEY);
 		if address_bytes != address_bytes_storage {
+			panic();
+		}
+
+		let nonce_msg = get_u128(&msg, "nonce");
+		if nonce != nonce_msg as u64 {
 			panic();
 		}
 
@@ -91,33 +95,26 @@ unsafe fn assert_owner() -> Vec<u8> {
 #[no_mangle]
 pub unsafe fn set_address() {
 	input(INPUT_REGISTER_ID);
-
 	let (_, data) = rread(INPUT_REGISTER_ID);
-	let address = get_string(&data, "address");
-	let address_bytes = hex::decode(&address).unwrap();
-
-	storage_write(
-		ADDRESS_KEY.len() as u64,
-		ADDRESS_KEY.as_ptr() as u64,
-		address_bytes.len() as u64,
-		address_bytes.as_ptr() as u64,
-		OUTPUT_REGISTER_1
-	);
+	swrite(ADDRESS_KEY, hex::decode(&get_string(&data, "address")).unwrap());
+	let nonce: u64 = 0;
+	swrite(NONCE_KEY, nonce.to_le_bytes().to_vec());
 }
 
 #[no_mangle]
 pub unsafe fn get_address() {
-	let (_, data) = sread(ADDRESS_KEY);
-	// let data = "testing".as_bytes();
-	let mut ret_data = vec![DOUBLE_QUOTE_BYTE];
-	ret_data.extend_from_slice(hex::encode(data).as_bytes());
-	ret_data.push(DOUBLE_QUOTE_BYTE);
-	value_return(ret_data.len() as u64, ret_data.as_ptr() as u64);
+	return_bytes(hex::encode(&sread(ADDRESS_KEY)).as_bytes());
+}
+
+#[no_mangle]
+pub unsafe fn get_nonce() {
+	return_bytes(hex::encode(sread_u64(NONCE_KEY).to_be_bytes()).as_bytes());
 }
 
 #[no_mangle]
 pub unsafe fn execute() {
-	let data = assert_owner();
+	let nonce = increase_nonce();
+	let data = assert_owner(nonce);
 
 	let receiver_id = get_string(&data, "receiver_id");
 	let actions = get_actions(&data);
@@ -135,6 +132,17 @@ pub unsafe fn execute() {
 			}
 		};
 	}
+}
+
+
+/// utils
+
+
+unsafe fn increase_nonce() -> u64 {
+	let nonce = sread_u64(NONCE_KEY);
+	let new_nonce = nonce + 1;
+	swrite(NONCE_KEY, new_nonce.to_le_bytes().to_vec());
+	nonce
 }
 
 
