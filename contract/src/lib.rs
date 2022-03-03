@@ -122,13 +122,21 @@ pub unsafe fn execute() {
 	let receiver_id = get_string(&data, "receiver_id");
 	let actions = get_actions(&data);
 
-	log(&from_utf8_unchecked(&receiver_id));
 	let id = promise_batch_create(receiver_id.len() as u64, receiver_id.as_ptr() as u64);
 	
 	for action in actions {
 		match from_utf8_unchecked(&get_string(&action, "type")) {
 			"Transfer" => {
-				let amount = u128::from_str_radix(from_utf8_unchecked(&get_string(&action, "amount")), 10).unwrap();
+				
+				let amount_bytes: Vec<u8> = get_string(&action, "amount");
+				let len = amount_bytes.len() - 1;
+				let mut amount: u128 = 0;
+				for (i, byte) in amount_bytes.iter().enumerate() {
+					amount += (*byte - 48) as u128 * 10u128.pow((len - i) as u32);
+					// log(&amount.to_string());
+				}
+				// parse and from_str_radix add bloat
+				// let amount = from_utf8_unchecked(&get_string(&action, "amount")).parse::<u128>().unwrap();
 				promise_batch_action_transfer(id, amount.to_le_bytes().as_ptr() as u64)
 			},
 			_ => {

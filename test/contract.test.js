@@ -5,7 +5,10 @@ const nearAPI = require('near-api-js')
 const {
 	KeyPair,
 	transactions: { deployContract, functionCall },
-	utils: { PublicKey }
+	utils: {
+		PublicKey,
+		format: { parseNearAmount }
+	}
 } = nearAPI
 const {
 	getAccount, init,
@@ -26,9 +29,9 @@ const {
 	NEW_ACCOUNT_AMOUNT,
 } = getConfig();
 
+/// ETH Account Setup (assume this is the MetaMask user)
 const { ethers } = require("ethers");
 
-/// ETH Account Setup (assume this is the MetaMask user)
 const privateKey = '0x0123456789012345678901234567890123456789012345678901234567890123';
 const wallet = new ethers.Wallet(privateKey);
 
@@ -137,11 +140,11 @@ test('execute actions', async (t) => {
 		actions: [
 			{
 				type: 'Transfer',
-				amount: '1',
+				amount: parseNearAmount('0.042'),
 			},
 			{
 				type: 'Transfer',
-				amount: '1',
+				amount: parseNearAmount('0.09187431982759'),
 			}
 		]
 	})
