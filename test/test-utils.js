@@ -58,12 +58,12 @@ const accountExists = async (accountId) => {
 	try {
 		const account = new nearAPI.Account(connection, accountId);
 		await account.state();
-		return true
+		return true;
 	} catch(e) {
 		if (!/no such file|does not exist/.test(e.toString())) {
 			throw e;
 		}
-		return false
+		return false;
 	}
 };
 
