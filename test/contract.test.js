@@ -68,7 +68,7 @@ const DELETE_EXISTING = false
 /// all tests
 let accountId, account, nonce
 
-test('implicit account w/ entropy from signature; set_address', async (t) => {
+test('implicit account w/ entropy from signature; setup', async (t) => {
 	const { sig } = await gen_args({
 		NEAR_ETH_PRIVATE_KEY: 'DO NOT SIGN THIS IF YOU HAVE ALREADY SET UP YOUR NEAR ACCOUNT USING THIS ETHEREUM ADDRESS'
 	})
@@ -94,12 +94,12 @@ test('implicit account w/ entropy from signature; set_address', async (t) => {
 	}
 
 	const contractBytes = fs.readFileSync('./out/main.wasm');
-	console.log('deploying contract and calling set_address');
+	console.log('deploying contract and calling setup');
 	console.log({ address })
 	const actions = [
 		deployContract(contractBytes),
 		functionCall(
-			'set_address',
+			'setup',
 			{ address },
 			gas
 		),
@@ -163,6 +163,29 @@ test('execute actions fail incorrect nonce', async (t) => {
 
 	try {
 		await account.functionCall({
+			contractId: accountId,
+			methodName: 'execute',
+			args,
+			gas,
+		})
+		t.true(false);
+	} catch (e) {
+		if (!/explicit guest panic/.test(e)) {
+			throw e
+		}
+		t.true(true);
+	}
+});
+
+test('execute fail from another account', async (t) => {
+	const args = await gen_args({
+		receiver_id: accountId,
+		nonce,
+		action: 'hello',
+	})
+
+	try {
+		await contractAccount.functionCall({
 			contractId: accountId,
 			methodName: 'execute',
 			args,

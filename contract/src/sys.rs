@@ -1,8 +1,4 @@
-const REGISTER_ID: u64 = 0;
-const DOUBLE_QUOTE_BYTE: u8 = "\"".as_bytes()[0];
-
-use alloc::vec;
-use alloc::vec::Vec;
+use crate::*;
 
 pub unsafe fn log(message: &str) {
     log_utf8(message.len() as _, message.as_ptr() as _);
@@ -21,23 +17,17 @@ pub unsafe fn swrite(key: &str, val: Vec<u8>) {
 		key.as_ptr() as u64,
 		val.len() as u64,
 		val.as_ptr() as u64,
-		REGISTER_ID
+		REGISTER_0
 	);
 }
 
 pub unsafe fn sread(key: &str) -> Vec<u8> {
-	// let res = 
 	storage_read(
 		key.len() as u64,
 		key.as_ptr() as u64,
-		REGISTER_ID,
+		REGISTER_0,
 	);
-	// if res == 1 {
-	// 	log("storage read success")
-	// } else {
-	// 	log("storage read fail")
-	// }
-	let (_, data) = rread(REGISTER_ID);
+	let (_, data) = rread(REGISTER_0);
 	data
 }
 

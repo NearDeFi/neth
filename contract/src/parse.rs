@@ -1,6 +1,4 @@
-use alloc::str::from_utf8_unchecked;
-use alloc::vec;
-use alloc::vec::Vec;
+use crate::*;
 
 pub unsafe fn get_string(bytes: &[u8], key: &str) -> Vec<u8> {
 	let mut find = key.as_bytes().to_vec();
@@ -13,14 +11,13 @@ pub unsafe fn get_string(bytes: &[u8], key: &str) -> Vec<u8> {
 
 pub unsafe fn get_json(bytes: &[u8], key: &str) -> Vec<u8> {
 	let mut find = key.as_bytes().to_vec();
-	find.extend_from_slice("\":{".as_bytes());
+	find.extend_from_slice("\":".as_bytes());
 	let string = from_utf8_unchecked(bytes);
 	let one: Vec<&str> = string.split(from_utf8_unchecked(find.as_slice())).collect();
-	let two: Vec<&str> = one[1].split("}").collect();
+	let two: Vec<&str> = one[1].split(R_BRACE).collect();
 	let mut ret = vec![];
-	ret.extend_from_slice("{".as_bytes());
 	ret.extend_from_slice(two[0].as_bytes());
-	ret.extend_from_slice("}".as_bytes());
+	ret.extend_from_slice(R_BRACE.as_bytes());
 	ret
 }
 
