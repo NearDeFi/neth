@@ -38,7 +38,7 @@ const wallet = new ethers.Wallet(privateKey);
 const privateKey2 = '0x1111111111111111111111111111111111111111111111111111111111111111';
 const wallet2 = new ethers.Wallet(privateKey2);
 
-const address = wallet.address.substring(2);
+const address = wallet.address;
 // "0x14791697260E4c9A71f18484C9f997B308e59325"
 console.log('ETH ADDRESS:', address);
 
@@ -55,6 +55,8 @@ const gen_args = async (msg, w = wallet) => {
 	const messageHash = ethers.utils.id(JSON.stringify(msg));
 	const messageHashBytes = ethers.utils.arrayify(messageHash);
 	const flatSig = await w.signMessage(messageHashBytes);
+
+	console.log(flatSig)
 
 	const args = {
 		sig: flatSig,
@@ -95,7 +97,6 @@ test('implicit account w/ entropy from signature; setup', async (t) => {
 
 	const contractBytes = fs.readFileSync('./out/main.wasm');
 	console.log('deploying contract and calling setup');
-	console.log({ address });
 	const actions = [
 		deployContract(contractBytes),
 		functionCall(

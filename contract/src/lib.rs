@@ -48,7 +48,7 @@ pub unsafe fn setup() {
 	assert_predecessor();
 	input(REGISTER_0);
 	let (_, data) = rread(REGISTER_0);
-	swrite(ADDRESS_KEY, hex::decode(&get_string(&data, "address")).unwrap());
+	swrite(ADDRESS_KEY, hex::decode(&get_string(&data, "address")[2..]).unwrap());
 	let nonce: u64 = 0;
 	swrite(NONCE_KEY, nonce.to_le_bytes().to_vec());
 }
@@ -130,7 +130,9 @@ pub unsafe fn execute() {
 
 #[no_mangle]
 pub unsafe fn get_address() {
-	return_bytes(hex::encode(&sread(ADDRESS_KEY)).as_bytes());
+	let mut address = vec![48, 120];
+	address.extend_from_slice(hex::encode(&sread(ADDRESS_KEY)).as_bytes());
+	return_bytes(&address);
 }
 
 #[no_mangle]

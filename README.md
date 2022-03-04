@@ -19,7 +19,7 @@ See: `test/contract.test.js` for details on how to deploy and call the contract 
 `setup()`
 
 - 1 argument
-- `address` is the hex encoded Ethereum address WITHOUT `0x`!!!
+- `address` is the hex encoded Ethereum address **WITH 0x**
 
 It will store address and a nonce (default 0) to protect against tx replay.
 
@@ -31,7 +31,15 @@ It will store address and a nonce (default 0) to protect against tx replay.
 - `sig` is the hex encoded flat sig of the msg argument
 - `msg` is stringified JSON of the TX request (https://github.com/near/core-contracts/tree/master/multisig#request)
 
-*note: args for FunctionCall are not Base64VecU8, they are json*
+### msg payload
+
+**ALL ARGUMENTS ARE STRINGS**
+
+There are no ints or numbers used in the msg payload!
+
+*note: args for FunctionCall are not Base64VecU8 (multisig contract), they are json!*
+
+### Actions
 
 There are 4 types of actions:
 1. Transfer
@@ -43,13 +51,28 @@ They can be batched in a json array, but there can only be 1 receiver_id for all
 
 For details on how to call them, see: `test/contract.test.js`
 
-### Utilities
+## View Methods
+
+- `get_address` returns the ethereum address for this account **WITH 0x**
+- `get_nonce` returns the nonce to use for the next TX **PADDED HEX ENCODING**
+
+### Parsing get_nonce response for TXs
+
+Take the base16 int of `get_nonce` result and stringify it for usage.
+```
+const nonce = parseInt(await account.viewFunction(
+	accountId,
+	'get_nonce'
+), 16).toString();
+```
+
+## Utilities
 
 `parse.rs` includes rudimentary string parsing for the `msg` arg.
 `sys.rs` handles the near-sys method definitions, storage and register ops.
 `owner.rs` is where the signature is recovered and predecessor checked.
 
-### Signatures
+## Signatures
 
 Using ethers.js:
 ```
