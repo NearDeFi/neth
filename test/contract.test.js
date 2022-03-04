@@ -42,6 +42,12 @@ const address = wallet.address.substring(2)
 // "0x14791697260E4c9A71f18484C9f997B308e59325"
 console.log('ETH ADDRESS:', address);
 
+const keyPair = {
+	publicKey: 'ed25519:2vwEmA557jXcRWjgq1L92RCRDumM6GCYpUgANby8gSD3',
+	secretKey: 'ed25519:2Qmnk8KzUh53aRvRyUeCnk1m846pT9YrtaSPw6txzFDs8QmqrsoqC59txo72KAbC39WZyzK16QCzfwQzBErZCCow',
+}
+
+
 /// helper gens the args for each call
 const gen_args = async (msg, w = wallet) => {
 	console.log('\nargs\n', JSON.stringify(msg), '\n')
@@ -70,10 +76,12 @@ test('implicit account w/ entropy from signature; set_address', async (t) => {
 	/// use 32 bytes of entropy from the signature of the above message to create a NEAR keyPair
 	const { seedPhrase, secretKey, publicKey } = generateSeedPhrase(sigHash.substring(2, 34))
 
+	console.log(secretKey)
+
 	accountId = PublicKey.fromString(publicKey).data.hexSlice()
 	account = new nearAPI.Account(connection, accountId);
 	const newKeyPair = KeyPair.fromString(secretKey);
-	await keyStore.setKey(networkId, accountId, newKeyPair);
+	keyStore.setKey(networkId, accountId, newKeyPair);
 
 	if (DELETE_EXISTING) {
 		const exists = await accountExists(accountId)
@@ -125,7 +133,7 @@ test('get_nonce', async (t) => {
 
 test('execute fail wallet2', async (t) => {
 	const args = await gen_args({
-		receiver_id: 'testnet',
+		receiver_id: accountId,
 		nonce,
 		action: 'hello',
 	}, wallet2)
@@ -148,7 +156,7 @@ test('execute fail wallet2', async (t) => {
 
 test('execute actions fail incorrect nonce', async (t) => {
 	const args = await gen_args({
-		receiver_id: 'testnet',
+		receiver_id: accountId,
 		nonce: '1',
 		action: 'hello',
 	})
@@ -169,23 +177,66 @@ test('execute actions fail incorrect nonce', async (t) => {
 	}
 });
 
+test('execute actions on account', async (t) => {
+	const args = await gen_args({
+		receiver_id: accountId,
+		/// nonce will not have incremented because the above txs failed
+		nonce,
+		actions: [
+			{
+				type: 'Transfer',
+				amount: parseNearAmount('0.00017'),
+			},
+			{
+				type: 'DeleteKey',
+				public_key: PublicKey.fromString(keyPair.publicKey).data.hexSlice(),
+			},
+			{
+				type: 'AddKey',
+				public_key: PublicKey.fromString(keyPair.publicKey).data.hexSlice(),
+				allowance: parseNearAmount('1'),
+				receiver_id: accountId,
+				method_names: 'execute',
+			}
+		]
+	})
 
-test('execute actions', async (t) => {
+	const res = await account.functionCall({
+		contractId: accountId,
+		methodName: 'execute',
+		args,
+		gas,
+	})
 
-	/// nonce will not have incremented because the above txs failed
+	t.true(true);
+});
+
+test('execute actions on some contract', async (t) => {
+
+	/// need a new nonce because the above tx succeeded and new nonce written
+	nonce = parseInt(await account.viewFunction(
+		accountId,
+		'get_nonce'
+	), 16).toString()
+
+	/// use limited access key (just re-upped in prev tx)
+	const newKeyPair = KeyPair.fromString(keyPair.secretKey);
+	keyStore.setKey(networkId, accountId, newKeyPair);
 
 	const args = await gen_args({
 		receiver_id: 'testnet',
 		nonce,
 		actions: [
 			{
-				type: 'Transfer',
-				amount: parseNearAmount('0.042'),
+				type: 'FunctionCall',
+				method_name: 'create_account',
+				args: {
+					new_account_id: 'meow-' + Date.now() + '.testnet',
+					new_public_key: newKeyPair.publicKey.toString(),
+				},
+				amount: parseNearAmount('0.02'),
+				gas: '100000000000000',
 			},
-			{
-				type: 'Transfer',
-				amount: parseNearAmount('0.09187431982759'),
-			}
 		]
 	})
 
@@ -205,7 +256,7 @@ test('get_nonce 2', async (t) => {
 		'get_nonce'
 	), 16).toString()
 	console.log('get_nonce', nonce)
-	t.is(nonce, '1');
+	t.is(nonce, '2');
 });
 
 

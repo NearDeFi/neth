@@ -125,7 +125,52 @@ pub unsafe fn execute() {
 		match from_utf8_unchecked(&get_string(&action, "type")) {
 			"Transfer" => {
 				let amount = get_u128(&action, "amount");
-				promise_batch_action_transfer(id, amount.to_le_bytes().as_ptr() as u64)
+				promise_batch_action_transfer(
+					id,
+					amount.to_le_bytes().as_ptr() as u64
+				);
+			},
+			"AddKey" => {
+				let allowance = get_u128(&action, "allowance");
+				let receiver_id = get_string(&action, "receiver_id");
+				let method_names = get_string(&action, "method_names");
+				let mut public_key = vec![0];
+				public_key.extend_from_slice(&hex::decode(get_string(&action, "public_key")).unwrap());
+				promise_batch_action_add_key_with_function_call(
+					id,
+					public_key.len() as u64,
+					public_key.as_ptr() as u64,
+					0,
+					allowance.to_le_bytes().as_ptr() as u64,
+					receiver_id.len() as u64,
+					receiver_id.as_ptr() as u64,
+					method_names.len() as u64,
+					method_names.as_ptr() as u64,
+				)
+			},
+			"DeleteKey" => {
+				let mut public_key = vec![0];
+				public_key.extend_from_slice(&hex::decode(get_string(&action, "public_key")).unwrap());
+				promise_batch_action_delete_key(
+					id,
+					public_key.len() as u64,
+					public_key.as_ptr() as u64,
+				);
+			},
+			"FunctionCall" => {
+				let method_name = get_string(&action, "method_name");
+				let args = get_json(&action, "args");
+				let amount = get_u128(&action, "amount");
+				let gas = get_u128(&action, "gas") as u64;
+				promise_batch_action_function_call(
+					id,
+					method_name.len() as u64,
+					method_name.as_ptr() as u64,
+					args.len() as u64,
+					args.as_ptr() as u64,
+					amount.to_le_bytes().as_ptr() as u64,
+					gas,
+				);
 			},
 			_ => {
 
@@ -134,9 +179,7 @@ pub unsafe fn execute() {
 	}
 }
 
-
 /// utils
-
 
 unsafe fn increase_nonce() -> u64 {
 	let nonce = sread_u64(NONCE_KEY);
@@ -144,10 +187,6 @@ unsafe fn increase_nonce() -> u64 {
 	swrite(NONCE_KEY, new_nonce.to_le_bytes().to_vec());
 	nonce
 }
-
-
-
-
 
 // fn assert_predecessor() {
 //     unsafe {
@@ -162,90 +201,4 @@ unsafe fn increase_nonce() -> u64 {
 //             panic();
 //         }
 //     }
-// }
-
-// /// This proxies passed call.
-// /// Checks that predecessor is suffix of the given account.
-// /// <gas:64><amount:u128><receiver_len:u32><receiver_id:bytes><method_name_len:u32><method_name:bytes><args_len:u32><args:bytes>
-// #[no_mangle]
-// pub extern "C" fn call() {
-//     assert_predecessor();
-//     unsafe {
-//         input(2);
-//         let data = vec![0u8; register_len(2) as usize];
-//         read_register(2, data.as_ptr() as *const u64 as u64);
-//         let gas = slice_to_u64(&data[..8]);
-//         let amount = &data[8..24]; // as u128;
-//         let receiver_len = slice_to_u32(&data[24..28]) as usize;
-//         let method_name_len = slice_to_u32(&data[28 + receiver_len..32 + receiver_len]) as usize;
-//         let args_len = slice_to_u32(
-//             &data[32 + receiver_len + method_name_len..36 + receiver_len + method_name_len],
-//         ) as usize;
-//         let id = promise_batch_create(receiver_len as _, data.as_ptr() as u64 + 28);
-//         promise_batch_action_function_call(
-//             id,
-//             method_name_len as _,
-//             data.as_ptr() as u64 + 32 + receiver_len as u64,
-//             args_len as _,
-//             data.as_ptr() as u64 + 36 + (receiver_len + method_name_len) as u64,
-//             amount.as_ptr() as _,
-//             gas,
-//         );
-//     }
-// }
-
-// /// Transfers given amount of $NEAR to given account.
-// /// Input format <amount:u128><receiver_id:bytes>
-// #[no_mangle]
-// pub extern "C" fn transfer() {
-//     assert_predecessor();
-//     unsafe {
-//         input(2);
-//         let data = vec![0u8; register_len(2) as usize];
-//         read_register(2, data.as_ptr() as *const u64 as u64);
-//         let id = promise_batch_create((data.len() - 16) as _, data.as_ptr() as u64 + 16);
-//         promise_batch_action_transfer(id, data.as_ptr() as _);
-//     }
-// }
-
-// /// This allows to update the contract on this account.
-// /// Checks that predecessor is suffix of the given account.
-// #[no_mangle]
-// pub extern "C" fn update() {
-//     assert_predecessor();
-//     unsafe {
-//         let id = promise_batch_create(u64::MAX as _, 0 as _);
-//         input(2);
-//         promise_batch_action_deploy_contract(id, u64::MAX as _, 2 as _);
-//     }
-// }
-
-// /// utils
-
-// fn slice_to_u64(s: &[u8]) -> u64 {
-//     let mut word = [0u8; 8];
-//     word.copy_from_slice(s);
-//     u64::from_le_bytes(word)
-// }
-
-// fn slice_to_u32(s: &[u8]) -> u32 {
-//     let mut word = [0u8; 4];
-//     word.copy_from_slice(s);
-//     u32::from_le_bytes(word)
-// }
-
-// fn slice_to_u8(s: &[u8]) -> u8 {
-//     let mut word = [0u8; 1];
-//     word.copy_from_slice(s);
-//     u8::from_le_bytes(word)
-// }
-
-// fn slice_to_bool(s: &[u8]) -> bool {
-//     let mut word = [0u8; 1];
-//     word.copy_from_slice(s);
-//     if u8::from_le_bytes(word) == 1 {
-// 		true
-// 	} else {
-// 		false
-// 	}
 // }

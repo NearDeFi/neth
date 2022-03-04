@@ -42,13 +42,8 @@ pub unsafe fn sread(key: &str) -> Vec<u8> {
 }
 
 pub unsafe fn sread_u64(key: &str) -> u64 {
-	let data = sread(key);
-	slice_to_u64(&data)
-}
-
-fn slice_to_u64(s: &[u8]) -> u64 {
-    let mut word = [0u8; 8];
-    word.copy_from_slice(s);
+	let mut word = [0u8; 8];
+	word.copy_from_slice(&sread(key));
     u64::from_le_bytes(word)
 }
 
@@ -61,15 +56,30 @@ pub unsafe fn rread(id: u64) -> (usize, Vec<u8>) {
 
 #[allow(dead_code)]
 extern "C" {
-    pub fn read_register(register_id: u64, ptr: u64);
-    pub fn write_register(register_id: u64, data_len: u64, data_ptr: u64);
-    pub fn register_len(register_id: u64) -> u64;
     pub fn current_account_id(register_id: u64);
     pub fn predecessor_account_id(register_id: u64);
     pub fn input(register_id: u64);
     pub fn panic();
     pub fn log_utf8(len: u64, ptr: u64);
+	// promises
     pub fn promise_batch_create(account_id_len: u64, account_id_ptr: u64) -> u64;
+    pub fn promise_batch_action_transfer(promise_index: u64, amount_ptr: u64);
+	pub fn promise_batch_action_add_key_with_function_call(
+		promise_index: u64, 
+		public_key_len: u64, 
+		public_key_ptr: u64, 
+		nonce: u64, 
+		allowance_ptr: u64, 
+		receiver_id_len: u64, 
+		receiver_id_ptr: u64, 
+		method_names_len: u64, 
+		method_names_ptr: u64
+	);
+	pub fn promise_batch_action_delete_key(
+		promise_index: u64,
+		public_key_len: u64,
+		public_key_ptr: u64,
+	);
     pub fn promise_batch_action_function_call(
         promise_index: u64,
         method_name_len: u64,
@@ -79,9 +89,7 @@ extern "C" {
         amount_ptr: u64,
         gas: u64,
     );
-    pub fn promise_batch_action_deploy_contract(promise_index: u64, code_len: u64, code_ptr: u64);
-    pub fn promise_batch_action_transfer(promise_index: u64, amount_ptr: u64);
-
+	// crypto
 	pub fn ecrecover(
 		hash_len: u64,
         hash_ptr: u64,
@@ -91,9 +99,11 @@ extern "C" {
         malleability_flag: u64,
         register_id: u64,
 	) -> u64;
-
 	pub fn keccak256(value_len: u64, value_ptr: u64, register_id: u64);
-
+	// io / storage
+    pub fn read_register(register_id: u64, ptr: u64);
+    pub fn write_register(register_id: u64, data_len: u64, data_ptr: u64);
+    pub fn register_len(register_id: u64) -> u64;
 	pub fn storage_write(
 		key_len: u64, 
 		key_ptr: u64, 
@@ -101,12 +111,11 @@ extern "C" {
 		value_ptr: u64, 
 		register_id: u64
 	) -> u64;
-
 	pub fn storage_read(
 		key_len: u64, 
 		key_ptr: u64, 
 		register_id: u64
 	) -> u64;
-
+	// return to client
     pub fn value_return(value_len: u64, value_ptr: u64);
 }
