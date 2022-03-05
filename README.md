@@ -37,7 +37,28 @@ It will store address and a nonce (default 0) to protect against tx replay.
 
 There are no ints or numbers used in the msg payload!
 
-*note: args for FunctionCall are not Base64VecU8 (multisig contract), they are json!*
+*note: args for FunctionCall are hex encoded, including 0x*
+
+e.g.
+
+```
+const obj2hex = (obj) => ethers.utils.hexlify(new TextEncoder().encode(JSON.stringify(obj)))
+...
+actions: [
+	{
+		type: 'FunctionCall',
+		method_name: 'create_account',
+		args: obj2hex({
+			new_account_id: 'meow-' + Date.now() + '.testnet',
+			new_public_key: publicKey,
+		}),
+		amount: parseNearAmount('0.02'),
+		gas: '100000000000000',
+	},
+]
+...
+// "args":"0x7b226e65775f6163636f756e745f6964223a226d656f772d313634363433393030363738312e746573746e6574222c226e65775f7075626c69635f6b6579223a22656432353531393a327677456d413535376a586352576a6771314c393252435244756d4d36474359705567414e62793867534433227d"
+```
 
 ### Actions
 

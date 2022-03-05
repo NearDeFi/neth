@@ -9,18 +9,6 @@ pub unsafe fn get_string(bytes: &[u8], key: &str) -> Vec<u8> {
 	two[0].as_bytes().to_vec()
 }
 
-pub unsafe fn get_json(bytes: &[u8], key: &str) -> Vec<u8> {
-	let mut find = key.as_bytes().to_vec();
-	find.extend_from_slice("\":".as_bytes());
-	let string = from_utf8_unchecked(bytes);
-	let one: Vec<&str> = string.split(from_utf8_unchecked(find.as_slice())).collect();
-	let two: Vec<&str> = one[1].split(R_BRACE).collect();
-	let mut ret = vec![];
-	ret.extend_from_slice(two[0].as_bytes());
-	ret.extend_from_slice(R_BRACE.as_bytes());
-	ret
-}
-
 pub unsafe fn get_u128(bytes: &[u8], key: &str) -> u128 {
 	let amount_bytes = get_string(bytes, key);
 	let len = amount_bytes.len() - 1;

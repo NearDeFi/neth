@@ -47,6 +47,7 @@ const keyPair = {
 	secretKey: 'ed25519:2Qmnk8KzUh53aRvRyUeCnk1m846pT9YrtaSPw6txzFDs8QmqrsoqC59txo72KAbC39WZyzK16QCzfwQzBErZCCow',
 };
 
+const obj2hex = (obj) => ethers.utils.hexlify(new TextEncoder().encode(JSON.stringify(obj)))
 
 /// helper gens the args for each call
 const gen_args = async (msg, w = wallet) => {
@@ -254,10 +255,10 @@ test('execute actions on some contract', async (t) => {
 			{
 				type: 'FunctionCall',
 				method_name: 'create_account',
-				args: {
+				args: obj2hex({
 					new_account_id: 'meow-' + Date.now() + '.testnet',
 					new_public_key: newKeyPair.publicKey.toString(),
-				},
+				}),
 				amount: parseNearAmount('0.02'),
 				gas: '100000000000000',
 			},
