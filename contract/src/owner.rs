@@ -55,7 +55,6 @@ pub unsafe fn assert_valid_tx(nonce: u64) -> Vec<u8> {
 	values.extend_from_slice(&hash(&nonce_msg_str));
 	values.extend_from_slice(&hash(&actions));
 	msg_wrapped.extend_from_slice(&hash(&values));
-	
 	let msg_hash = hash(&msg_wrapped);
 	
 	let result = ecrecover(

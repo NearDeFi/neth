@@ -95,29 +95,38 @@ const nonce = parseInt(await account.viewFunction(
 
 ## Signatures
 
-Using ethers.js:
+Follows:
+https://github.com/ethereum/EIPs/blob/master/EIPS/eip-712.md
+
+Client side using ethers.js:
 ```
-const messageHash = ethers.utils.id(JSON.stringify(msg));
-const messageHashBytes = ethers.utils.arrayify(messageHash);
-const flatSig = await wallet.signMessage(messageHashBytes);
+export const ethSignJson = async (signer, json) => {
+	const types = {
+		Transaction: []
+	}
+	Object.entries(json).forEach(([k, v]) => {
+		types.Transaction.push({
+			type: 'string',
+			name: k,
+		})
+	})
+	if (json.actions) json.actions = JSON.stringify(json.actions)
+
+	const sig = await signer._signTypedData(domain, types, json);
+
+	return sig
+};
 ```
-
-Most Ethereum clients take a digest of the signed message bytes, prepend `"\x19Ethereum Signed Message:\n32"`, and then `keccak256` this to get the hash for `ecrecover`.
-
-Therefore, the contract takes in msg and performs the above hashes, then calls `ecrecover`
-
+Contract:
 ```
-// create ethereum signed message hash
-let mut msg_wrapped = Vec::new();
-msg_wrapped.extend_from_slice("\x19Ethereum Signed Message:\n32".as_bytes());
+// construct the message from the original JSON pieces, then hash it
+let mut msg_wrapped = Vec::from(DOMAIN_HASH);
+let mut values = Vec::from(TX_TYPE_HASH);
+values.extend_from_slice(&hash(&receiver_id));
+values.extend_from_slice(&hash(&nonce_msg_str));
+values.extend_from_slice(&hash(&actions));
+msg_wrapped.extend_from_slice(&hash(&values));
+let msg_hash = hash(&msg_wrapped);
 
-write_register(REGISTER_0, msg.len() as u64, msg.as_ptr() as u64);
-keccak256(u64::MAX, REGISTER_0, REGISTER_2);
-let (_, keccak_hash_1) = rread(REGISTER_2);
-
-msg_wrapped.extend_from_slice(keccak_hash_1.as_slice());
-
-write_register(REGISTER_0, msg_wrapped.len() as u64, msg_wrapped.as_ptr() as u64);
-keccak256(u64::MAX, REGISTER_0, REGISTER_2);
-let (_, keccak_hash_2) = rread(REGISTER_2);
+// then ecrecover with signature
 ```
