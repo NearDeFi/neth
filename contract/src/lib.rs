@@ -13,6 +13,8 @@ const REGISTER_2: u64 = 2;
 const DOUBLE_QUOTE_BYTE: u8 = "\"".as_bytes()[0];
 const RECEIVER_ID: &str = "receiver_id";
 const PUBLIC_KEY: &str = "public_key";
+const NONCE: &str = "nonce";
+const ACTIONS: &str = "actions\":\"";
 
 extern crate alloc;
 
@@ -62,12 +64,15 @@ pub unsafe fn execute() {
 
 	let data = assert_valid_tx(nonce);
 
+	// log(&from_utf8_unchecked(&data));
+
 	let receiver_id = get_string(&data, RECEIVER_ID);
 	let actions = get_actions(&data);
 
 	let id = promise_batch_create(receiver_id.len() as u64, receiver_id.as_ptr() as u64);
 	
 	for action in actions {
+
 		match from_utf8_unchecked(&get_string(&action, "type")) {
 			"Transfer" => {
 				let amount = get_u128(&action, "amount");

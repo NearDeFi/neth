@@ -42,27 +42,76 @@ const address = wallet.address;
 // "0x14791697260E4c9A71f18484C9f997B308e59325"
 console.log('ETH ADDRESS:', address);
 
+const domain = {
+	name: "NETH",
+	version: "1",
+	chainId: 1313161554, // aurora/near?
+};
+
 const keyPair = {
 	publicKey: 'ed25519:2vwEmA557jXcRWjgq1L92RCRDumM6GCYpUgANby8gSD3',
 	secretKey: 'ed25519:2Qmnk8KzUh53aRvRyUeCnk1m846pT9YrtaSPw6txzFDs8QmqrsoqC59txo72KAbC39WZyzK16QCzfwQzBErZCCow',
 };
 
-const obj2hex = (obj) => ethers.utils.hexlify(new TextEncoder().encode(JSON.stringify(obj)))
+const obj2hex = (obj) => ethers.utils.hexlify(ethers.utils.toUtf8Bytes(JSON.stringify(obj)));
+
+const encode = (arr) => {
+	const res = [];
+	arr.forEach((str, i) => {
+		if (str.indexOf('0x') !== 0) {
+			str = ethers.utils.keccak256(ethers.utils.toUtf8Bytes(str));
+		}
+		res.push(str.substring(2));
+	});
+	return '0x' + res.join('');
+};
 
 /// helper gens the args for each call
-const gen_args = async (msg, w = wallet) => {
-	console.log('\nargs\n', JSON.stringify(msg), '\n');
+const gen_args = async (json, w = wallet) => {
 
-	const messageHash = ethers.utils.id(JSON.stringify(msg));
+	const types = {
+		Transaction: []
+	};
+	Object.entries(json).forEach(([k, v]) => {
+		types.Transaction.push({
+			type: 'string',
+			name: k,
+		});
+	});
+	if (json.actions) json.actions = JSON.stringify(json.actions);
+
+	// console.log(json.actions, ethers.utils.toUtf8Bytes(json.actions))
+
+	const flatSig = await w._signTypedData(domain, types, json);
+
+	/// how the signature is actually created (demo in JS pre-Rust impl)
+	const prelim = "0x1901";
+	const domainHash = '0x1259f716ef38d519cab86b12674f6980042d2c429b3d0b7aa6b6dfa942dcdac2';
+	// const warningTypeHash = ethers.utils.id("Transaction(string WARNING)")
+	const transactionTypeHash = ethers.utils.id("Transaction(string receiver_id,string nonce,string actions)");
+	// console.log(ethers.utils.arrayify(prelim))
+
+	
+	const messageHash = ethers.utils.keccak256([
+		prelim,
+		domainHash.substring(2),
+		ethers.utils.keccak256(encode([
+			transactionTypeHash,
+			...Object.values(json)
+		])).substring(2)
+	].join(''));
 	const messageHashBytes = ethers.utils.arrayify(messageHash);
-	const flatSig = await w.signMessage(messageHashBytes);
+	const flatSig1 = ethers.utils.joinSignature(await w._signingKey().signDigest(messageHashBytes));
 
-	console.log(flatSig)
+	console.log(flatSig, flatSig1);
 
 	const args = {
 		sig: flatSig,
-		msg
+		msg: json,
 	};
+
+	// console.log('\nargs\n', JSON.stringify(args), '\n');
+
 	return args;
 };
 
@@ -73,7 +122,7 @@ let accountId, account, nonce;
 
 test('implicit account w/ entropy from signature; setup', async (t) => {
 	const { sig } = await gen_args({
-		NEAR_ETH_PRIVATE_KEY: 'DO NOT SIGN THIS IF YOU HAVE ALREADY SET UP YOUR NEAR ACCOUNT USING THIS ETHEREUM ADDRESS'
+		WARNING: 'MEOW'
 	});
 	let sigHash = ethers.utils.id(sig);
 	/// use 32 bytes of entropy from the signature of the above message to create a NEAR keyPair
@@ -82,6 +131,7 @@ test('implicit account w/ entropy from signature; setup', async (t) => {
 	console.log(secretKey);
 
 	accountId = PublicKey.fromString(publicKey).data.hexSlice();
+	console.log('accountId', accountId);
 	account = new nearAPI.Account(connection, accountId);
 	const newKeyPair = KeyPair.fromString(secretKey);
 	keyStore.setKey(networkId, accountId, newKeyPair);
@@ -137,7 +187,9 @@ test('execute fail wallet2', async (t) => {
 	const args = await gen_args({
 		receiver_id: accountId,
 		nonce,
-		action: 'hello',
+		actions: [{
+			hello: 'world!'
+		}]
 	}, wallet2);
 
 	try {
@@ -160,7 +212,9 @@ test('execute actions fail incorrect nonce', async (t) => {
 	const args = await gen_args({
 		receiver_id: accountId,
 		nonce: '1',
-		action: 'hello',
+		actions: [{
+			hello: 'world!'
+		}],
 	});
 
 	try {
@@ -183,7 +237,9 @@ test('execute fail from another account', async (t) => {
 	const args = await gen_args({
 		receiver_id: accountId,
 		nonce,
-		action: 'hello',
+		actions: [{
+			hello: 'world!'
+		}],
 	});
 
 	try {
@@ -285,19 +341,3 @@ test('get_nonce 2', async (t) => {
 });
 
 
-
-
-
-
-// test.beforeEach((t) => {
-// });
-
-let aliceId, bobId, alice, bob;
-// test('users initialized', async (t) => {
-// 	aliceId = 'alice.' + contractId;
-// 	bobId = 'bob.' + contractId;
-// 	alice = await getAccount(aliceId);
-// 	bob = await getAccount(bobId);
-
-// 	t.true(true);
-// });

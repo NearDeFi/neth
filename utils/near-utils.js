@@ -54,6 +54,7 @@ const contractAccount = new Account(connection, contractId);
 
 module.exports = {
 	near,
+	networkId,
 	credentials,
 	keyStore,
 	connection,

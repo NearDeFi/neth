@@ -21,10 +21,9 @@ pub unsafe fn get_u128(bytes: &[u8], key: &str) -> u128 {
 
 pub unsafe fn get_actions(bytes: &[u8]) -> Vec<Vec<u8>> {
 	let string = from_utf8_unchecked(bytes);
-	let one: Vec<&str> = string.split("actions\":[{").collect();
-	let two: Vec<&str> = one[1].split("]}").collect();
-	let three: Vec<Vec<u8>> = two[0].split("},{").map(|m| {
+	let one: Vec<&str> = string.split(ACTIONS).collect();
+	let two: Vec<Vec<u8>> = one[1].split("},{").map(|m| {
 		m.as_bytes().to_vec()
 	}).collect();
-	three
+	two
 }
