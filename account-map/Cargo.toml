@@ -1,0 +1,19 @@
+[package]
+name = "account-map"
+version = "0.1.0"
+authors = ["Matt Lockyer <mattdlockyer@gmail.com>"]
+edition = "2018"
+
+[lib]
+crate-type = ["cdylib"]
+
+[dependencies]
+near-sdk = "4.0.0-pre.7"
+
+[profile.release]
+codegen-units = 1
+opt-level = "z"
+lto = true
+debug = false
+panic = "abort"
+overflow-checks = true

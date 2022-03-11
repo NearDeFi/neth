@@ -31,6 +31,8 @@
 		"build": "parcel build src/index.html --no-source-maps",
 		"clean": "rimraf ./dist",
 		"start": "parcel src/index.html --open",
+		"build-account-map": "cd account-map && ./build.sh && cd ..",
+		"deploy-account-map": "yarn build-account-map && near deploy --accountId map.neth.testnet --wasmFile out/account-map.wasm",
 		"build-contract": "cd contract && ./build.sh && cd ..",
 		"patch-config": "node ./utils/patch-config.js",
 		"dev-deploy": "rm -rf neardev && (near dev-deploy || exit 0) && yarn patch-config",

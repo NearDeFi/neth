@@ -55,6 +55,7 @@ const contractAccount = new Account(connection, contractId);
 module.exports = {
 	near,
 	networkId,
+	accountSuffix: networkId === 'mainnet' ? '.near' : '.' + networkId,
 	credentials,
 	keyStore,
 	connection,
