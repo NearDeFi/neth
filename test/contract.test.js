@@ -53,6 +53,8 @@ const keyPair = {
 	secretKey: 'ed25519:2Qmnk8KzUh53aRvRyUeCnk1m846pT9YrtaSPw6txzFDs8QmqrsoqC59txo72KAbC39WZyzK16QCzfwQzBErZCCow',
 };
 
+const DELETE_EXISTING = false;
+
 const obj2hex = (obj) => ethers.utils.hexlify(ethers.utils.toUtf8Bytes(JSON.stringify(obj)));
 
 const encode = (arr) => {
@@ -115,8 +117,6 @@ const gen_args = async (json, w = wallet) => {
 	return args;
 };
 
-const DELETE_EXISTING = false;
-
 /// all tests
 let accountId, account, nonce;
 
@@ -156,10 +156,6 @@ test('implicit account w/ entropy from signature; setup', async (t) => {
 			gas
 		),
 	];
-	// const state = await account.state()
-	// if (state.code_hash === '11111111111111111111111111111111') {
-	// 	actions.push(functionCall('new', { linkdrop_contract: network }, GAS))
-	// }
 	await account.signAndSendTransaction({ receiverId: accountId, actions });
 
 	t.true(true);
@@ -259,27 +255,36 @@ test('execute fail from another account', async (t) => {
 });
 
 test('execute actions on account', async (t) => {
+	const actions = [
+		{
+			type: 'AddKey',
+			public_key: PublicKey.fromString(keyPair.publicKey).data.hexSlice(),
+			allowance: parseNearAmount('1'),
+			receiver_id: accountId,
+			method_names: 'execute',
+		},
+		{
+			type: 'Transfer',
+			amount: parseNearAmount('0.00017'),
+		},
+	]
+
+	/// check keys
+	const public_key = keyPair.publicKey.toString();
+	const accessKeys = await account.getAccessKeys()
+	if (accessKeys.some((k) => k.public_key === public_key)) {
+		actions.unshift({
+			type: 'DeleteKey',
+			public_key: PublicKey.fromString(keyPair.publicKey).data.hexSlice(),
+		})
+	}
+
+	/// get sig args
 	const args = await gen_args({
 		receiver_id: accountId,
 		/// nonce will not have incremented because the above txs failed
 		nonce,
-		actions: [
-			{
-				type: 'Transfer',
-				amount: parseNearAmount('0.00017'),
-			},
-			{
-				type: 'DeleteKey',
-				public_key: PublicKey.fromString(keyPair.publicKey).data.hexSlice(),
-			},
-			{
-				type: 'AddKey',
-				public_key: PublicKey.fromString(keyPair.publicKey).data.hexSlice(),
-				allowance: parseNearAmount('1'),
-				receiver_id: accountId,
-				method_names: 'execute',
-			}
-		]
+		actions
 	});
 
 	const res = await account.functionCall({

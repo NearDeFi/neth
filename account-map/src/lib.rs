@@ -35,10 +35,11 @@ impl Contract {
 
 		// store
 		let account_id = env::predecessor_account_id();
-		if self.near_eth.insert(&account_id, &eth_address).is_none() {
-			self.eth_near.insert(&eth_address, &account_id);
-		} else {
-			env::panic_str("account already exists");
+		if self.near_eth.insert(&account_id, &eth_address).is_some() {
+			env::panic_str("near_eth account already exists");
+		}
+		if self.eth_near.insert(&eth_address, &account_id).is_some() {
+			env::panic_str("eth_near account already exists");
 		}
 
 		// cost and refund

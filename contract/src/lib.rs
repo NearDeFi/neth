@@ -7,6 +7,7 @@ const ECRECOVER_SIGNATURE_LENGTH: u64 = 64;
 const ECRECOVER_MALLEABILITY_FLAG: u64 = 1;
 const ADDRESS_KEY: &str = "a";
 const NONCE_KEY: &str = "n";
+const NONCE_APP_KEY: &str = "k";
 const REGISTER_0: u64 = 0;
 const REGISTER_1: u64 = 1;
 const REGISTER_2: u64 = 2;
@@ -52,6 +53,7 @@ pub unsafe fn setup() {
 	swrite(ADDRESS_KEY, hex::decode(&get_string(&data, "address")[2..]).unwrap());
 	let nonce: u64 = 0;
 	swrite(NONCE_KEY, nonce.to_le_bytes().to_vec());
+	swrite(NONCE_APP_KEY, nonce.to_le_bytes().to_vec());
 }
 
 #[no_mangle]
@@ -85,8 +87,18 @@ pub unsafe fn execute() {
 				let allowance = get_u128(&action, "allowance");
 				let receiver_id = get_string(&action, RECEIVER_ID);
 				let method_names = get_string(&action, "method_names");
+				// NEAR ed25519 keys prepend 0 to 32 bytes of key (33 bytes len)
 				let mut public_key = vec![0];
 				public_key.extend_from_slice(&hex::decode(get_string(&action, PUBLIC_KEY)).unwrap());
+				// special case
+				// set app key nonce to the nonce in sig used for entropy for the app key keypair
+				// apps call get_app_key_nonce and ask for signature during sign in
+				predecessor_account_id(REGISTER_1);
+       			let (_, predecessor_account) = rread(REGISTER_1);
+				if receiver_id == predecessor_account && &method_names == "execute".as_bytes() {
+					swrite(NONCE_APP_KEY, nonce.to_le_bytes().to_vec());
+				}
+				
 				promise_batch_action_add_key_with_function_call(
 					id,
 					public_key.len() as u64,
@@ -142,4 +154,9 @@ pub unsafe fn get_address() {
 #[no_mangle]
 pub unsafe fn get_nonce() {
 	return_bytes(hex::encode(sread_u64(NONCE_KEY).to_be_bytes()).as_bytes());
+}
+
+#[no_mangle]
+pub unsafe fn get_app_key_nonce() {
+	return_bytes(hex::encode(sread_u64(NONCE_APP_KEY).to_be_bytes()).as_bytes());
 }

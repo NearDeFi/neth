@@ -7,6 +7,7 @@ import {
 	handleCreate,
 	createAccount,
 	handleDeployContract,
+	handleSetupContract,
 	handleCheckAccount,
 } from './utils/neth';
 
@@ -63,8 +64,9 @@ const App = () => {
 						<p>To sign out, go to "Connected Sites" in your wallet (MetaMask) and disconnect this one.</p>
 						<p>Choose NEAR Account ID</p>
 						<input value={accountId} onChange={handleAccountInput} />
-						<button disabled={!!error} onClick={() => handleCreate(accountId + accountSuffix, ethereumId)}>Create Account {accountId}.testnet</button>
-						{/* <button onClick={handleDeployContract}>Deploy Contract</button> */}
+						<button disabled={!!error} onClick={() => handleCreate(signer, ethereumId, accountId + accountSuffix)}>Create Account {accountId}.testnet</button>
+						{/* <button onClick={handleDeployContract}>Deploy Contract</button>
+						<button onClick={handleSetupContract}>Setup Contract</button> */}
 						<button onClick={handleCheckAccount}>Check Account</button>
 						{error && <p>{error}</p>}
 					</>

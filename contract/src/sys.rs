@@ -1,8 +1,8 @@
 use crate::*;
 
-pub unsafe fn log(message: &str) {
-    log_utf8(message.len() as _, message.as_ptr() as _);
-}
+// pub unsafe fn log(message: &str) {
+//     log_utf8(message.len() as _, message.as_ptr() as _);
+// }
 
 pub unsafe fn return_bytes(bytes: &[u8]) {
 	let mut ret_data = vec![DOUBLE_QUOTE_BYTE];
