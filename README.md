@@ -74,9 +74,11 @@ For details on how to call them, see: `test/contract.test.js`
 
 ## AddKey, DeleteKey, FunctionCall
 
-The NEAR `public_key` and `args` arguments must be hex encoded **WITHOUT 0x** 64 length string (32 bytes)
+The NEAR `public_key` and `args` arguments must be hex encoded **WITHOUT 0x**
 
-e.g.
+e.g. for public key it's hex 64 length string (32 bytes)
+
+Example:
 ```
 const actions = [
 	...,

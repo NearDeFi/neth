@@ -15,7 +15,6 @@ import { accountExists } from '../../test/test-utils'
 import { get, set, del } from './store';
 import contractPath from 'url:../../out/main.wasm'
 
-
 const FUNDING_ACCOUNT_ID = 'neth.testnet'
 const MAP_ACCOUNT_ID = 'map.neth.testnet'
 const ATTEMPT_SECRET_KEY = '__ATTEMPT_SECRET_KEY'
@@ -29,13 +28,7 @@ const attachedDeposit = parseNearAmount('0.25')
 const attachedDepositMapping = parseNearAmount('0.01')
 /// for NEAR keys we need 64 chars hex for publicKey WITHOUT 0x
 const pub2hex = (publicKey) => ethers.utils.hexlify(PublicKey.fromString(publicKey).data).substring(2)
-
-
-
-/// TODO this will have to substring(2) with next contract deploy
 const obj2hex = (obj) => ethers.utils.hexlify(ethers.utils.toUtf8Bytes(JSON.stringify(obj))).substring(2);
-
-
 
 /// account creation flow
 
@@ -203,8 +196,6 @@ const setupFromStorage = () => {
 	keyStore.setKey(networkId, newAccountId, keyPair);
 	return { newAccountId, newSecretKey, ethAddress, account, keyPair }
 }
-
-/// TODO UPDATE THIS PAYLOAD WITH nonce field
 
 const appKeyPayload = (accountId, appKeyNonce) => ({
 	WARNING: `Creating key for: ${accountId}`,
@@ -375,7 +366,7 @@ export const signAndSendTransaction = async ({
 
 /// helpers
 
-const convertActions = (actions, accountId, receiverId) => actions.map((_action) => {
+export const convertActions = (actions, accountId, receiverId) => actions.map((_action) => {
 
 	const { enum: type } = _action
     const { gas, publicKey, methodName, args, deposit, accessKey, code } = _action[type];
