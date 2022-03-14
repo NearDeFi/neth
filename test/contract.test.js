@@ -55,7 +55,7 @@ const keyPair = {
 
 const DELETE_EXISTING = false;
 
-const obj2hex = (obj) => ethers.utils.hexlify(ethers.utils.toUtf8Bytes(JSON.stringify(obj)));
+const obj2hex = (obj) => ethers.utils.hexlify(ethers.utils.toUtf8Bytes(JSON.stringify(obj))).substring(2);
 
 const encode = (arr) => {
 	const res = [];
@@ -92,8 +92,6 @@ const gen_args = async (json, w = wallet) => {
 	// const warningTypeHash = ethers.utils.id("Transaction(string WARNING)")
 	const transactionTypeHash = ethers.utils.id("Transaction(string receiver_id,string nonce,string actions)");
 	// console.log(ethers.utils.arrayify(prelim))
-
-	
 	const messageHash = ethers.utils.keccak256([
 		prelim,
 		domainHash.substring(2),
@@ -105,6 +103,7 @@ const gen_args = async (json, w = wallet) => {
 	const messageHashBytes = ethers.utils.arrayify(messageHash);
 	const flatSig1 = ethers.utils.joinSignature(await w._signingKey().signDigest(messageHashBytes));
 
+	/// should match
 	console.log(flatSig, flatSig1);
 
 	const args = {
@@ -336,12 +335,67 @@ test('execute actions on some contract', async (t) => {
 	t.true(true);
 });
 
+test('rotate app key', async (t) => {
+
+	/// need a new nonce because the above tx succeeded and new nonce written
+	nonce = parseInt(await account.viewFunction(
+		accountId,
+		'get_nonce'
+	), 16).toString();
+
+	const actions = [
+		{
+			type: 'AddKey',
+			public_key: PublicKey.fromString(keyPair.publicKey).data.hexSlice(),
+			allowance: parseNearAmount('1'),
+			receiver_id: accountId,
+			method_names: 'execute',
+		},
+	]
+	/// check keys
+	const public_key = keyPair.publicKey.toString();
+	const accessKeys = await account.getAccessKeys()
+	if (accessKeys.some((k) => k.public_key === public_key)) {
+		actions.unshift({
+			type: 'DeleteKey',
+			public_key: PublicKey.fromString(keyPair.publicKey).data.hexSlice(),
+		})
+	}
+
+	/// get sig args
+	const args = await gen_args({
+		receiver_id: accountId,
+		/// nonce will not have incremented because the above txs failed
+		nonce,
+		actions
+	});
+
+	const res = await account.functionCall({
+		contractId: accountId,
+		methodName: 'execute',
+		args,
+		gas,
+	});
+
+	t.true(true);
+});
+
 test('get_nonce 2', async (t) => {
 	nonce = parseInt(await account.viewFunction(
 		accountId,
 		'get_nonce'
 	), 16).toString();
 	console.log('get_nonce', nonce);
+	t.is(nonce, '3');
+});
+
+
+test('get_app_key_nonce', async (t) => {
+	nonce = parseInt(await account.viewFunction(
+		accountId,
+		'get_app_key_nonce'
+	), 16).toString();
+	console.log('get_app_key_nonce', nonce);
 	t.is(nonce, '2');
 });
 

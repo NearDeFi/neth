@@ -72,6 +72,27 @@ They can be batched in a json array, but there can only be 1 receiver_id for all
 
 For details on how to call them, see: `test/contract.test.js`
 
+## AddKey, DeleteKey, FunctionCall
+
+The NEAR `public_key` and `args` arguments must be hex encoded **WITHOUT 0x** 64 length string (32 bytes)
+
+e.g.
+```
+const actions = [
+	...,
+	{
+		type: 'DeleteKey',
+		public_key: '1caccbcbb9850c9d4a0d4a1888b346f5584cc1f6347472b107138f08de34e1c6',
+	},
+	{
+		type: 'FunctionCall',
+		args: 'd4a1888b346f5584cc1f6347472b107138f01caccbcbb9850c9d4a0d4a1888b346f5584cc1f6347472b107138f08de34e1c66347472b107138',
+		...,
+	},
+	...,
+]
+```
+
 ## View Methods
 
 - `get_address` returns the ethereum address for this account **WITH 0x**

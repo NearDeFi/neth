@@ -95,7 +95,8 @@ pub unsafe fn execute() {
 				// apps call get_app_key_nonce and ask for signature during sign in
 				predecessor_account_id(REGISTER_1);
        			let (_, predecessor_account) = rread(REGISTER_1);
-				if receiver_id == predecessor_account && &method_names == "execute".as_bytes() {
+
+				if receiver_id == predecessor_account && from_utf8_unchecked(&method_names) == "execute" {
 					swrite(NONCE_APP_KEY, nonce.to_le_bytes().to_vec());
 				}
 				
@@ -122,7 +123,7 @@ pub unsafe fn execute() {
 			},
 			"FunctionCall" => {
 				let method_name = get_string(&action, "method_name");
-				let args = hex::decode(&get_string(&action, "args")[2..]).unwrap();
+				let args = hex::decode(get_string(&action, "args")).unwrap();
 				let amount = get_u128(&action, "amount");
 				let gas = get_u128(&action, "gas") as u64;
 				promise_batch_action_function_call(
