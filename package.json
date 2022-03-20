@@ -17,6 +17,7 @@
 		"crypto-browserify": "^3.12.0",
 		"eslint": "^8.6.0",
 		"events": "^3.3.0",
+		"gh-pages": "^3.2.3",
 		"near-api-js": "^0.44.2",
 		"path-browserify": "^1.0.1",
 		"process": "^0.11.10",
@@ -28,7 +29,7 @@
 	],
 	"scripts": {
 		"prebuild": "yarn clean",
-		"build": "parcel build src/index.html --no-source-maps",
+		"build": "parcel build src/index.html --public-url ./ --no-source-maps",
 		"clean": "rimraf ./dist",
 		"start": "parcel src/index.html --open",
 		"build-account-map": "cd account-map && ./build.sh && cd ..",
@@ -39,6 +40,7 @@
 		"test-build": "yarn build-contract && yarn test",
 		"test-deploy": "yarn build-contract && yarn dev-deploy && yarn test",
 		"test": "ava test/contract.test.js -vs --timeout=5m",
+		"deploy-app": "yarn build; yarn gh-pages -d dist",
 		"fix": "eslint test/ --fix"
 	}
 }
