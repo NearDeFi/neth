@@ -23,14 +23,16 @@ const ATTEMPT_ETH_ADDRESS = '__ATTEMPT_ETH_ADDRESS'
 const APP_KEY_SECRET = '__APP_KEY_SECRET'
 const APP_KEY_ACCOUNT_ID = '__APP_KEY_ACCOUNT_ID'
 const gas = '100000000000000'
+const half_gas = '50000000000000'
 /// this is the new account amount 0.21 for account name, keys, contract and 0.01 for mapping contract storage cost
 const attachedDeposit = parseNearAmount('0.25')
 const attachedDepositMapping = parseNearAmount('0.01')
 /// for NEAR keys we need 64 chars hex for publicKey WITHOUT 0x
+const buf2hex = (buf) => ethers.utils.hexlify(buf).substring(2)
 const pub2hex = (publicKey) => ethers.utils.hexlify(PublicKey.fromString(publicKey).data).substring(2)
 const obj2hex = (obj) => ethers.utils.hexlify(ethers.utils.toUtf8Bytes(JSON.stringify(obj))).substring(2);
 
-/// account creation flow
+/// account creation and connection flow
 
 export const handleCreate = async (signer, ethAddress, newAccountId) => {
 	/// get keypair from eth sig entropy for the near-eth account
@@ -39,8 +41,11 @@ export const handleCreate = async (signer, ethAddress, newAccountId) => {
 	set(ATTEMPT_ACCOUNT_ID, newAccountId)
 	set(ATTEMPT_SECRET_KEY, new_secret_key)
 	set(ATTEMPT_ETH_ADDRESS, ethAddress)
+	// remove any existing app key
+	del(APP_KEY_ACCOUNT_ID)
+	del(APP_KEY_SECRET)
 	
-	createAccount(newAccountId, new_public_key)
+	return await createAccount(newAccountId, new_public_key)
 }
 
 const createAccount = async (newAccountId, new_public_key) => {
@@ -62,7 +67,7 @@ const createAccount = async (newAccountId, new_public_key) => {
 	/// check
 	console.log(res)
 
-	handleDeployContract()
+	return await handleDeployContract()
 }
 
 export const handleDeployContract = async () => {
@@ -73,7 +78,7 @@ export const handleDeployContract = async () => {
 	const res = await account.deployContract(contractBytes)
 	console.log(res)
 
-	handleSetupContract()
+	return await handleSetupContract()
 }
 
 export const handleSetupContract = async () => {
@@ -87,7 +92,7 @@ export const handleSetupContract = async () => {
 	if (res?.status?.SuccessValue !== '') {
 		return alert('account setup failed, please try again')
 	}
-	handleMapping()
+	return await handleMapping()
 }
 
 export const handleMapping = async () => {
@@ -107,11 +112,11 @@ export const handleMapping = async () => {
 	} catch(e) {
 		console.warn(e)
 	}
-	handleKeys()
+	return await handleKeys()
 }
 
 export const handleKeys = async () => {
-	const { account, newAccountId } = setupFromStorage()
+	const { account, newAccountId, ethAddress } = setupFromStorage()
 	const accessKeys = await account.getAccessKeys()
 	// keys are done
 	if (accessKeys.length !== 1 || accessKeys[0]?.access_key?.permission !== 'FullAccess') return
@@ -129,17 +134,19 @@ export const handleKeys = async () => {
 	if (res?.status?.SuccessValue !== '') {
 		console.log('key rotation failed')
 	}
-	handleCheckAccount()
+	return await handleCheckAccount(ethAddress)
 }
 
 /// waterfall check everything about account and fill in missing pieces
 
-export const handleCheckAccount = async () => {
-	const { newAccountId, newSecretKey, ethAddress } = setupFromStorage()
+export const handleCheckAccount = async (ethAddress) => {
+	let { newAccountId, newSecretKey } = setupFromStorage()
 
-	console.log('checking account attempt')
-	if (!newAccountId || !newSecretKey) {
-		return alert('create account first')
+	const mapAccountId = await getNearMap(ethAddress)
+	if (!mapAccountId) {
+		alert('create account first')
+	} else {
+		newAccountId = mapAccountId
 	}
 
 	console.log('checking account created')
@@ -180,22 +187,217 @@ export const handleCheckAccount = async () => {
 		return handleKeys(account)
 	}
 
-	console.log('account created, contract deployed, setup, mapping added, keys rotated')
-	// del(ATTEMPT_ACCOUNT_ID)
-	// del(ATTEMPT_SECRET_KEY)
+	console.log('Success! account created, contract deployed, setup, mapping added, keys rotated')
+
+	return { account }
 }
 
-/// helpers
+/// on same domain as setup
+
+export const handleRefreshAppKey = async (signer, ethAddress) => {
+	const { account, accountId } = await getUnlimitedKeyAccount(signer, ethAddress)
+	
+	// now refresh app key
+	const nonce = parseInt(await account.viewFunction(accountId, 'get_nonce'), 16).toString()
+	// new public key based on current nonce which will become the app_key_nonce in contract after this TX
+	const { publicKey, secretKey } = await keyPairFromEthSig(signer, appKeyPayload(accountId, nonce))
+	console.log(publicKey)
+	public_key = pub2hex(publicKey)
+	const actions = [
+		{
+			type: 'AddKey',
+			public_key,
+			allowance: parseNearAmount('1'),
+			receiver_id: accountId,
+			method_names: 'execute',
+		},
+	]
+	/// check keys, find old app key, delete that first
+	const accessKeys = await account.getAccessKeys()
+	if (accessKeys.some((k) => {
+		const functionCallPermission = k?.access_key?.permission?.FunctionCall
+		return functionCallPermission.allowance !== null && functionCallPermission.method_names[0] === 'execute'
+	})) {
+		// old public key based on current app_key_nonce
+		const appKeyNonce = parseInt(await account.viewFunction(accountId, 'get_app_key_nonce'), 16).toString()
+		const { publicKey: oldPublicKey } = await keyPairFromEthSig(signer, appKeyPayload(accountId, appKeyNonce))
+		oldPublicKeyHex = pub2hex(oldPublicKey)
+		actions.unshift({
+			type: 'DeleteKey',
+			public_key: oldPublicKeyHex,
+		})
+	}
+	/// get args for execute call
+	const args = await ethSignJson(signer, {
+		receiver_id: accountId,
+		nonce,
+		actions
+	});
+	const res = await account.functionCall({
+		contractId: accountId,
+		methodName: 'execute',
+		args,
+		gas,
+	});
+
+	if (res?.status?.SuccessValue !== '') {
+		return console.warn('app key rotation unsuccessful')
+	}
+	del(APP_KEY_SECRET)
+	del(APP_KEY_ACCOUNT_ID)
+	return { publicKey: public_key, secretKey }
+}
+
+export const handleUpdateContract = async (signer, ethAddress) => {
+	const { account, accountId } = await getUnlimitedKeyAccount(signer, ethAddress)
+	
+	const contractBytes = new Uint8Array(await fetch(contractPath).then((res) => res.arrayBuffer()));
+	const actions = [
+		{
+			type: 'DeployContract',
+			code: buf2hex(contractBytes),
+		},
+	]
+	const nonce = parseInt(await account.viewFunction(accountId, 'get_nonce'), 16).toString()
+	const args = await ethSignJson(signer, {
+		receiver_id: accountId,
+		nonce,
+		actions
+	});
+	const res = await account.functionCall({
+		contractId: accountId,
+		methodName: 'execute',
+		args,
+		gas,
+	});
+	if (res?.status?.SuccessValue !== '') {
+		return console.warn('redeply contract unsuccessful')
+	}
+}
+
+/// account disconnecting flow
+
+export const handleDisconnect = async (signer, ethAddress) => {
+	const { account, accountId, secretKey } = await getUnlimitedKeyAccount(signer, ethAddress)
+	
+	const { seedPhrase, publicKey, secretKey: newSecretKey } = generateSeedPhrase();
+	const _seedPhrase = window.prompt('Copy this down and keep it safe!!! This is your new seed phrase!!!', seedPhrase);
+	if (seedPhrase !== _seedPhrase) {
+		return alert('There was an error, try copying seed phrase again.')
+	}
+	const oldUnlimitedKey = KeyPair.fromString(secretKey)
+
+	const actions = [
+		{
+			type: 'DeleteKey',
+			public_key: pub2hex(oldUnlimitedKey.publicKey.toString()),
+		},
+		{
+			type: 'AddKey',
+			public_key: pub2hex(publicKey),
+			// special case will add full access key
+			allowance: '0',
+		},
+		{
+			type: 'FunctionCall',
+			method_name: 'remove_storage',
+			args: '',
+			amount: '0',
+			gas: half_gas
+		},
+		{
+			type: 'DeployContract',
+			code: '',
+		},
+	]
+	/// check keys, find old app key, delete that first
+	const accessKeys = await account.getAccessKeys()
+	if (accessKeys.some((k) => {
+		const functionCallPermission = k?.access_key?.permission?.FunctionCall
+		return functionCallPermission?.allowance !== null && functionCallPermission?.method_names[0] === 'execute'
+	})) {
+		const appKeyNonce = parseInt(await account.viewFunction(accountId, 'get_app_key_nonce'), 16).toString()
+		const { publicKey: oldPublicKey } = await keyPairFromEthSig(signer, appKeyPayload(accountId, appKeyNonce))
+		oldPublicKeyHex = pub2hex(oldPublicKey)
+		actions.unshift({
+			type: 'DeleteKey',
+			public_key: oldPublicKeyHex,
+		})
+	}
+
+	/// get args for execute call
+	const nonce = parseInt(await account.viewFunction(accountId, 'get_nonce'), 16).toString()
+	const args = await ethSignJson(signer, {
+		receiver_id: accountId,
+		nonce,
+		actions
+	});
+	const res = await account.functionCall({
+		contractId: accountId,
+		methodName: 'execute',
+		args,
+		gas,
+	});
+
+	if (res?.status?.SuccessValue !== '') {
+		return console.warn('app key rotation unsuccessful')
+	}
+
+	// remove the mapping (can do this later if user has FAK)
+
+	keyStore.setKey(networkId, accountId, newSecretKey);
+	try {
+		const res = await account.functionCall({
+			contractId: MAP_ACCOUNT_ID,
+			methodName: 'del',
+			args: {},
+			gas,
+		})
+		console.log(res)
+		if (res?.status?.SuccessValue !== '') {
+			console.log('account mapping removal failed')
+		}
+	} catch(e) {
+		console.warn(e)
+	}
+
+	return { account }
+}
+
+/// helpers for account creation and connection domain
 
 const setupFromStorage = () => {
 	const newAccountId = get(ATTEMPT_ACCOUNT_ID)
 	const newSecretKey = get(ATTEMPT_SECRET_KEY)
 	const ethAddress = get(ATTEMPT_ETH_ADDRESS)
 	const account = new Account(connection, newAccountId)
-	const keyPair = KeyPair.fromString(newSecretKey)
-	keyStore.setKey(networkId, newAccountId, keyPair);
+	let keyPair
+	if (newSecretKey) {
+		keyPair = KeyPair.fromString(newSecretKey)
+		keyStore.setKey(networkId, newAccountId, keyPair);
+	}
 	return { newAccountId, newSecretKey, ethAddress, account, keyPair }
 }
+
+const getUnlimitedKeyAccount = async (signer, ethAddress) => {
+	let accountId, secretKey = get(ATTEMPT_SECRET_KEY)
+	// if unlimited allowance access key is not in localStorage user will have to sign to generate it
+	if (!secretKey) {
+		// TODO remove dep on near-utils
+		// use any random near account to check mapping
+		accountId = await contractAccount.viewFunction(MAP_ACCOUNT_ID, 'get_near', { eth_address: ethAddress });
+		const { secretKey: _secretKey } = await keyPairFromEthSig(signer, unlimitedKeyPayload(accountId, ethAddress))
+		secretKey = _secretKey
+	} else {
+		accountId = get(ATTEMPT_ACCOUNT_ID)
+	}
+	const account = new Account(connection, accountId)
+	const keyPair = KeyPair.fromString(secretKey)
+	keyStore.setKey(networkId, accountId, keyPair);
+	return { account, accountId, secretKey }
+}
+
+/// helpers for eth signing (also use in apps)
 
 const appKeyPayload = (accountId, appKeyNonce) => ({
 	WARNING: `Creating key for: ${accountId}`,
@@ -237,70 +439,9 @@ const keyPairFromEthSig = async (signer, json) => {
 	return generateSeedPhrase(sigHash.substring(2, 34));
 }
 
-/// app key helpers
 
-export const handleRefreshAppKey = async (signer, ethAddress) => {
-	let accountId, secretKey = get(ATTEMPT_SECRET_KEY)
-	// if unlimited allowance access key is not in localStorage user will have to sign to generate it
-	if (!secretKey) {
-		// TODO remove dep on near-utils
-		// use any random near account to check mapping
-		accountId = await contractAccount.viewFunction(MAP_ACCOUNT_ID, 'get_near', { eth_address: ethAddress });
-		const { secretKey: _secretKey } = await keyPairFromEthSig(signer, unlimitedKeyPayload(accountId, ethAddress))
-		secretKey = _secretKey
-	} else {
-		accountId = get(ATTEMPT_ACCOUNT_ID)
-	}
-	const account = new Account(connection, accountId)
-	const keyPair = KeyPair.fromString(secretKey)
-	keyStore.setKey(networkId, accountId, keyPair);
-	// now refresh app key
-	const nonce = parseInt(await account.viewFunction(accountId, 'get_nonce'), 16).toString()
-	const appKeyNonce = parseInt(await account.viewFunction(accountId, 'get_app_key_nonce'), 16).toString()
-	// new public key based on current nonce which will become the app_key_nonce in contract after this TX
-	const { publicKey } = await keyPairFromEthSig(signer, appKeyPayload(accountId, nonce))
-	console.log(publicKey)
-	public_key = pub2hex(publicKey)
-	const actions = [
-		{
-			type: 'AddKey',
-			public_key,
-			allowance: parseNearAmount('1'),
-			receiver_id: accountId,
-			method_names: 'execute',
-		},
-	]
-	/// check keys, find old app key, delete that first
-	const accessKeys = await account.getAccessKeys()
-	if (accessKeys.some((k) => {
-		const functionCallPermission = k?.access_key?.permission?.FunctionCall
-		return functionCallPermission.allowance !== null && functionCallPermission.method_names[0] === 'execute'
-	})) {
-		// old public key based on current app_key_nonce
-		const { publicKey: oldPublicKey } = await keyPairFromEthSig(signer, appKeyPayload(accountId, appKeyNonce))
-		oldPublicKeyHex = pub2hex(oldPublicKey)
-		actions.unshift({
-			type: 'DeleteKey',
-			public_key: oldPublicKeyHex,
-		})
-	}
-	/// get args for execute call
-	const args = await ethSignJson(signer, {
-		receiver_id: accountId,
-		nonce,
-		actions
-	});
-	const res = await account.functionCall({
-		contractId: accountId,
-		methodName: 'execute',
-		args,
-		gas,
-	});
+/// apps
 
-	console.log(res)
-}
-
-/// for apps
 
 /// ethereum
 
@@ -313,14 +454,39 @@ export const getEthereum = async () => {
 	const signer = provider.getSigner()
 	return { signer, ethAddress: await signer.getAddress() }
 }
+export const switchEthereum = async () => {
+	const provider = new ethers.providers.Web3Provider(window.ethereum)
+	await provider.send("wallet_requestPermissions", [{ eth_accounts: {} }]);
+}
 
 /// near
+
+export const signIn = async () => {
+	return getNear()
+}
+
+export const signOut = async () => {
+	const accountId = get(APP_KEY_ACCOUNT_ID)
+	if (!accountId) {
+		return console.warn('already signed out')
+	}
+	del(APP_KEY_SECRET)
+	del(APP_KEY_ACCOUNT_ID)
+	return { accountId }
+}
+
+export const isSignedIn = () => {
+	return !!get(APP_KEY_SECRET) || !!get(APP_KEY_ACCOUNT_ID)
+}
+
+export const getNearMap = async (ethAddress) => {
+	return contractAccount.viewFunction(MAP_ACCOUNT_ID, 'get_near', { eth_address: ethAddress })
+}
 
 export const getNear = async () => {
 	const secretKey = get(APP_KEY_SECRET)
 	const accountId = get(APP_KEY_ACCOUNT_ID)
 	if (!secretKey || !accountId) {
-		console.log(!secretKey || !accountId)
 		await getAppKey(await getEthereum())
 		return getNear()
 	}

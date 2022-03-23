@@ -65,6 +65,12 @@ extern "C" {
 		method_names_len: u64, 
 		method_names_ptr: u64
 	);
+	pub fn promise_batch_action_add_key_with_full_access(
+		promise_index: u64, 
+		public_key_len: u64, 
+		public_key_ptr: u64, 
+		nonce: u64
+	);
 	pub fn promise_batch_action_delete_key(
 		promise_index: u64,
 		public_key_len: u64,
@@ -79,6 +85,11 @@ extern "C" {
         amount_ptr: u64,
         gas: u64,
     );
+	pub fn promise_batch_action_deploy_contract(
+		promise_index: u64, 
+		code_len: u64, 
+		code_ptr: u64
+	);
 	// crypto
 	pub fn ecrecover(
 		hash_len: u64,
@@ -102,6 +113,11 @@ extern "C" {
 		register_id: u64
 	) -> u64;
 	pub fn storage_read(
+		key_len: u64, 
+		key_ptr: u64, 
+		register_id: u64
+	) -> u64;
+	pub fn storage_remove(
 		key_len: u64, 
 		key_ptr: u64, 
 		register_id: u64
