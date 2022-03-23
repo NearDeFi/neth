@@ -1,1 +1,0 @@
-{"mappings":"AAEA;EACC;EACA;;;AAGD;EACC","sources":["src/App.scss"],"sourcesContent":["\n\n.container {\n\tmargin-top: 32px;\n\tmax-width: 800px !important;\n}\n\n.small {\n\tfont-size: 0.8rem;\n}"],"names":[],"version":3,"file":"index.f320dde6.css.map","sourceRoot":"/__parcel_source_root/"}
