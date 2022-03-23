@@ -40,7 +40,7 @@
 		"test-build": "yarn build-contract && yarn test",
 		"test-deploy": "yarn build-contract && yarn dev-deploy && yarn test",
 		"test": "ava test/contract.test.js -vs --timeout=5m",
-		"deploy-app": "yarn build; yarn gh-pages -d dist",
+		"deploy-app": "yarn clean; yarn build; yarn gh-pages -d dist",
 		"fix": "eslint test/ --fix"
 	}
 }

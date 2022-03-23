@@ -266,16 +266,16 @@ test('execute actions on account', async (t) => {
 			type: 'Transfer',
 			amount: parseNearAmount('0.00017'),
 		},
-	]
+	];
 
 	/// check keys
 	const public_key = keyPair.publicKey.toString();
-	const accessKeys = await account.getAccessKeys()
+	const accessKeys = await account.getAccessKeys();
 	if (accessKeys.some((k) => k.public_key === public_key)) {
 		actions.unshift({
 			type: 'DeleteKey',
 			public_key: PublicKey.fromString(keyPair.publicKey).data.hexSlice(),
-		})
+		});
 	}
 
 	/// get sig args
@@ -351,15 +351,15 @@ test('rotate app key', async (t) => {
 			receiver_id: accountId,
 			method_names: 'execute',
 		},
-	]
+	];
 	/// check keys
 	const public_key = keyPair.publicKey.toString();
-	const accessKeys = await account.getAccessKeys()
+	const accessKeys = await account.getAccessKeys();
 	if (accessKeys.some((k) => k.public_key === public_key)) {
 		actions.unshift({
 			type: 'DeleteKey',
 			public_key: PublicKey.fromString(keyPair.publicKey).data.hexSlice(),
-		})
+		});
 	}
 
 	/// get sig args

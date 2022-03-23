@@ -202,7 +202,7 @@ export const handleRefreshAppKey = async (signer, ethAddress) => {
 	// new public key based on current nonce which will become the app_key_nonce in contract after this TX
 	const { publicKey, secretKey } = await keyPairFromEthSig(signer, appKeyPayload(accountId, nonce))
 	console.log(publicKey)
-	public_key = pub2hex(publicKey)
+	const public_key = pub2hex(publicKey)
 	const actions = [
 		{
 			type: 'AddKey',
@@ -221,7 +221,7 @@ export const handleRefreshAppKey = async (signer, ethAddress) => {
 		// old public key based on current app_key_nonce
 		const appKeyNonce = parseInt(await account.viewFunction(accountId, 'get_app_key_nonce'), 16).toString()
 		const { publicKey: oldPublicKey } = await keyPairFromEthSig(signer, appKeyPayload(accountId, appKeyNonce))
-		oldPublicKeyHex = pub2hex(oldPublicKey)
+		const oldPublicKeyHex = pub2hex(oldPublicKey)
 		actions.unshift({
 			type: 'DeleteKey',
 			public_key: oldPublicKeyHex,
@@ -318,7 +318,7 @@ export const handleDisconnect = async (signer, ethAddress) => {
 	})) {
 		const appKeyNonce = parseInt(await account.viewFunction(accountId, 'get_app_key_nonce'), 16).toString()
 		const { publicKey: oldPublicKey } = await keyPairFromEthSig(signer, appKeyPayload(accountId, appKeyNonce))
-		oldPublicKeyHex = pub2hex(oldPublicKey)
+		const oldPublicKeyHex = pub2hex(oldPublicKey)
 		actions.unshift({
 			type: 'DeleteKey',
 			public_key: oldPublicKeyHex,
@@ -460,6 +460,15 @@ export const switchEthereum = async () => {
 }
 
 /// near
+
+export const hasAppKey = async (accountId) => {
+	const account = new Account(connection, accountId)
+	const accessKeys = await account.getAccessKeys()
+	return accessKeys.some((k) => {
+		const functionCallPermission = k?.access_key?.permission?.FunctionCall
+		return functionCallPermission.allowance !== null && functionCallPermission.method_names[0] === 'execute'
+	})
+}
 
 export const signIn = async () => {
 	return getNear()

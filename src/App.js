@@ -13,6 +13,7 @@ import {
 	handleDisconnect,
 	handleUpdateContract,
 	handleRefreshAppKey,
+	hasAppKey,
 	signIn,
 	signOut,
 	isSignedIn,
@@ -32,7 +33,8 @@ const App = () => {
 	const [loading, setLoading] = useState(true)
 	const [mapAccountId, setMapAccountId] = useState(null)
 	const [accountId, setAccountId] = useState('')
-	const [error, setError] = useState('')
+	const [showApps, setShowApps] = useState(false)
+	const [error, setError] = useState('enter an account ID')
 	const [signer, setSigner] = useState('')
 	const [ethAddress, setEthAddress] = useState('')
 
@@ -42,7 +44,10 @@ const App = () => {
 		setEthAddress(ethAddress)
 		console.log(ethAddress)
 		if (ethAddress) {
-			setMapAccountId(await getNearMap(ethAddress))
+			console.log('hello')
+			const accountId = await getNearMap(ethAddress)
+			setMapAccountId(accountId)
+			if (!!accountId) setShowApps(await hasAppKey(accountId))
 		}
 		setLoading(false)
 	}
@@ -55,8 +60,8 @@ const App = () => {
 	const handleAccountInput = async ({ target: { value } }) => {
 		setAccountId(value)
 		const newAccountId = value + accountSuffix
-		if (accountId.indexOf('.') > -1 || !ACCOUNT_REGEX.test(newAccountId) || newAccountId.length > 64) {
-			return setError(`account is invalid (a-z, 0-9 and -,_ only; max 64; ${accountSuffix} applied automatically)`)
+		if (value < 2 || accountId.indexOf('.') > -1 || !ACCOUNT_REGEX.test(newAccountId) || newAccountId.length > 64) {
+			return setError(`account is invalid (a-z, 0-9 and -,_ only; min 2; max 64; ${accountSuffix} applied automatically)`)
 		}
 		if (await accountExists(newAccountId)) {
 			setError(`account already exists`)
@@ -70,7 +75,7 @@ const App = () => {
 		try {
 			await fn(...args)
 			setLoading(false)
-		} catch(e) {
+		} catch (e) {
 			setLoading(false)
 			throw e
 		}
@@ -88,7 +93,7 @@ const App = () => {
 					<>
 						<p>{ethAddress}</p>
 						<button aria-busy={loading} disabled={loading} onClick={handleAction(async () => {
-							
+
 							await switchEthereum()
 							updateEthState()
 
@@ -121,73 +126,81 @@ const App = () => {
 									<p>This method is in case user drops off / bad network during account setup. It uses saved key material in localStorage from "Create Account" step.</p>
 									<br />
 									<button aria-busy={loading} disabled={loading} onClick={handleAction(async () => {
-										
+
 										const { publicKey } = await handleRefreshAppKey(signer, ethAddress)
 										alert('New app key (publicKey): ' + publicKey)
-										
-									})}>Update App Key</button>
-									<p>TLDR; 1 sig to access the unlimited allowance access key (this domain only); 2 app key sigs for key rotation actions addKey, deleteKey; and 1 execute sig</p>
+										updateEthState()
+
+									})}>Get / Change your App Key</button>
+									<p>TLDR; 1 sig to access the unlimited allowance access key (this domain only); 1 sig for addKey, (1 sig for deleteKey if user has old app key), and 1 execute sig</p>
 									<p>This method will rotate the currently active app key and bump the app key nonce so malicious apps cannot repeatedly drain a new app key allowance (1 N). The user should only sign on the setup domain which is why there is a warning in the payload that produces the app key material.</p>
 
-									<h2>Account Disconnection / Contract Update</h2>
+									{
+										showApps &&
+										<>
+											<h2>For Apps</h2>
 
-									<button aria-busy={loading} disabled={loading} onClick={handleAction(async () => {
-										
-										const { account } = await handleDisconnect(signer, ethAddress)
-										alert('Account: ' + account.accountId + ' disconnected from: ' + ethAddress)
-										setMapAccountId(await getNearMap(ethAddress))
-									})}>Disconnect Account</button>
-									<p>This method is for user to get a seed phrase and disconnect NEAR account from ETH address.</p>
-									<br />
-									<button aria-busy={loading} disabled={loading} onClick={handleAction(async () => {
-										
-										await handleUpdateContract(signer, ethAddress)
-										alert('Contract Updated')
-										
-									})}>Update Contract</button>
-									<p>This method will ask the user to approve a contract update to their NEAR account.</p>
+											<button aria-busy={loading} disabled={loading} onClick={handleAction(() => {
 
-									<h2>For Apps</h2>
+												alert('isSignedIn: ' + isSignedIn())
 
-									<button aria-busy={loading} disabled={loading} onClick={handleAction(() => {
-										
-										alert('isSignedIn: ' + isSignedIn())
-										
-									})}>Is NEAR Account Signed In?</button>
-									<p>Check if there's an app key in local storage.</p>
-									<br />
-									<button aria-busy={loading} disabled={loading} onClick={handleAction(async () => {
-										
-										const { accountId } = await signIn()
-										alert('Signed in: ' + accountId)
-										
-									})}>Sign In</button>
-									<p>This method creates the app key from a signature with the current app key nonce, apps save it in localStorage. This request, storing and checking is done automatically in the "Test Transfer" action below, but you can try it isolated here and it will store the key.</p>
-									<br />
-									<button aria-busy={loading} disabled={loading} onClick={handleAction(async () => {
-										
-										const { accountId } = await signOut()
-										alert('Signed out: ' + accountId)
-										
-									})}>Sign Out</button>
-									<p>Remove the locally stored app key.</p>
-									<br />
-									<button aria-busy={loading} disabled={loading} onClick={handleAction(async () => {
-										
-										const { accountId } = await getNear()
-										const res = await signAndSendTransaction({
-											receiverId: accountId,
-											actions: [
-												transfer('1'),
-											],
-										})
-										if (!!res?.status?.SuccessValue) {
-											console.warn('error')
-										}
-										alert('TX success, view on explorer: https://explorer.testnet.near.org/transactions/' + res.transaction.hash)
-										
-									})}>Test Transfer</button>
-									<p>Transfer 1 yocto to yourself.</p>
+											})}>Is NEAR Account Signed In?</button>
+											<p>Check if there's an app key in local storage.</p>
+											<br />
+											<button aria-busy={loading} disabled={loading} onClick={handleAction(async () => {
+
+												const { accountId } = await signIn()
+												alert('Signed in: ' + accountId)
+
+											})}>Sign In</button>
+											<p>This method creates the app key from a signature with the current app key nonce, apps save it in localStorage. This request, storing and checking is done automatically in the "Test Transfer" action below, but you can try it isolated here and it will store the key.</p>
+											<br />
+											<button aria-busy={loading} disabled={loading} onClick={handleAction(async () => {
+
+												const { accountId } = await signOut()
+												alert('Signed out: ' + accountId)
+
+											})}>Sign Out</button>
+											<p>Remove the locally stored app key.</p>
+											<br />
+											<button aria-busy={loading} disabled={loading} onClick={handleAction(async () => {
+
+												const { accountId } = await getNear()
+												const res = await signAndSendTransaction({
+													receiverId: accountId,
+													actions: [
+														transfer('1'),
+													],
+												})
+												if (!!res?.status?.SuccessValue) {
+													console.warn('error')
+												}
+												alert('TX success, view on explorer: https://explorer.testnet.near.org/transactions/' + res.transaction.hash)
+
+											})}>Test Transfer</button>
+											<p>Transfer 1 yocto to yourself.</p>
+
+											<h2>Account Disconnection / Contract Update</h2>
+
+											<button aria-busy={loading} disabled={loading} onClick={handleAction(async () => {
+
+												const { account } = await handleDisconnect(signer, ethAddress)
+												alert('Account: ' + account.accountId + ' disconnected from: ' + ethAddress)
+												setMapAccountId(await getNearMap(ethAddress))
+											})}>Disconnect Account</button>
+											<p>This method is for user to get a seed phrase and disconnect NEAR account from ETH address.</p>
+											<br />
+											<button aria-busy={loading} disabled={loading} onClick={handleAction(async () => {
+
+												await handleUpdateContract(signer, ethAddress)
+												alert('Contract Updated')
+
+											})}>Update Contract</button>
+											<p>This method will ask the user to approve a contract update to their NEAR account.</p>
+
+										</>
+									}
+
 								</>
 						}
 
