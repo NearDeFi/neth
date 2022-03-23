@@ -44,7 +44,6 @@ const App = () => {
 		setEthAddress(ethAddress)
 		console.log(ethAddress)
 		if (ethAddress) {
-			console.log('hello')
 			const accountId = await getNearMap(ethAddress)
 			setMapAccountId(accountId)
 			if (!!accountId) setShowApps(await hasAppKey(accountId))
