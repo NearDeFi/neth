@@ -23,26 +23,23 @@ pub fn assert_predecessor() {
 }
 
 /// TODO comment
-pub unsafe fn assert_valid_tx(nonce: u64) -> Vec<u8> {
+pub unsafe fn assert_valid_tx(nonce: u64) -> String {
     near_sys::input(REGISTER_0);
     let data = register_read(REGISTER_0);
 
     let mut sig_bytes = hex_decode(&data[10..140]);
     sig_bytes[64] -= 27;
-    let msg_string = from_utf8_unchecked(&data[148..data.len() - 1]).replace("\\\"", "\"");
-    let msg = msg_string.as_bytes();
+    let msg = alloc::str::from_utf8(&data[148..data.len() - 1])
+        .unwrap_or_else(|_| near_sys::panic())
+        .replace("\\\"", "\"");
     // log(&msg);
 
     // create ethereum signed message hash
-    let receiver_id = get_string(msg, RECEIVER_ID);
-    let nonce_msg_str = get_string(msg, NONCE);
-    let nonce_msg = get_u128(msg, NONCE);
-    let actions_vec: Vec<&str> = from_utf8_unchecked(msg).split(ACTIONS).collect();
+    let receiver_id = get_string(&msg, RECEIVER_ID);
+    let nonce_msg_str = get_string(&msg, NONCE);
+    let nonce_msg = get_u128(&msg, NONCE);
+    let actions_vec: Vec<&str> = msg.as_str().split(ACTIONS).collect();
     let actions = Vec::from(actions_vec[1][0..actions_vec[1].len() - 2].as_bytes());
-
-    // log(&from_utf8_unchecked(&receiver_id));
-    // log(&from_utf8_unchecked(&nonce_msg_str));
-    // log(&from_utf8_unchecked(&actions));
 
     let mut msg_wrapped = Vec::from(DOMAIN_HASH);
     let mut values = Vec::from(TX_TYPE_HASH);
@@ -65,7 +62,7 @@ pub unsafe fn assert_valid_tx(nonce: u64) -> Vec<u8> {
     if result == (true as u64) {
         near_sys::keccak256(u64::MAX, REGISTER_1, REGISTER_2);
         let result_hash_bytes = register_read(REGISTER_2);
-        let address_bytes = result_hash_bytes[12..].to_vec();
+        let address_bytes = &result_hash_bytes[12..];
 
         // log(&hex::encode(&address_bytes));
 
@@ -78,7 +75,7 @@ pub unsafe fn assert_valid_tx(nonce: u64) -> Vec<u8> {
             near_sys::panic();
         }
 
-        Vec::from(msg)
+        msg
     } else {
         near_sys::panic()
     }

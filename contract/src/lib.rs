@@ -22,7 +22,6 @@ const ACTIONS: &str = "actions\":\"";
 
 extern crate alloc;
 
-use alloc::str::from_utf8_unchecked;
 use alloc::vec;
 use alloc::vec::Vec;
 
@@ -60,6 +59,7 @@ pub unsafe fn setup() {
     assert_predecessor();
     near_sys::input(REGISTER_0);
     let data = register_read(REGISTER_0);
+    let data = alloc::str::from_utf8(&data).unwrap_or_else(|_| near_sys::panic());
     swrite(ADDRESS_KEY, &hex_decode(&get_string(&data, "address")[2..]));
     let nonce: u64 = 0;
     swrite(NONCE_KEY, &nonce.to_le_bytes());
@@ -96,20 +96,18 @@ pub unsafe fn execute() {
 
     let data = assert_valid_tx(nonce);
 
-    // log(&from_utf8_unchecked(&data));
-
     let receiver_id = get_string(&data, RECEIVER_ID);
     let actions = get_actions(&data);
 
     let id = near_sys::promise_batch_create(receiver_id.len() as u64, receiver_id.as_ptr() as u64);
 
     for action in actions {
-        match from_utf8_unchecked(&get_string(&action, "type")) {
-            "Transfer" => {
+        match get_string(&action, "type").as_slice() {
+            b"Transfer" => {
                 let amount = get_u128(&action, AMOUNT);
                 near_sys::promise_batch_action_transfer(id, amount.to_le_bytes().as_ptr() as u64);
             }
-            "AddKey" => {
+            b"AddKey" => {
                 // NEAR ed25519 keys prepend 0 to 32 bytes of key (33 bytes len)
                 let mut public_key = vec![0];
                 public_key.extend_from_slice(&hex_decode(&get_string(&action, PUBLIC_KEY)));
@@ -132,9 +130,7 @@ pub unsafe fn execute() {
                 // apps call get_app_key_nonce and ask for signature during sign in
                 near_sys::predecessor_account_id(REGISTER_1);
                 let predecessor_account = register_read(REGISTER_1);
-                if receiver_id == predecessor_account
-                    && from_utf8_unchecked(&method_names) == "execute"
-                {
+                if receiver_id == predecessor_account && &method_names == b"execute" {
                     swrite(NONCE_APP_KEY, &nonce.to_le_bytes());
                 }
 
@@ -150,7 +146,7 @@ pub unsafe fn execute() {
                     method_names.as_ptr() as u64,
                 )
             }
-            "DeleteKey" => {
+            b"DeleteKey" => {
                 let mut public_key = vec![0];
                 public_key.extend_from_slice(&hex_decode(&get_string(&action, PUBLIC_KEY)));
                 near_sys::promise_batch_action_delete_key(
@@ -159,7 +155,7 @@ pub unsafe fn execute() {
                     public_key.as_ptr() as u64,
                 );
             }
-            "FunctionCall" => {
+            b"FunctionCall" => {
                 let method_name = get_string(&action, "method_name");
                 let args = hex_decode(&get_string(&action, "args"));
                 let amount = get_u128(&action, AMOUNT);
@@ -174,7 +170,7 @@ pub unsafe fn execute() {
                     gas,
                 );
             }
-            "DeployContract" => {
+            b"DeployContract" => {
                 let code = hex_decode(&get_string(&action, "code"));
                 near_sys::promise_batch_action_deploy_contract(
                     id,
@@ -215,19 +211,15 @@ mod tests {
 
     #[test]
     fn test_get_empty_string() {
-        unsafe {
-            let str = get_string("\"args\":\"\"".as_bytes(), "args");
-            assert_eq!(str, vec![]);
-        }
+        let str = get_string("\"args\":\"\"", "args");
+        assert_eq!(str, vec![]);
     }
 
     #[test]
     fn test_get_empty_amount() {
-        unsafe {
-            let amount = get_u128("\"amount\":\"0\"".as_bytes(), "amount");
-            assert_eq!(amount, 0);
-			assert_eq!(ADDRESS_KEY.as_bytes().len(), 1);
-        }
+        let amount = get_u128("\"amount\":\"0\"", "amount");
+        assert_eq!(amount, 0);
+        assert_eq!(ADDRESS_KEY.as_bytes().len(), 1);
     }
 
     #[test]
@@ -238,10 +230,8 @@ mod tests {
 
     #[test]
     fn test_empty_args() {
-        unsafe {
-            let str = get_string("\"args\":\"\"".as_bytes(), "args");
-            let decoded = hex_decode(&str);
-            assert_eq!(decoded.len(), 0);
-        }
+        let str = get_string("\"args\":\"\"", "args");
+        let decoded = hex_decode(&str);
+        assert_eq!(decoded.len(), 0);
     }
 }
