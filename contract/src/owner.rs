@@ -27,7 +27,7 @@ pub unsafe fn assert_valid_tx(nonce: u64) -> Vec<u8> {
     near_sys::input(REGISTER_0);
     let data = rread(REGISTER_0);
 
-    let mut sig_bytes = hex::decode(&data[10..140]).unwrap();
+    let mut sig_bytes = hex_decode(&data[10..140]);
     sig_bytes[64] -= 27;
     let msg_string = from_utf8_unchecked(&data[148..data.len() - 1]).replace("\\\"", "\"");
     let msg = msg_string.as_bytes();
