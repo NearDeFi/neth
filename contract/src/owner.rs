@@ -13,9 +13,9 @@ const TX_TYPE_HASH: [u8; 32] = [
 pub fn assert_predecessor() {
     unsafe {
         near_sys::current_account_id(REGISTER_0);
-        let current_account = rread(REGISTER_0);
+        let current_account = register_read(REGISTER_0);
         near_sys::predecessor_account_id(REGISTER_1);
-        let predecessor_account = rread(REGISTER_1);
+        let predecessor_account = register_read(REGISTER_1);
         if current_account != predecessor_account {
             near_sys::panic();
         }
@@ -25,7 +25,7 @@ pub fn assert_predecessor() {
 /// TODO comment
 pub unsafe fn assert_valid_tx(nonce: u64) -> Vec<u8> {
     near_sys::input(REGISTER_0);
-    let data = rread(REGISTER_0);
+    let data = register_read(REGISTER_0);
 
     let mut sig_bytes = hex_decode(&data[10..140]);
     sig_bytes[64] -= 27;
@@ -46,11 +46,11 @@ pub unsafe fn assert_valid_tx(nonce: u64) -> Vec<u8> {
 
     let mut msg_wrapped = Vec::from(DOMAIN_HASH);
     let mut values = Vec::from(TX_TYPE_HASH);
-    values.extend_from_slice(&hash(&receiver_id));
-    values.extend_from_slice(&hash(&nonce_msg_str));
-    values.extend_from_slice(&hash(&actions));
-    msg_wrapped.extend_from_slice(&hash(&values));
-    let msg_hash = hash(&msg_wrapped);
+    values.extend_from_slice(&keccak256(&receiver_id));
+    values.extend_from_slice(&keccak256(&nonce_msg_str));
+    values.extend_from_slice(&keccak256(&actions));
+    msg_wrapped.extend_from_slice(&keccak256(&values));
+    let msg_hash = keccak256(&msg_wrapped);
 
     let result = near_sys::ecrecover(
         ECRECOVER_MESSAGE_SIZE,
@@ -64,12 +64,12 @@ pub unsafe fn assert_valid_tx(nonce: u64) -> Vec<u8> {
 
     if result == (true as u64) {
         near_sys::keccak256(u64::MAX, REGISTER_1, REGISTER_2);
-        let result_hash_bytes = rread(REGISTER_2);
+        let result_hash_bytes = register_read(REGISTER_2);
         let address_bytes = result_hash_bytes[12..].to_vec();
 
         // log(&hex::encode(&address_bytes));
 
-        let address_bytes_storage = sread(ADDRESS_KEY);
+        let address_bytes_storage = storage_read(ADDRESS_KEY);
         if address_bytes != address_bytes_storage {
             near_sys::panic();
         }
@@ -82,10 +82,4 @@ pub unsafe fn assert_valid_tx(nonce: u64) -> Vec<u8> {
     } else {
         near_sys::panic()
     }
-}
-
-unsafe fn hash(msg: &[u8]) -> Vec<u8> {
-    near_sys::write_register(REGISTER_1, msg.len() as u64, msg.as_ptr() as u64);
-    near_sys::keccak256(u64::MAX, REGISTER_1, REGISTER_2);
-    rread(REGISTER_2)
 }

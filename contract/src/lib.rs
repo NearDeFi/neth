@@ -59,7 +59,7 @@ fn hex_decode(bytes: &[u8]) -> Vec<u8> {
 pub unsafe fn setup() {
     assert_predecessor();
     near_sys::input(REGISTER_0);
-    let data = rread(REGISTER_0);
+    let data = register_read(REGISTER_0);
     swrite(ADDRESS_KEY, &hex_decode(&get_string(&data, "address")[2..]));
     let nonce: u64 = 0;
     swrite(NONCE_KEY, &nonce.to_le_bytes());
@@ -131,7 +131,7 @@ pub unsafe fn execute() {
                 // set app key nonce to the nonce in sig used for entropy for the app key keypair
                 // apps call get_app_key_nonce and ask for signature during sign in
                 near_sys::predecessor_account_id(REGISTER_1);
-                let predecessor_account = rread(REGISTER_1);
+                let predecessor_account = register_read(REGISTER_1);
                 if receiver_id == predecessor_account
                     && from_utf8_unchecked(&method_names) == "execute"
                 {
@@ -190,19 +190,19 @@ pub unsafe fn execute() {
 /// views
 
 #[no_mangle]
-pub unsafe fn get_address() {
+pub(crate) unsafe fn get_address() {
     let mut address = vec![48, 120];
-    address.extend_from_slice(hex::encode(&sread(ADDRESS_KEY)).as_bytes());
+    address.extend_from_slice(hex::encode(&storage_read(ADDRESS_KEY)).as_bytes());
     return_bytes(&address);
 }
 
 #[no_mangle]
-pub unsafe fn get_nonce() {
+pub(crate) unsafe fn get_nonce() {
     return_bytes(hex::encode(sread_u64(NONCE_KEY).to_be_bytes()).as_bytes());
 }
 
 #[no_mangle]
-pub unsafe fn get_app_key_nonce() {
+pub(crate) unsafe fn get_app_key_nonce() {
     return_bytes(hex::encode(sread_u64(NONCE_APP_KEY).to_be_bytes()).as_bytes());
 }
 
@@ -226,6 +226,7 @@ mod tests {
         unsafe {
             let amount = get_u128("\"amount\":\"0\"".as_bytes(), "amount");
             assert_eq!(amount, 0);
+			assert_eq!(ADDRESS_KEY.as_bytes().len(), 1);
         }
     }
 
