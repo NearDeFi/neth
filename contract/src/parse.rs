@@ -1,11 +1,8 @@
 use crate::*;
-use alloc::string::String;
 
 // FIXME
 pub(crate) fn get_string<'a>(string: &'a str, key: &str) -> &'a str {
-    let mut find = String::from(key);
-    find.push_str("\":\"");
-    let (_, value) = expect(string.split_once(&find));
+    let (_, value) = expect(string.split_once(key));
     let (value, _) = expect(value.split_once('\"'));
     value
 }

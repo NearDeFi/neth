@@ -14,10 +14,10 @@ const REGISTER_0: u64 = 0;
 const REGISTER_1: u64 = 1;
 const REGISTER_2: u64 = 2;
 const DOUBLE_QUOTE_BYTE: u8 = b'\"';
-const RECEIVER_ID: &str = "receiver_id";
-const PUBLIC_KEY: &str = "public_key";
-const AMOUNT: &str = "amount";
-const NONCE: &str = "nonce";
+const RECEIVER_ID: &str = "receiver_id\":\"";
+const PUBLIC_KEY: &str = "public_key\":\"";
+const AMOUNT: &str = "amount\":\"";
+const NONCE: &str = "nonce\":\"";
 const ACTIONS: &str = "actions\":\"";
 
 extern crate alloc;
@@ -195,9 +195,9 @@ pub unsafe fn execute() {
 
 #[no_mangle]
 pub(crate) unsafe fn get_address() {
-    let mut address = vec![48, 120];
-    address.extend_from_slice(hex::encode(&storage_read(ADDRESS_KEY)).as_bytes());
-    return_bytes(&address);
+    let mut address = hex::encode(&storage_read(ADDRESS_KEY));
+    address.insert_str(0, "0x");
+    return_bytes(address.as_bytes());
 }
 
 #[no_mangle]
