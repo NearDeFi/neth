@@ -50,8 +50,16 @@ pub unsafe fn on_alloc_error(_: core::alloc::Layout) -> ! {
     core::arch::wasm32::unreachable()
 }
 
-fn hex_decode(bytes: &[u8]) -> Vec<u8> {
-    hex::decode(bytes).unwrap_or_else(|_| unsafe { near_sys::panic() })
+#[inline]
+fn hex_decode(bytes: impl AsRef<[u8]>) -> Vec<u8> {
+    expect(hex::decode(bytes).ok())
+}
+
+/// Helper function to panic on None types.
+fn expect<T>(v: Option<T>) -> T {
+    // Allowing because false positive
+    #[allow(clippy::redundant_closure)]
+    v.unwrap_or_else(|| sys::panic())
 }
 
 #[no_mangle]
@@ -59,8 +67,8 @@ pub unsafe fn setup() {
     assert_predecessor();
     near_sys::input(REGISTER_0);
     let data = register_read(REGISTER_0);
-    let data = alloc::str::from_utf8(&data).unwrap_or_else(|_| near_sys::panic());
-    swrite(ADDRESS_KEY, &hex_decode(&get_string(&data, "address")[2..]));
+    let data = expect(alloc::str::from_utf8(&data).ok());
+    swrite(ADDRESS_KEY, &hex_decode(&get_string(data, "address")[2..]));
     let nonce: u64 = 0;
     swrite(NONCE_KEY, &nonce.to_le_bytes());
     swrite(NONCE_APP_KEY, &nonce.to_le_bytes());
@@ -102,17 +110,17 @@ pub unsafe fn execute() {
     let id = near_sys::promise_batch_create(receiver_id.len() as u64, receiver_id.as_ptr() as u64);
 
     for action in actions {
-        match get_string(&action, "type").as_slice() {
+        match get_string(action, "type").as_bytes() {
             b"Transfer" => {
-                let amount = get_u128(&action, AMOUNT);
+                let amount = get_u128(action, AMOUNT);
                 near_sys::promise_batch_action_transfer(id, amount.to_le_bytes().as_ptr() as u64);
             }
             b"AddKey" => {
                 // NEAR ed25519 keys prepend 0 to 32 bytes of key (33 bytes len)
                 let mut public_key = vec![0];
-                public_key.extend_from_slice(&hex_decode(&get_string(&action, PUBLIC_KEY)));
+                public_key.extend_from_slice(&hex_decode(&get_string(action, PUBLIC_KEY)));
                 // special case: allowance 0 means full access key, user would never want to add key with 0 allowance
-                let allowance = get_u128(&action, "allowance");
+                let allowance = get_u128(action, "allowance");
                 if allowance == 0 {
                     near_sys::promise_batch_action_add_key_with_full_access(
                         id,
@@ -123,14 +131,14 @@ pub unsafe fn execute() {
                     return;
                 }
                 // not a full access key get rest of args
-                let receiver_id = get_string(&action, RECEIVER_ID);
-                let method_names = get_string(&action, "method_names");
+                let receiver_id = get_string(action, RECEIVER_ID);
+                let method_names = get_string(action, "method_names");
                 // special case
                 // set app key nonce to the nonce in sig used for entropy for the app key keypair
                 // apps call get_app_key_nonce and ask for signature during sign in
                 near_sys::predecessor_account_id(REGISTER_1);
                 let predecessor_account = register_read(REGISTER_1);
-                if receiver_id == predecessor_account && &method_names == b"execute" {
+                if receiver_id.as_bytes() == predecessor_account && method_names == "execute" {
                     swrite(NONCE_APP_KEY, &nonce.to_le_bytes());
                 }
 
@@ -148,7 +156,7 @@ pub unsafe fn execute() {
             }
             b"DeleteKey" => {
                 let mut public_key = vec![0];
-                public_key.extend_from_slice(&hex_decode(&get_string(&action, PUBLIC_KEY)));
+                public_key.extend_from_slice(&hex_decode(&get_string(action, PUBLIC_KEY)));
                 near_sys::promise_batch_action_delete_key(
                     id,
                     public_key.len() as u64,
@@ -156,10 +164,10 @@ pub unsafe fn execute() {
                 );
             }
             b"FunctionCall" => {
-                let method_name = get_string(&action, "method_name");
-                let args = hex_decode(&get_string(&action, "args"));
-                let amount = get_u128(&action, AMOUNT);
-                let gas = get_u128(&action, "gas") as u64;
+                let method_name = get_string(action, "method_name");
+                let args = hex_decode(&get_string(action, "args"));
+                let amount = get_u128(action, AMOUNT);
+                let gas = get_u128(action, "gas") as u64;
                 near_sys::promise_batch_action_function_call(
                     id,
                     method_name.len() as u64,
@@ -171,7 +179,7 @@ pub unsafe fn execute() {
                 );
             }
             b"DeployContract" => {
-                let code = hex_decode(&get_string(&action, "code"));
+                let code = hex_decode(&get_string(action, "code"));
                 near_sys::promise_batch_action_deploy_contract(
                     id,
                     code.len() as u64,
@@ -212,7 +220,7 @@ mod tests {
     #[test]
     fn test_get_empty_string() {
         let str = get_string("\"args\":\"\"", "args");
-        assert_eq!(str, vec![]);
+        assert_eq!(str, "");
     }
 
     #[test]
@@ -224,7 +232,7 @@ mod tests {
 
     #[test]
     fn test_hex_empty_decode() {
-        let decoded = hex_decode(&[]);
+        let decoded = hex_decode("");
         assert_eq!(decoded.len(), 0);
     }
 

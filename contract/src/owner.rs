@@ -17,7 +17,7 @@ pub fn assert_predecessor() {
         near_sys::predecessor_account_id(REGISTER_1);
         let predecessor_account = register_read(REGISTER_1);
         if current_account != predecessor_account {
-            near_sys::panic();
+            sys::panic();
         }
     }
 }
@@ -29,9 +29,7 @@ pub unsafe fn assert_valid_tx(nonce: u64) -> String {
 
     let mut sig_bytes = hex_decode(&data[10..140]);
     sig_bytes[64] -= 27;
-    let msg = alloc::str::from_utf8(&data[148..data.len() - 1])
-        .unwrap_or_else(|_| near_sys::panic())
-        .replace("\\\"", "\"");
+    let msg = expect(alloc::str::from_utf8(&data[148..data.len() - 1]).ok()).replace("\\\"", "\"");
     // log(&msg);
 
     // create ethereum signed message hash
@@ -43,8 +41,8 @@ pub unsafe fn assert_valid_tx(nonce: u64) -> String {
 
     let mut msg_wrapped = Vec::from(DOMAIN_HASH);
     let mut values = Vec::from(TX_TYPE_HASH);
-    values.extend_from_slice(&keccak256(&receiver_id));
-    values.extend_from_slice(&keccak256(&nonce_msg_str));
+    values.extend_from_slice(&keccak256(receiver_id.as_bytes()));
+    values.extend_from_slice(&keccak256(nonce_msg_str.as_bytes()));
     values.extend_from_slice(&keccak256(&actions));
     msg_wrapped.extend_from_slice(&keccak256(&values));
     let msg_hash = keccak256(&msg_wrapped);
@@ -68,15 +66,15 @@ pub unsafe fn assert_valid_tx(nonce: u64) -> String {
 
         let address_bytes_storage = storage_read(ADDRESS_KEY);
         if address_bytes != address_bytes_storage {
-            near_sys::panic();
+            sys::panic();
         }
 
         if nonce != nonce_msg as u64 {
-            near_sys::panic();
+            sys::panic();
         }
 
         msg
     } else {
-        near_sys::panic()
+        sys::panic()
     }
 }

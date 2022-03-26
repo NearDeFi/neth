@@ -53,8 +53,8 @@ pub(crate) fn register_read(id: u64) -> Vec<u8> {
     let len = unsafe { near_sys::register_len(id) } as usize;
     let data = vec![0u8; len];
 
-	//* SAFETY: Length of buffer is set dynamically based on `register_len` so it will always
-	//* 		be sufficient length.
+    //* SAFETY: Length of buffer is set dynamically based on `register_len` so it will always
+    //* 		be sufficient length.
     unsafe { near_sys::read_register(id, data.as_ptr() as u64) };
     data
 }
@@ -67,4 +67,9 @@ pub(crate) fn keccak256(value: &[u8]) -> [u8; 32] {
         near_sys::keccak256(value.len() as _, value.as_ptr() as _, REGISTER_1);
         read_register_fixed_32(REGISTER_1)
     }
+}
+
+pub(crate) fn panic() -> ! {
+    //* SAFETY: Assumed valid panic host function implementation
+    unsafe { near_sys::panic() }
 }
