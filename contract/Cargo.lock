@@ -13,6 +13,7 @@ name = "eth-near"
 version = "0.1.0"
 dependencies = [
  "hex",
+ "near-sys",
  "wee_alloc",
 ]
 
@@ -33,6 +34,12 @@ name = "memory_units"
 version = "0.4.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "8452105ba047068f40ff7093dd1d9da90898e63dd61736462e9cdda6a90ad3c3"
+
+[[package]]
+name = "near-sys"
+version = "0.1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "f6a7aa3f46fac44416d8a93d14f30a562c4d730a1c6bf14bffafab5f475c244a"
 
 [[package]]
 name = "wee_alloc"
