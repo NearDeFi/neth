@@ -10,7 +10,7 @@ use core::mem::MaybeUninit;
 pub unsafe fn read_register_fixed_32(register_id: u64) -> [u8; 32] {
     let mut hash = [MaybeUninit::<u8>::uninit(); 32];
     near_sys::read_register(register_id, hash.as_mut_ptr() as _);
-    std::mem::transmute(hash)
+    core::mem::transmute(hash)
 }
 
 pub fn read_register_fixed<const N: usize>(register_id: u64) -> [u8; N] {

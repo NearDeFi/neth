@@ -1,8 +1,5 @@
 #![cfg_attr(target_arch = "wasm32", no_std)]
-#![cfg_attr(
-    all(target_arch = "wasm32", feature = "oom-handler"),
-    feature(alloc_error_handler)
-)]
+#![cfg_attr(all(target_arch = "wasm32"), feature(alloc_error_handler))]
 
 const ECRECOVER_MESSAGE_SIZE: u64 = 32;
 const ECRECOVER_SIGNATURE_LENGTH: u64 = 64;
