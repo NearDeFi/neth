@@ -7,9 +7,9 @@
 const ECRECOVER_MESSAGE_SIZE: u64 = 32;
 const ECRECOVER_SIGNATURE_LENGTH: u64 = 64;
 const ECRECOVER_MALLEABILITY_FLAG: u64 = 1;
-const ADDRESS_KEY: &str = "a";
-const NONCE_KEY: &str = "n";
-const NONCE_APP_KEY: &str = "k";
+const ADDRESS_KEY: &[u8] = b"a";
+const NONCE_KEY: &[u8] = b"n";
+const NONCE_APP_KEY: &[u8] = b"k";
 const TEMP_REGISTER: u64 = 0;
 const REGISTER_1: u64 = 1;
 const DOUBLE_QUOTE_BYTE: u8 = b'\"';
@@ -245,7 +245,7 @@ mod tests {
     fn test_get_empty_amount() {
         let amount = get_u128("\"amount\":\"0\"", "amount");
         assert_eq!(amount, 0);
-        assert_eq!(ADDRESS_KEY.as_bytes().len(), 1);
+        assert_eq!(ADDRESS_KEY.len(), 1);
     }
 
     #[test]

@@ -28,7 +28,7 @@ pub(crate) unsafe fn return_bytes(bytes: &[u8]) {
     near_sys::value_return(ret_data.len() as u64, ret_data.as_ptr() as u64);
 }
 
-pub(crate) fn swrite(key: &str, val: &[u8]) {
+pub(crate) fn swrite(key: &[u8], val: &[u8]) {
     //* SAFETY: Assumes valid storage_write implementation.
     unsafe {
         near_sys::storage_write(
@@ -41,7 +41,7 @@ pub(crate) fn swrite(key: &str, val: &[u8]) {
     }
 }
 
-pub(crate) fn storage_read(key: &str) -> Vec<u8> {
+pub(crate) fn storage_read(key: &[u8]) -> Vec<u8> {
     let key_exists =
         unsafe { near_sys::storage_read(key.len() as u64, key.as_ptr() as u64, TEMP_REGISTER) };
     if key_exists == 0 {
@@ -52,7 +52,7 @@ pub(crate) fn storage_read(key: &str) -> Vec<u8> {
 }
 
 //* SAFETY: Assumes that length of storage value at this key is less than u64 buffer len (8).
-pub(crate) unsafe fn sread_u64(key: &str) -> u64 {
+pub(crate) unsafe fn sread_u64(key: &[u8]) -> u64 {
     near_sys::storage_read(key.len() as u64, key.as_ptr() as u64, TEMP_REGISTER);
     u64::from_le_bytes(read_register_fixed(TEMP_REGISTER))
 }
