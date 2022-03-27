@@ -63,9 +63,9 @@ fn expect<T>(v: Option<T>) -> T {
 }
 
 #[no_mangle]
-pub unsafe fn setup() {
+pub fn setup() {
     assert_predecessor();
-    near_sys::input(REGISTER_0);
+    unsafe { near_sys::input(REGISTER_0) };
     let data = register_read(REGISTER_0);
     let data = expect(alloc::str::from_utf8(&data).ok());
     swrite(ADDRESS_KEY, &hex_decode(&get_string(data, "address")[2..]));
@@ -75,30 +75,32 @@ pub unsafe fn setup() {
 }
 
 #[no_mangle]
-pub unsafe fn remove_storage() {
+pub fn remove_storage() {
     assert_predecessor();
-    near_sys::storage_remove(
-        ADDRESS_KEY.len() as u64,
-        ADDRESS_KEY.as_ptr() as u64,
-        REGISTER_0,
-    );
-    near_sys::storage_remove(
-        NONCE_KEY.len() as u64,
-        NONCE_KEY.as_ptr() as u64,
-        REGISTER_0,
-    );
-    near_sys::storage_remove(
-        NONCE_APP_KEY.len() as u64,
-        NONCE_APP_KEY.as_ptr() as u64,
-        REGISTER_0,
-    );
+    unsafe {
+        near_sys::storage_remove(
+            ADDRESS_KEY.len() as u64,
+            ADDRESS_KEY.as_ptr() as u64,
+            REGISTER_0,
+        );
+        near_sys::storage_remove(
+            NONCE_KEY.len() as u64,
+            NONCE_KEY.as_ptr() as u64,
+            REGISTER_0,
+        );
+        near_sys::storage_remove(
+            NONCE_APP_KEY.len() as u64,
+            NONCE_APP_KEY.as_ptr() as u64,
+            REGISTER_0,
+        );
+    }
 }
 
 #[no_mangle]
-pub unsafe fn execute() {
+pub fn execute() {
     assert_predecessor();
     //increase nonce
-    let nonce = sread_u64(NONCE_KEY);
+    let nonce = unsafe { sread_u64(NONCE_KEY) };
     let new_nonce = nonce + 1;
     swrite(NONCE_KEY, &new_nonce.to_le_bytes());
 
@@ -107,13 +109,20 @@ pub unsafe fn execute() {
     let receiver_id = get_string(&data, RECEIVER_ID);
     let actions = get_actions(&data);
 
-    let id = near_sys::promise_batch_create(receiver_id.len() as u64, receiver_id.as_ptr() as u64);
+    let id = unsafe {
+        near_sys::promise_batch_create(receiver_id.len() as u64, receiver_id.as_ptr() as u64)
+    };
 
     for action in actions {
         match get_string(action, "type").as_bytes() {
             b"Transfer" => {
                 let amount = get_u128(action, AMOUNT);
-                near_sys::promise_batch_action_transfer(id, amount.to_le_bytes().as_ptr() as u64);
+                unsafe {
+                    near_sys::promise_batch_action_transfer(
+                        id,
+                        amount.to_le_bytes().as_ptr() as u64,
+                    )
+                };
             }
             b"AddKey" => {
                 // NEAR ed25519 keys prepend 0 to 32 bytes of key (33 bytes len)
@@ -122,12 +131,14 @@ pub unsafe fn execute() {
                 // special case: allowance 0 means full access key, user would never want to add key with 0 allowance
                 let allowance = get_u128(action, "allowance");
                 if allowance == 0 {
-                    near_sys::promise_batch_action_add_key_with_full_access(
-                        id,
-                        public_key.len() as u64,
-                        public_key.as_ptr() as u64,
-                        0,
-                    );
+                    unsafe {
+                        near_sys::promise_batch_action_add_key_with_full_access(
+                            id,
+                            public_key.len() as u64,
+                            public_key.as_ptr() as u64,
+                            0,
+                        )
+                    };
                     return;
                 }
                 // not a full access key get rest of args
@@ -136,55 +147,63 @@ pub unsafe fn execute() {
                 // special case
                 // set app key nonce to the nonce in sig used for entropy for the app key keypair
                 // apps call get_app_key_nonce and ask for signature during sign in
-                near_sys::predecessor_account_id(REGISTER_1);
+                unsafe { near_sys::predecessor_account_id(REGISTER_1) };
                 let predecessor_account = register_read(REGISTER_1);
                 if receiver_id.as_bytes() == predecessor_account && method_names == "execute" {
                     swrite(NONCE_APP_KEY, &nonce.to_le_bytes());
                 }
 
-                near_sys::promise_batch_action_add_key_with_function_call(
-                    id,
-                    public_key.len() as u64,
-                    public_key.as_ptr() as u64,
-                    0,
-                    allowance.to_le_bytes().as_ptr() as u64,
-                    receiver_id.len() as u64,
-                    receiver_id.as_ptr() as u64,
-                    method_names.len() as u64,
-                    method_names.as_ptr() as u64,
-                )
+                unsafe {
+                    near_sys::promise_batch_action_add_key_with_function_call(
+                        id,
+                        public_key.len() as u64,
+                        public_key.as_ptr() as u64,
+                        0,
+                        allowance.to_le_bytes().as_ptr() as u64,
+                        receiver_id.len() as u64,
+                        receiver_id.as_ptr() as u64,
+                        method_names.len() as u64,
+                        method_names.as_ptr() as u64,
+                    )
+                }
             }
             b"DeleteKey" => {
                 let mut public_key = vec![0];
                 public_key.extend_from_slice(&hex_decode(&get_string(action, PUBLIC_KEY)));
-                near_sys::promise_batch_action_delete_key(
-                    id,
-                    public_key.len() as u64,
-                    public_key.as_ptr() as u64,
-                );
+                unsafe {
+                    near_sys::promise_batch_action_delete_key(
+                        id,
+                        public_key.len() as u64,
+                        public_key.as_ptr() as u64,
+                    )
+                };
             }
             b"FunctionCall" => {
                 let method_name = get_string(action, "method_name");
                 let args = hex_decode(&get_string(action, "args"));
                 let amount = get_u128(action, AMOUNT);
                 let gas = get_u128(action, "gas") as u64;
-                near_sys::promise_batch_action_function_call(
-                    id,
-                    method_name.len() as u64,
-                    method_name.as_ptr() as u64,
-                    args.len() as u64,
-                    args.as_ptr() as u64,
-                    amount.to_le_bytes().as_ptr() as u64,
-                    gas,
-                );
+                unsafe {
+                    near_sys::promise_batch_action_function_call(
+                        id,
+                        method_name.len() as u64,
+                        method_name.as_ptr() as u64,
+                        args.len() as u64,
+                        args.as_ptr() as u64,
+                        amount.to_le_bytes().as_ptr() as u64,
+                        gas,
+                    )
+                };
             }
             b"DeployContract" => {
                 let code = hex_decode(&get_string(action, "code"));
-                near_sys::promise_batch_action_deploy_contract(
-                    id,
-                    code.len() as u64,
-                    code.as_ptr() as u64,
-                )
+                unsafe {
+                    near_sys::promise_batch_action_deploy_contract(
+                        id,
+                        code.len() as u64,
+                        code.as_ptr() as u64,
+                    )
+                }
             }
             _ => {}
         };

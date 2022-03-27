@@ -10,21 +10,20 @@ const TX_TYPE_HASH: [u8; 32] = [
     17, 243, 164, 206, 45, 16, 238, 120, 22, 254, 210, 73,
 ];
 
-pub fn assert_predecessor() {
-    unsafe {
-        near_sys::current_account_id(REGISTER_0);
-        let current_account = register_read(REGISTER_0);
-        near_sys::predecessor_account_id(REGISTER_1);
-        let predecessor_account = register_read(REGISTER_1);
-        if current_account != predecessor_account {
-            sys::panic();
-        }
+pub(crate) fn assert_predecessor() {
+    unsafe { near_sys::current_account_id(REGISTER_0) };
+    let current_account = register_read(REGISTER_0);
+
+    unsafe { near_sys::predecessor_account_id(REGISTER_1) };
+    let predecessor_account = register_read(REGISTER_1);
+    if current_account != predecessor_account {
+        sys::panic();
     }
 }
 
 /// TODO comment
-pub unsafe fn assert_valid_tx(nonce: u64) -> String {
-    near_sys::input(REGISTER_0);
+pub(crate) fn assert_valid_tx(nonce: u64) -> String {
+    unsafe { near_sys::input(REGISTER_0) };
     let data = register_read(REGISTER_0);
 
     let mut sig_bytes = hex_decode(&data[10..140]);
@@ -36,29 +35,32 @@ pub unsafe fn assert_valid_tx(nonce: u64) -> String {
     let receiver_id = get_string(&msg, RECEIVER_ID);
     let nonce_msg_str = get_string(&msg, NONCE);
     let nonce_msg = get_u128(&msg, NONCE);
-    let actions_vec: Vec<&str> = msg.as_str().split(ACTIONS).collect();
-    let actions = Vec::from(actions_vec[1][0..actions_vec[1].len() - 2].as_bytes());
+    let (_, actions_vec) = expect(msg.as_str().split_once(ACTIONS));
+    let actions = &actions_vec.as_bytes()[0..actions_vec.len() - 2];
 
     let mut msg_wrapped = Vec::from(DOMAIN_HASH);
     let mut values = Vec::from(TX_TYPE_HASH);
     values.extend_from_slice(&keccak256(receiver_id.as_bytes()));
     values.extend_from_slice(&keccak256(nonce_msg_str.as_bytes()));
-    values.extend_from_slice(&keccak256(&actions));
+    values.extend_from_slice(&keccak256(actions));
     msg_wrapped.extend_from_slice(&keccak256(&values));
     let msg_hash = keccak256(&msg_wrapped);
 
-    let result = near_sys::ecrecover(
-        ECRECOVER_MESSAGE_SIZE,
-        msg_hash.as_ptr() as u64,
-        ECRECOVER_SIGNATURE_LENGTH,
-        sig_bytes.as_ptr() as u64,
-        sig_bytes[64] as u64,
-        ECRECOVER_MALLEABILITY_FLAG,
-        REGISTER_1,
-    );
+    let result = unsafe {
+        near_sys::ecrecover(
+            ECRECOVER_MESSAGE_SIZE,
+            msg_hash.as_ptr() as u64,
+            ECRECOVER_SIGNATURE_LENGTH,
+            sig_bytes.as_ptr() as u64,
+            sig_bytes[64] as u64,
+            ECRECOVER_MALLEABILITY_FLAG,
+            REGISTER_1,
+        )
+    };
 
     if result == (true as u64) {
-        near_sys::keccak256(u64::MAX, REGISTER_1, REGISTER_2);
+        //* SAFETY: REGISTER_1 is filled with ecrecover. Assumes valid ecrecover implementation.
+        unsafe { near_sys::keccak256(u64::MAX, REGISTER_1, REGISTER_2) };
         let result_hash_bytes = register_read(REGISTER_2);
         let address_bytes = &result_hash_bytes[12..];
 
