@@ -10,9 +10,8 @@ const ECRECOVER_MALLEABILITY_FLAG: u64 = 1;
 const ADDRESS_KEY: &str = "a";
 const NONCE_KEY: &str = "n";
 const NONCE_APP_KEY: &str = "k";
-const REGISTER_0: u64 = 0;
+const TEMP_REGISTER: u64 = 0;
 const REGISTER_1: u64 = 1;
-const REGISTER_2: u64 = 2;
 const DOUBLE_QUOTE_BYTE: u8 = b'\"';
 const RECEIVER_ID: &str = "receiver_id\":\"";
 const PUBLIC_KEY: &str = "public_key\":\"";
@@ -65,8 +64,8 @@ fn expect<T>(v: Option<T>) -> T {
 #[no_mangle]
 pub fn setup() {
     assert_predecessor();
-    unsafe { near_sys::input(REGISTER_0) };
-    let data = register_read(REGISTER_0);
+    unsafe { near_sys::input(TEMP_REGISTER) };
+    let data = register_read(TEMP_REGISTER);
     let data = expect(alloc::str::from_utf8(&data).ok());
     swrite(ADDRESS_KEY, &hex_decode(&get_string(data, "address")[2..]));
     let nonce: u64 = 0;
@@ -81,17 +80,17 @@ pub fn remove_storage() {
         near_sys::storage_remove(
             ADDRESS_KEY.len() as u64,
             ADDRESS_KEY.as_ptr() as u64,
-            REGISTER_0,
+            TEMP_REGISTER,
         );
         near_sys::storage_remove(
             NONCE_KEY.len() as u64,
             NONCE_KEY.as_ptr() as u64,
-            REGISTER_0,
+            TEMP_REGISTER,
         );
         near_sys::storage_remove(
             NONCE_APP_KEY.len() as u64,
             NONCE_APP_KEY.as_ptr() as u64,
-            REGISTER_0,
+            TEMP_REGISTER,
         );
     }
 }
@@ -147,8 +146,8 @@ pub fn execute() {
                 // special case
                 // set app key nonce to the nonce in sig used for entropy for the app key keypair
                 // apps call get_app_key_nonce and ask for signature during sign in
-                unsafe { near_sys::predecessor_account_id(REGISTER_1) };
-                let predecessor_account = register_read(REGISTER_1);
+                unsafe { near_sys::predecessor_account_id(TEMP_REGISTER) };
+                let predecessor_account = register_read(TEMP_REGISTER);
                 if receiver_id.as_bytes() == predecessor_account && method_names == "execute" {
                     swrite(NONCE_APP_KEY, &nonce.to_le_bytes());
                 }

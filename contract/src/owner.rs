@@ -11,11 +11,11 @@ const TX_TYPE_HASH: [u8; 32] = [
 ];
 
 pub(crate) fn assert_predecessor() {
-    unsafe { near_sys::current_account_id(REGISTER_0) };
-    let current_account = register_read(REGISTER_0);
+    unsafe { near_sys::current_account_id(TEMP_REGISTER) };
+    let current_account = register_read(TEMP_REGISTER);
 
-    unsafe { near_sys::predecessor_account_id(REGISTER_1) };
-    let predecessor_account = register_read(REGISTER_1);
+    unsafe { near_sys::predecessor_account_id(TEMP_REGISTER) };
+    let predecessor_account = register_read(TEMP_REGISTER);
     if current_account != predecessor_account {
         sys::panic();
     }
@@ -23,8 +23,8 @@ pub(crate) fn assert_predecessor() {
 
 /// TODO comment
 pub(crate) fn assert_valid_tx(nonce: u64) -> String {
-    unsafe { near_sys::input(REGISTER_0) };
-    let data = register_read(REGISTER_0);
+    unsafe { near_sys::input(TEMP_REGISTER) };
+    let data = register_read(TEMP_REGISTER);
 
     let mut sig_bytes = hex_decode(&data[10..140]);
     sig_bytes[64] -= 27;
@@ -63,8 +63,8 @@ pub(crate) fn assert_valid_tx(nonce: u64) -> String {
 
     if result == (true as u64) {
         //* SAFETY: REGISTER_1 is filled with ecrecover. Assumes valid ecrecover implementation.
-        unsafe { near_sys::keccak256(u64::MAX, REGISTER_1, REGISTER_2) };
-        let result_hash_bytes = register_read(REGISTER_2);
+        unsafe { near_sys::keccak256(u64::MAX, REGISTER_1, TEMP_REGISTER) };
+        let result_hash_bytes = register_read(TEMP_REGISTER);
         let address_bytes = &result_hash_bytes[12..];
 
         // log(&hex::encode(&address_bytes));

@@ -36,25 +36,25 @@ pub(crate) fn swrite(key: &str, val: &[u8]) {
             key.as_ptr() as u64,
             val.len() as u64,
             val.as_ptr() as u64,
-            REGISTER_0,
+            TEMP_REGISTER,
         );
     }
 }
 
 pub(crate) fn storage_read(key: &str) -> Vec<u8> {
     let key_exists =
-        unsafe { near_sys::storage_read(key.len() as u64, key.as_ptr() as u64, REGISTER_0) };
+        unsafe { near_sys::storage_read(key.len() as u64, key.as_ptr() as u64, TEMP_REGISTER) };
     if key_exists == 0 {
         // Return code of 0 means storage key had no entry.
         sys::panic()
     }
-    register_read(REGISTER_0)
+    register_read(TEMP_REGISTER)
 }
 
 //* SAFETY: Assumes that length of storage value at this key is less than u64 buffer len (8).
 pub(crate) unsafe fn sread_u64(key: &str) -> u64 {
-    near_sys::storage_read(key.len() as u64, key.as_ptr() as u64, REGISTER_0);
-    u64::from_le_bytes(read_register_fixed(REGISTER_0))
+    near_sys::storage_read(key.len() as u64, key.as_ptr() as u64, TEMP_REGISTER);
+    u64::from_le_bytes(read_register_fixed(TEMP_REGISTER))
 }
 
 pub(crate) fn register_read(id: u64) -> Vec<u8> {
@@ -76,8 +76,8 @@ pub(crate) fn keccak256(value: &[u8]) -> [u8; 32] {
     //*         so the read will have a sufficient buffer of 32, and can transmute from uninit
     //*         because all bytes are filled. This assumes a valid keccak256 implementation.
     unsafe {
-        near_sys::keccak256(value.len() as _, value.as_ptr() as _, REGISTER_1);
-        read_register_fixed_32(REGISTER_1)
+        near_sys::keccak256(value.len() as _, value.as_ptr() as _, TEMP_REGISTER);
+        read_register_fixed_32(TEMP_REGISTER)
     }
 }
 
