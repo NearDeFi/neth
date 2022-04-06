@@ -1,3 +1,4 @@
+#![feature(alloc_error_handler)]
 #![cfg_attr(target_arch = "wasm32", no_std)]
 #![cfg_attr(
     all(target_arch = "wasm32", feature = "oom-handler"),
