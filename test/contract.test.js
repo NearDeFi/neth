@@ -29,6 +29,12 @@ const {
 	NEW_ACCOUNT_AMOUNT,
 } = getConfig();
 
+
+
+
+const DELETE_EXISTING = false;
+
+
 /// ETH Account Setup (assume this is the MetaMask user)
 const { ethers } = require("ethers");
 
@@ -52,8 +58,6 @@ const keyPair = {
 	publicKey: 'ed25519:2vwEmA557jXcRWjgq1L92RCRDumM6GCYpUgANby8gSD3',
 	secretKey: 'ed25519:2Qmnk8KzUh53aRvRyUeCnk1m846pT9YrtaSPw6txzFDs8QmqrsoqC59txo72KAbC39WZyzK16QCzfwQzBErZCCow',
 };
-
-const DELETE_EXISTING = false;
 
 const obj2hex = (obj) => ethers.utils.hexlify(ethers.utils.toUtf8Bytes(JSON.stringify(obj))).substring(2);
 

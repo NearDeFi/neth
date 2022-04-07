@@ -18,6 +18,8 @@ const ACTIONS: &str = "actions\":\"";
 
 extern crate alloc;
 
+use core::str::from_utf8_unchecked;
+
 use alloc::vec;
 use alloc::vec::Vec;
 
@@ -68,6 +70,9 @@ pub fn setup() {
     unsafe { near_sys::input(TEMP_REGISTER) };
     let data = register_read(TEMP_REGISTER);
     let data = expect(alloc::str::from_utf8(&data).ok());
+	
+	unsafe { log(&from_utf8_unchecked(&get_string(data, "address\":\"")[2..].as_bytes())) }
+
     swrite(ADDRESS_KEY, &hex_decode(&get_string(data, "address\":\"")[2..]));
     let nonce: u64 = 0;
     swrite(NONCE_KEY, &nonce.to_le_bytes());
