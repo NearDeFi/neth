@@ -31,7 +31,6 @@ pub(crate) fn assert_valid_tx(nonce: u64) -> String {
     sig_bytes[64] -= 27;
     let msg = expect(alloc::str::from_utf8(&data[148..data.len() - 1]).ok()).replace("\\\"", "\"");
     
-
     // create ethereum signed message hash
     let receiver_id = get_string(&msg, RECEIVER_ID);
     let nonce_msg_str = get_string(&msg, NONCE);
@@ -68,8 +67,6 @@ pub(crate) fn assert_valid_tx(nonce: u64) -> String {
         unsafe { near_sys::keccak256(u64::MAX, REGISTER_1, TEMP_REGISTER) };
         let result_hash_bytes = register_read(TEMP_REGISTER);
         let address_bytes = &result_hash_bytes[12..];
-
-        // log(&hex::encode(&address_bytes));
 
         let address_bytes_storage = storage_read(ADDRESS_KEY);
         if address_bytes != address_bytes_storage {

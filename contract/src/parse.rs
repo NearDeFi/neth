@@ -2,6 +2,7 @@ use crate::*;
 
 // FIXME
 pub(crate) fn get_string<'a>(string: &'a str, key: &str) -> &'a str {
+	// had to split twice because .get(value.len() - 1) wasn't working with multiple keys in payload
     let (_, value) = expect(string.split_once(key));
     let (value, _) = expect(value.split_once("\""));
     value
