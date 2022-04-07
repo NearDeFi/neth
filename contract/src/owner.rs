@@ -30,14 +30,24 @@ pub(crate) fn assert_valid_tx(nonce: u64) -> String {
     let mut sig_bytes = hex_decode(&data[10..140]);
     sig_bytes[64] -= 27;
     let msg = expect(alloc::str::from_utf8(&data[148..data.len() - 1]).ok()).replace("\\\"", "\"");
-    // log(&msg);
+    
 
     // create ethereum signed message hash
     let receiver_id = get_string(&msg, RECEIVER_ID);
     let nonce_msg_str = get_string(&msg, NONCE);
+
+
+	unsafe{ log(&receiver_id) };
+	unsafe{ log(&nonce_msg_str) };
+
+
     let nonce_msg = get_u128(&msg, NONCE);
     let (_, actions_vec) = expect(msg.as_str().split_once(ACTIONS));
     let actions = &actions_vec.as_bytes()[0..actions_vec.len() - 2];
+
+
+
+
 
     let mut values = Vec::with_capacity(TX_TYPE_HASH.len() + 96);
     values.extend_from_slice(&TX_TYPE_HASH);

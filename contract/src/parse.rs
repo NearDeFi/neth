@@ -3,7 +3,7 @@ use crate::*;
 // FIXME
 pub(crate) fn get_string<'a>(string: &'a str, key: &str) -> &'a str {
     let (_, value) = expect(string.split_once(key));
-    let value = expect(value.get(..value.len() - 2));
+    let (value, _) = expect(value.split_once("\""));
     value
 }
 
