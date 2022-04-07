@@ -53,9 +53,13 @@ fn hex_decode(bytes: impl AsRef<[u8]>) -> Vec<u8> {
 
 /// Helper function to panic on None types.
 fn expect<T>(v: Option<T>) -> T {
-    // Allowing because false positive
-    #[allow(clippy::redundant_closure)]
-    v.unwrap_or_else(|| sys::panic())
+    if cfg!(target_arch = "wasm32") {
+        // Allowing because false positive
+        #[allow(clippy::redundant_closure)]
+        v.unwrap_or_else(|| sys::panic())
+    } else {
+        v.unwrap()
+    }
 }
 
 #[no_mangle]
@@ -240,7 +244,7 @@ mod tests {
 
     #[test]
     fn test_get_empty_amount() {
-        let amount = get_u128("\"amount\":\"0\"", "amount");
+        let amount = get_u128("\"amount\":\"0\"", "amount\":\"");
         assert_eq!(amount, 0);
         assert_eq!(ADDRESS_KEY.len(), 1);
     }
