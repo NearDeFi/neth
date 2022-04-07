@@ -18,8 +18,6 @@ const ACTIONS: &str = "actions\":\"";
 
 extern crate alloc;
 
-use core::str::from_utf8_unchecked;
-
 use alloc::vec;
 use alloc::vec::Vec;
 
