@@ -238,7 +238,7 @@ mod tests {
 
     #[test]
     fn test_get_empty_string() {
-        let str = get_string("\"args\":\"\"", "args");
+        let str = get_string("\"args\":\"\"", "args\":\"");
         assert_eq!(str, "");
     }
 
@@ -257,7 +257,7 @@ mod tests {
 
     #[test]
     fn test_empty_args() {
-        let str = get_string("\"args\":\"\"", "args");
+        let str = get_string("\"args\":\"\"", "args\":\"");
         let decoded = hex_decode(&str);
         assert_eq!(decoded.len(), 0);
     }
