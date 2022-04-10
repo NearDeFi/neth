@@ -84,9 +84,9 @@ const gen_args = async (json, w = wallet) => {
 			name: k,
 		});
 	});
-	if (json.actions) json.actions = JSON.stringify(json.actions);
+	if (json.transactions) json.transactions = JSON.stringify(json.transactions);
 
-	// console.log(json.actions, ethers.utils.toUtf8Bytes(json.actions))
+	// console.log(json.transactions, ethers.utils.toUtf8Bytes(json.transactions))
 
 	const flatSig = await w._signTypedData(domain, types, json);
 
@@ -94,8 +94,11 @@ const gen_args = async (json, w = wallet) => {
 	const prelim = "0x1901";
 	const domainHash = '0x1259f716ef38d519cab86b12674f6980042d2c429b3d0b7aa6b6dfa942dcdac2';
 	// const warningTypeHash = ethers.utils.id("Transaction(string WARNING)")
-	const transactionTypeHash = ethers.utils.id("Transaction(string receiver_id,string nonce,string actions)");
-	// console.log(ethers.utils.arrayify(prelim))
+	const transactionTypeHash = ethers.utils.id("Transaction(string nonce,string transactions)");
+	
+	/// this needs to match the TX type hash in the contract
+	// console.log(ethers.utils.arrayify(transactionTypeHash))
+
 	const messageHash = ethers.utils.keccak256([
 		prelim,
 		domainHash.substring(2),
@@ -184,11 +187,15 @@ test('get_nonce', async (t) => {
 
 test('execute fail wallet2', async (t) => {
 	const args = await gen_args({
-		receiver_id: accountId,
 		nonce,
-		actions: [{
-			hello: 'world!'
-		}]
+		transactions: [
+			{
+				receiver_id: accountId,
+				actions: [{
+					hello: 'world!'
+				}],
+			}
+		],
 	}, wallet2);
 
 	try {
@@ -209,11 +216,15 @@ test('execute fail wallet2', async (t) => {
 
 test('execute actions fail incorrect nonce', async (t) => {
 	const args = await gen_args({
-		receiver_id: accountId,
 		nonce: '1',
-		actions: [{
-			hello: 'world!'
-		}],
+		transactions: [
+			{
+				receiver_id: accountId,
+				actions: [{
+					hello: 'world!'
+				}],
+			}
+		]
 	});
 
 	try {
@@ -234,11 +245,15 @@ test('execute actions fail incorrect nonce', async (t) => {
 
 test('execute fail from another account', async (t) => {
 	const args = await gen_args({
-		receiver_id: accountId,
 		nonce,
-		actions: [{
-			hello: 'world!'
-		}],
+		transactions: [
+			{
+				receiver_id: accountId,
+				actions: [{
+					hello: 'world!'
+				}],
+			}
+		]
 	});
 
 	try {
@@ -257,7 +272,7 @@ test('execute fail from another account', async (t) => {
 	}
 });
 
-test('execute actions on account', async (t) => {
+test('execute batch transaction on account', async (t) => {
 	const actions = [
 		{
 			type: 'AddKey',
@@ -272,6 +287,14 @@ test('execute actions on account', async (t) => {
 		},
 	];
 
+	const payload = {
+		nonce,
+		transactions: [{
+			receiver_id: accountId,
+			actions,
+		}]
+	}
+
 	/// check keys
 	const public_key = keyPair.publicKey.toString();
 	const accessKeys = await account.getAccessKeys();
@@ -283,12 +306,7 @@ test('execute actions on account', async (t) => {
 	}
 
 	/// get sig args
-	const args = await gen_args({
-		receiver_id: accountId,
-		/// nonce will not have incremented because the above txs failed
-		nonce,
-		actions
-	});
+	const args = await gen_args(payload);
 
 	const res = await account.functionCall({
 		contractId: accountId,
@@ -300,7 +318,7 @@ test('execute actions on account', async (t) => {
 	t.true(true);
 });
 
-test('execute actions on some contract', async (t) => {
+test('execute actions on some other contracts', async (t) => {
 
 	/// need a new nonce because the above tx succeeded and new nonce written
 	nonce = parseInt(await account.viewFunction(
@@ -312,19 +330,36 @@ test('execute actions on some contract', async (t) => {
 	const newKeyPair = KeyPair.fromString(keyPair.secretKey);
 	keyStore.setKey(networkId, accountId, newKeyPair);
 
+	/// 50 Tgas for the create account tx
+	/// transfer uses some
+	/// 200 Tgas attached to original tx
+
 	const args = await gen_args({
-		receiver_id: 'testnet',
 		nonce,
-		actions: [
+		transactions: [
 			{
-				type: 'FunctionCall',
-				method_name: 'create_account',
-				args: obj2hex({
-					new_account_id: 'meow-' + Date.now() + '.testnet',
-					new_public_key: newKeyPair.publicKey.toString(),
-				}),
-				amount: parseNearAmount('0.02'),
-				gas: '100000000000000',
+				receiver_id: 'testnet',
+				actions: [
+					{
+						type: 'FunctionCall',
+						method_name: 'create_account',
+						args: obj2hex({
+							new_account_id: 'meow-' + Date.now() + '.testnet',
+							new_public_key: newKeyPair.publicKey.toString(),
+						}),
+						amount: parseNearAmount('0.02'),
+						gas: '50000000000000',
+					}
+				]
+			},
+			{
+				receiver_id: 'a.testnet',
+				actions: [
+					{
+						type: 'Transfer',
+						amount: parseNearAmount('0.00017'),
+					}
+				]
 			},
 		]
 	});
@@ -368,10 +403,13 @@ test('rotate app key', async (t) => {
 
 	/// get sig args
 	const args = await gen_args({
-		receiver_id: accountId,
-		/// nonce will not have incremented because the above txs failed
 		nonce,
-		actions
+		transactions: [
+			{
+				receiver_id: accountId,
+				actions
+			}
+		]
 	});
 
 	const res = await account.functionCall({

@@ -7,8 +7,10 @@ const DOMAIN_HASH: [u8; 34] = [
 ];
 
 const TX_TYPE_HASH: [u8; 32] = [
-    86, 246, 96, 247, 82, 9, 62, 114, 101, 236, 210, 111, 209, 113, 117, 72, 184, 240, 125, 103,
-    17, 243, 164, 206, 45, 16, 238, 120, 22, 254, 210, 73,
+	12, 163, 146, 108, 68, 228, 145, 185,
+	80, 103,  50,  49, 34,  90, 111, 250,
+	92,  30,  60,  56, 44,  61,  47, 243,
+	75, 107,  66, 156, 10,   2,  16, 150
 ];
 
 pub(crate) fn assert_predecessor() {
@@ -32,18 +34,17 @@ pub(crate) fn assert_valid_tx(nonce: u64) -> String {
     let msg = expect(alloc::str::from_utf8(&data[148..data.len() - 1]).ok()).replace("\\\"", "\"");
     
     // create ethereum signed message hash
-    let receiver_id = get_string(&msg, RECEIVER_ID);
+    // let receiver_id = get_string(&msg, RECEIVER_ID);
     let nonce_msg_str = get_string(&msg, NONCE);
-
     let nonce_msg = get_u128(&msg, NONCE);
-    let (_, actions_vec) = expect(msg.as_str().split_once(ACTIONS));
-    let actions = &actions_vec.as_bytes()[0..actions_vec.len() - 2];
+    let (_, transactions_vec) = expect(msg.as_str().split_once(TRANSACTIONS));
+    let transactions = &transactions_vec.as_bytes()[0..transactions_vec.len() - 2];
 
     let mut values = Vec::with_capacity(TX_TYPE_HASH.len() + 96);
     values.extend_from_slice(&TX_TYPE_HASH);
-    values.extend_from_slice(&keccak256(receiver_id.as_bytes()));
+    // values.extend_from_slice(&keccak256(receiver_id.as_bytes()));
     values.extend_from_slice(&keccak256(nonce_msg_str.as_bytes()));
-    values.extend_from_slice(&keccak256(actions));
+    values.extend_from_slice(&keccak256(transactions));
 
     let mut msg_wrapped = Vec::with_capacity(DOMAIN_HASH.len() + 32);
     msg_wrapped.extend_from_slice(&DOMAIN_HASH);

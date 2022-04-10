@@ -13,9 +13,3 @@ pub(crate) fn get_u128(bytes: &str, key: &str) -> u128 {
     // TODO: This should be minimal, but can explore removing ToStr usage for code size
     expect(amount_bytes.parse().ok())
 }
-
-pub(crate) fn get_actions(input: &str) -> Vec<&str> {
-    // Assumes input has "actions":" prefix
-    let (_, actions) = expect(input.split_once(ACTIONS));
-    actions.split("},{").collect()
-}
