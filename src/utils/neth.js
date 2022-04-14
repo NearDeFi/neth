@@ -73,6 +73,8 @@ const createAccount = async (newAccountId, new_public_key) => {
 export const handleDeployContract = async () => {
 	const { account } = setupFromStorage()
 
+	console.log(contractPath)
+
 	const contractBytes = new Uint8Array(await fetch(contractPath).then((res) => res.arrayBuffer()));
 	console.log('contractBytes.length', contractBytes.length)
 	const res = await account.deployContract(contractBytes)
@@ -229,9 +231,11 @@ export const handleRefreshAppKey = async (signer, ethAddress) => {
 	}
 	/// get args for execute call
 	const args = await ethSignJson(signer, {
-		receiver_id: accountId,
 		nonce,
-		actions
+		transactions: [{
+			receiver_id: accountId,
+			actions,
+		}]
 	});
 	const res = await account.functionCall({
 		contractId: accountId,
@@ -260,9 +264,11 @@ export const handleUpdateContract = async (signer, ethAddress) => {
 	]
 	const nonce = parseInt(await account.viewFunction(accountId, 'get_nonce'), 16).toString()
 	const args = await ethSignJson(signer, {
-		receiver_id: accountId,
 		nonce,
-		actions
+		transactions: [{
+			receiver_id: accountId,
+			actions,
+		}]
 	});
 	const res = await account.functionCall({
 		contractId: accountId,
@@ -328,9 +334,11 @@ export const handleDisconnect = async (signer, ethAddress) => {
 	/// get args for execute call
 	const nonce = parseInt(await account.viewFunction(accountId, 'get_nonce'), 16).toString()
 	const args = await ethSignJson(signer, {
-		receiver_id: accountId,
 		nonce,
-		actions
+		transactions: [{
+			receiver_id: accountId,
+			actions,
+		}]
 	});
 	const res = await account.functionCall({
 		contractId: accountId,
@@ -427,7 +435,8 @@ const ethSignJson = async (signer, json) => {
 			name: k,
 		})
 	})
-	if (json.actions) json.actions = JSON.stringify(json.actions)
+	if (json.transactions) json.transactions = JSON.stringify(json.transactions);
+	// if (json.actions) json.actions = JSON.stringify(json.actions)
 	const sig = await signer._signTypedData(domain, types, json);
 	return { sig, msg: json }
 };
@@ -526,9 +535,11 @@ export const signAndSendTransaction = async ({
 	actions = convertActions(actions, accountId, receiverId)
 	const nonce = parseInt(await account.viewFunction(accountId, 'get_nonce'), 16).toString()
 	const args = await ethSignJson(signer, {
-		receiver_id: receiverId,
 		nonce,
-		actions
+		transactions: [{
+			receiver_id: receiverId,
+			actions
+		}]
 	});
 	const res = await account.functionCall({
 		contractId: accountId,
