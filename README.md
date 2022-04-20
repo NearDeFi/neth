@@ -2,6 +2,10 @@
 
 This is a minimal no-std contract that can be deployed to a NEAR account and allows an Ethereum keypair to control it via signing payloads.
 
+## Detail on User Flows
+
+https://docs.google.com/document/d/1qcYWr6THYY9wibZNTxPhzjb1_aKaNIUL0l1cU9fuYu0/edit?usp=sharing
+
 ## Warning 🚨🚨🚨
 
 This is functioning, but unaudited and incomplete.
