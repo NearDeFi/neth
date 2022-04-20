@@ -1,21 +1,24 @@
 #![cfg_attr(target_arch = "wasm32", no_std)]
 #![cfg_attr(target_arch = "wasm32", feature(alloc_error_handler))]
 
+/// contants related to ecrecover
 const ECRECOVER_MESSAGE_SIZE: u64 = 32;
 const ECRECOVER_SIGNATURE_LENGTH: u64 = 64;
 const ECRECOVER_MALLEABILITY_FLAG: u64 = 1;
+/// storage keys used by this contract because it uses raw storage key value writes and reads
 const ADDRESS_KEY: &[u8] = b"a";
 const NONCE_KEY: &[u8] = b"n";
 const NONCE_APP_KEY: &[u8] = b"k";
+/// register constants used
 const TEMP_REGISTER: u64 = 0;
 const REGISTER_1: u64 = 1;
+/// repeated string literals (reduce contract size, improve readability)
 const DOUBLE_QUOTE_BYTE: u8 = b'\"';
 const RECEIVER_ID: &str = "receiver_id\":\"";
 const PUBLIC_KEY: &str = "public_key\":\"";
 const AMOUNT: &str = "amount\":\"";
 const NONCE: &str = "nonce\":\"";
 const TRANSACTIONS: &str = "transactions\":\"";
-const ACTIONS: &str = "actions\":";
 
 extern crate alloc;
 
@@ -47,6 +50,7 @@ pub unsafe fn on_alloc_error(_: core::alloc::Layout) -> ! {
     core::arch::wasm32::unreachable()
 }
 
+/// helps handle hex decode errors in one place
 #[inline]
 fn hex_decode(bytes: impl AsRef<[u8]>) -> Vec<u8> {
     expect(hex::decode(bytes).ok())
@@ -63,6 +67,15 @@ fn expect<T>(v: Option<T>) -> T {
     }
 }
 
+/// This method allows a users (with a full NEAR access key) to initialize
+/// their contract with the ethereum address they wish to use to control is via eth typed signed data.
+/// 
+/// args: stringified JSON e.g. `{ address: string }`
+/// 
+/// This method also sets the nonce and nonce for the app key to 0.
+/// 
+/// This method may be called again if the contract is redeployed.
+/// In this case the storage for all 3 keys would have been deleted when the contract was removed.
 #[no_mangle]
 pub fn setup() {
     assert_predecessor();
@@ -75,6 +88,10 @@ pub fn setup() {
     swrite(NONCE_APP_KEY, &nonce.to_le_bytes());
 }
 
+/// When a user no longer wishes to control their account, they will call execute
+/// with a payload to add a full access key to their account (usually provided with a seed phrase on the client side).
+/// 
+/// This method cleans up the 3 storage keys that store the ethereum address, nonce and app key nonce.
 #[no_mangle]
 pub fn remove_storage() {
     assert_predecessor();
@@ -97,6 +114,14 @@ pub fn remove_storage() {
     }
 }
 
+/// This method is the main interpreter of the eth typed data signed payload by the ethereum account.
+/// First the predecessor is checked by assert_predecessor() in owner.rs to ensure only access keys originating from this NEAR account are calling.
+/// Next the nonce and new nonce are read and computed from storage.
+/// Finally the data is returned from assert_valid_tx(nonce) in owner.rs.
+/// 
+/// After these conditions are satisfied the method parses and executes the transaction payload.
+/// 
+/// For details on NEAR transactions and actions please refer to: https://nomicon.io/RuntimeSpec/, https://nomicon.io/RuntimeSpec/Actions
 #[no_mangle]
 pub fn execute() {
     assert_predecessor();
@@ -104,8 +129,8 @@ pub fn execute() {
     let nonce = unsafe { sread_u64(NONCE_KEY) };
     let new_nonce = nonce + 1;
     swrite(NONCE_KEY, &new_nonce.to_le_bytes());
-
     let data = assert_valid_tx(nonce);
+
 	let (_, transactions_split) = expect(data.split_once(TRANSACTIONS));
     let transactions: Vec<&str> = transactions_split.split("]},{").collect();
 
@@ -118,7 +143,7 @@ pub fn execute() {
 		}
 
 		let receiver_id = get_string(&tx, RECEIVER_ID);
-		let (_, actions_split) = expect(tx.split_once(ACTIONS));
+		let (_, actions_split) = expect(tx.split_once("actions\":"));
 		unsafe {
 			log(actions_split);
 		}
@@ -260,7 +285,7 @@ pub(crate) unsafe fn get_app_key_nonce() {
     return_bytes(hex::encode(sread_u64(NONCE_APP_KEY).to_be_bytes()).as_bytes());
 }
 
-/// tests
+/// minimal tests for edge cases only
 
 #[cfg(test)]
 mod tests {

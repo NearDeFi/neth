@@ -2,7 +2,7 @@
 name = "eth-near"
 edition = "2018"
 version = "0.1.0"
-authors = ["Illia Polosukhin <ilblackdragon@gmail.com>", "Matt Lockyer <mattdlockyer@gmail.com>"]
+authors = ["Illia Polosukhin <ilblackdragon@gmail.com>", "Matt Lockyer <matt@proximity.dev>"]
 license = "Apache2"
 description = "Sign message with metamask, have actions executed on NEAR"
 publish = false

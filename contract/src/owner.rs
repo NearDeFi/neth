@@ -1,11 +1,15 @@
 use crate::*;
 use alloc::string::String;
 
+/// compile time constant for the eth typed signed data payloads
+/// matches keccak256(`{"name":"NETH","version":"1","chainId":1313161554}`)
 const DOMAIN_HASH: [u8; 34] = [
     25, 1, 18, 89, 247, 22, 239, 56, 213, 25, 202, 184, 107, 18, 103, 79, 105, 128, 4, 45, 44, 66,
     155, 61, 11, 122, 166, 182, 223, 169, 66, 220, 218, 194,
 ];
 
+/// compile time constant for the eth typed signed data payloads
+/// matches keccak256("Transaction(string nonce,string transactions)")
 const TX_TYPE_HASH: [u8; 32] = [
 	12, 163, 146, 108, 68, 228, 145, 185,
 	80, 103,  50,  49, 34,  90, 111, 250,
@@ -13,6 +17,7 @@ const TX_TYPE_HASH: [u8; 32] = [
 	75, 107,  66, 156, 10,   2,  16, 150
 ];
 
+/// checks to ensure call is coming from the NEAR account that this contract is deployed on
 pub(crate) fn assert_predecessor() {
     unsafe { near_sys::current_account_id(TEMP_REGISTER) };
     let current_account = register_read(TEMP_REGISTER);
@@ -24,17 +29,29 @@ pub(crate) fn assert_predecessor() {
     }
 }
 
-/// TODO comment
+/// This method is the main validation of the eth typed signed data payload.
+/// It checks whether the payload passed in (as stringified JSON) was accurately signed by the ethereum address in storage.
+/// 
+/// args: { sig: string, msg: string }
+/// 
+/// First the signature bytes are extracted from the args.
+/// Next the msg bytes are extracted including the current nonce (which was signed on the client side).
+/// 
+/// The ethereum message hash is recreated and wrapped with all the eth typed signed data requirements.
+/// 
+/// Finally the message hash is checked against the signature using ecrecover pre-compile from NEAR runtime system.
+/// 
+/// If the result is true (1) we will check the recovered address and the nonce against values in storage and
+/// return the msg payload to execute() so the transactions in the payload can be executed.
 pub(crate) fn assert_valid_tx(nonce: u64) -> String {
     unsafe { near_sys::input(TEMP_REGISTER) };
     let data = register_read(TEMP_REGISTER);
 
     let mut sig_bytes = hex_decode(&data[10..140]);
+    // known offset for final byte of ethereum signatures, reduces to either 0 or 1 from 27 or 28
     sig_bytes[64] -= 27;
     let msg = expect(alloc::str::from_utf8(&data[148..data.len() - 1]).ok()).replace("\\\"", "\"");
     
-    // create ethereum signed message hash
-    // let receiver_id = get_string(&msg, RECEIVER_ID);
     let nonce_msg_str = get_string(&msg, NONCE);
     let nonce_msg = get_u128(&msg, NONCE);
     let (_, transactions_vec) = expect(msg.as_str().split_once(TRANSACTIONS));
@@ -42,7 +59,6 @@ pub(crate) fn assert_valid_tx(nonce: u64) -> String {
 
     let mut values = Vec::with_capacity(TX_TYPE_HASH.len() + 96);
     values.extend_from_slice(&TX_TYPE_HASH);
-    // values.extend_from_slice(&keccak256(receiver_id.as_bytes()));
     values.extend_from_slice(&keccak256(nonce_msg_str.as_bytes()));
     values.extend_from_slice(&keccak256(transactions));
 
