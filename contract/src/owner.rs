@@ -50,18 +50,20 @@ pub(crate) fn assert_valid_tx(nonce: u64) -> String {
     let mut sig_bytes = hex_decode(&data[10..140]);
     // known offset for final byte of ethereum signatures, reduces to either 0 or 1 from 27 or 28
     sig_bytes[64] -= 27;
-    let msg = expect(alloc::str::from_utf8(&data[148..data.len() - 1]).ok()).replace("\\\"", "\"");
+    // json stringify + borsh double escaped quotes in msg payload, strip slashes
+    let msg = expect(alloc::str::from_utf8(&data[148..data.len() - 1]).ok()).trim().replace("\\\"", "\"");
     
-    let nonce_msg_str = get_string(&msg, NONCE);
-    let nonce_msg = get_u128(&msg, NONCE);
     let (_, transactions_vec) = expect(msg.as_str().split_once(TRANSACTIONS));
     let transactions = &transactions_vec.as_bytes()[0..transactions_vec.len() - 2];
+    let nonce_msg_str = get_string(&msg, NONCE);
 
+    // build the inner msg payload for TX_TYPE: Transaction(string nonce,string transactions)
     let mut values = Vec::with_capacity(TX_TYPE_HASH.len() + 96);
     values.extend_from_slice(&TX_TYPE_HASH);
     values.extend_from_slice(&keccak256(nonce_msg_str.as_bytes()));
     values.extend_from_slice(&keccak256(transactions));
 
+    // build wrapped msg payload for DOMAIN: {"name":"NETH","version":"1","chainId":1313161554}
     let mut msg_wrapped = Vec::with_capacity(DOMAIN_HASH.len() + 32);
     msg_wrapped.extend_from_slice(&DOMAIN_HASH);
     msg_wrapped.extend_from_slice(&keccak256(&values));
@@ -90,6 +92,7 @@ pub(crate) fn assert_valid_tx(nonce: u64) -> String {
             sys::panic();
         }
 
+        let nonce_msg = get_u128(&msg, NONCE);
         if nonce != nonce_msg as u64 {
             sys::panic();
         }

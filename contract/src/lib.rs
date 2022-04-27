@@ -125,31 +125,28 @@ pub fn remove_storage() {
 #[no_mangle]
 pub fn execute() {
     assert_predecessor();
-    //increase nonce
+
+	// validate msg payload and signature with current nonce
     let nonce = unsafe { sread_u64(NONCE_KEY) };
-    let new_nonce = nonce + 1;
-    swrite(NONCE_KEY, &new_nonce.to_le_bytes());
     let data = assert_valid_tx(nonce);
 
-	let (_, transactions_split) = expect(data.split_once(TRANSACTIONS));
-    let transactions: Vec<&str> = transactions_split.split("]},{").collect();
+    // increase nonce
+    let new_nonce = nonce + 1;
+    swrite(NONCE_KEY, &new_nonce.to_le_bytes());
 
+	let (_, transactions_split) = expect(data.split_once(TRANSACTIONS));
+    let transactions: Vec<&str> = transactions_split.split("]},{").map(|x| x.trim()).collect();
+
+	// keep track of promise ids for each tx
 	let mut promises: Vec<u64> = vec![];
 
     for tx in transactions {
 
-		unsafe {
-			log(tx);
-		}
-
 		let receiver_id = get_string(&tx, RECEIVER_ID);
 		let (_, actions_split) = expect(tx.split_once("actions\":"));
-		unsafe {
-			log(actions_split);
-		}
-		
-    	let actions: Vec<&str> = actions_split.split("},{").collect();
+    	let actions: Vec<&str> = actions_split.split("},{").map(|x| x.trim()).collect();
 
+		// start new promise batch or chain with previous promise batch
 		let id = if promises.len() == 0 {
 			unsafe {
 				near_sys::promise_batch_create(
@@ -168,6 +165,7 @@ pub fn execute() {
 		};
 		promises.push(id);
 
+		// execute all actions for this promise
 		for action in actions {
 			match get_string(action, "type\":\"").as_bytes() {
 				b"Transfer" => {
