@@ -17,8 +17,8 @@ near-sys = "0.1"
 
 [profile.release]
 codegen-units = 1
-opt-level = "s"
+opt-level = "z"
 lto = true
 debug = false
+stri= true
 panic = "abort"
-overflow-checks = true
