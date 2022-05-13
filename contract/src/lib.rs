@@ -134,8 +134,14 @@ pub fn execute() {
     let new_nonce = nonce + 1;
     swrite(NONCE_KEY, &new_nonce.to_le_bytes());
 
-	let (_, transactions_split) = expect(data.split_once(TRANSACTIONS));
-    let transactions: Vec<&str> = transactions_split.split("]},{").map(|x| x.trim()).collect();
+	let (_, mut transaction_data) = expect(data.split_once(TRANSACTIONS));
+	transaction_data = &transaction_data[0..transaction_data.len()-2];
+	let mut transactions: Vec<&str> = vec![];
+	while transaction_data.len() > 0 {
+		let length_bytes: usize = expect(transaction_data[4..16].parse().ok());
+		transactions.push(&transaction_data[16..16+length_bytes]);
+		transaction_data = &transaction_data[16+length_bytes..];
+	}
 
 	// keep track of promise ids for each tx
 	let mut promises: Vec<u64> = vec![];

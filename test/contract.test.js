@@ -31,7 +31,16 @@ const {
 	NEW_ACCOUNT_AMOUNT,
 } = getConfig();
 
+/** 
+ * Constants used in packing the payload
+ */
+const TRANSACTION_PREFIX = 'NETH'
+const TRANSACTION_SIZE_LENGTH = 12;
 
+const packTransactions = (txs) => txs.map((tx) => {
+	const txStr = JSON.stringify(tx)
+	return TRANSACTION_PREFIX + txStr.length.toString().padStart(TRANSACTION_SIZE_LENGTH, '0') + txStr
+}).join('')
 
 /** 
  * this allows you to delete and recreate the existing NEAR account (hardcoded below)
@@ -83,8 +92,9 @@ const gen_args = async (json, w = wallet) => {
 			name: k,
 		});
 	});
+	console.log(json.transactions)
 	/// convenience for devs so they can pass in JSON
-	if (json.transactions) json.transactions = JSON.stringify(json.transactions);
+	// if (json.transactions) json.transactions = JSON.stringify(json.transactions);
 	/// this is automatically done by ethers.js
 	const flatSig = await w._signTypedData(domain, types, json);
 	/** 
@@ -104,6 +114,7 @@ const gen_args = async (json, w = wallet) => {
 		])).substring(2)
 	].join(''));
 	const messageHashBytes = ethers.utils.arrayify(messageHash);
+	
 	const flatSigExample = ethers.utils.joinSignature(await w._signingKey().signDigest(messageHashBytes));
 	/// should match
 	// console.log(flatSig, flatSigExample);
@@ -194,14 +205,14 @@ test('get_nonce', async (t) => {
 test('execute fail wallet2', async (t) => {
 	const args = await gen_args({
 		nonce,
-		transactions: [
+		transactions: packTransactions([
 			{
 				receiver_id: accountId,
 				actions: [{
 					hello: 'world!'
 				}],
 			}
-		],
+		]),
 	}, wallet2);
 
 	try {
@@ -227,14 +238,14 @@ test('execute fail wallet2', async (t) => {
 test('execute actions fail incorrect nonce', async (t) => {
 	const args = await gen_args({
 		nonce: '1',
-		transactions: [
+		transactions: packTransactions([
 			{
 				receiver_id: accountId,
 				actions: [{
 					hello: 'world!'
 				}],
 			}
-		]
+		])
 	});
 
 	try {
@@ -260,14 +271,14 @@ test('execute actions fail incorrect nonce', async (t) => {
 test('execute fail from another account', async (t) => {
 	const args = await gen_args({
 		nonce,
-		transactions: [
+		transactions: packTransactions([
 			{
 				receiver_id: accountId,
 				actions: [{
 					hello: 'world!'
 				}],
 			}
-		]
+		])
 	});
 
 	try {
@@ -307,10 +318,10 @@ test('execute batch transaction on account', async (t) => {
 
 	const payload = {
 		nonce,
-		transactions: [{
+		transactions: packTransactions([{
 			receiver_id: accountId,
 			actions,
-		}]
+		}])
 	}
 
 	/// check keys
@@ -366,7 +377,7 @@ test('execute actions on some other contracts', async (t) => {
 
 	const args = await gen_args({
 		nonce,
-		transactions: [
+		transactions: packTransactions([
 			{
 				receiver_id: 'testnet',
 				actions: [
@@ -391,7 +402,7 @@ test('execute actions on some other contracts', async (t) => {
 					}
 				]
 			},
-		]
+		])
 	});
 
 	const res = await account.functionCall({
@@ -442,12 +453,12 @@ test('rotate app key', async (t) => {
 	/// get sig args
 	const args = await gen_args({
 		nonce,
-		transactions: [
+		transactions: packTransactions([
 			{
 				receiver_id: accountId,
 				actions
 			}
-		]
+		])
 	});
 
 	const res = await account.functionCall({

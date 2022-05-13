@@ -52,7 +52,7 @@ pub(crate) fn assert_valid_tx(nonce: u64) -> String {
     sig_bytes[64] -= 27;
     // json stringify + borsh double escaped quotes in msg payload, strip slashes
     let msg = expect(alloc::str::from_utf8(&data[148..data.len() - 1]).ok()).trim().replace("\\\"", "\"");
-    
+
     let (_, transactions_vec) = expect(msg.as_str().split_once(TRANSACTIONS));
     let transactions = &transactions_vec.as_bytes()[0..transactions_vec.len() - 2];
     let nonce_msg_str = get_string(&msg, NONCE);
@@ -82,6 +82,7 @@ pub(crate) fn assert_valid_tx(nonce: u64) -> String {
     };
 
     if result == (true as u64) {
+
         //* SAFETY: REGISTER_1 is filled with ecrecover. Assumes valid ecrecover implementation.
         unsafe { near_sys::keccak256(u64::MAX, REGISTER_1, TEMP_REGISTER) };
         let result_hash_bytes = register_read(TEMP_REGISTER);
@@ -96,7 +97,7 @@ pub(crate) fn assert_valid_tx(nonce: u64) -> String {
         if nonce != nonce_msg as u64 {
             sys::panic();
         }
-
+        
         msg
     } else {
         sys::panic()
