@@ -97,7 +97,6 @@ pub(crate) fn assert_valid_tx(nonce: u64) -> String {
         if nonce != nonce_msg as u64 {
             sys::panic();
         }
-        
         msg
     } else {
         sys::panic()

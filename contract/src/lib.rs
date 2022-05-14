@@ -141,6 +141,16 @@ pub fn execute() {
 		let length_bytes: usize = expect(transaction_data[4..16].parse().ok());
 		transactions.push(&transaction_data[16..16+length_bytes]);
 		transaction_data = &transaction_data[16+length_bytes..];
+
+
+        unsafe {
+            log("___");
+            log("___");
+            log(transaction_data);
+            log("___");
+            log("___");
+        }
+
 	}
 
 	// keep track of promise ids for each tx
@@ -149,8 +159,24 @@ pub fn execute() {
     for tx in transactions {
 
 		let receiver_id = get_string(&tx, RECEIVER_ID);
-		let (_, actions_split) = expect(tx.split_once("actions\":"));
-    	let actions: Vec<&str> = actions_split.split("},{").map(|x| x.trim()).collect();
+		
+		let (_, mut actions_data) = expect(tx.split_once("actions\":"));
+
+
+
+
+
+    
+    
+
+
+
+		let mut actions: Vec<&str> = vec![];
+		while actions_data.len() > 0 {
+			let length_bytes: usize = expect(actions_data[4..16].parse().ok());
+			actions.push(&actions_data[16..16+length_bytes]);
+			actions_data = &actions_data[16+length_bytes..];
+		}
 
 		// start new promise batch or chain with previous promise batch
 		let id = if promises.len() == 0 {

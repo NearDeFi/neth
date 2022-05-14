@@ -34,12 +34,12 @@ const {
 /** 
  * Constants used in packing the payload
  */
-const TRANSACTION_PREFIX = 'NETH'
-const TRANSACTION_SIZE_LENGTH = 12;
+const PREFIX = 'NETH'
+const SIZE_LENGTH = 12;
 
-const packTransactions = (txs) => txs.map((tx) => {
-	const txStr = JSON.stringify(tx)
-	return TRANSACTION_PREFIX + txStr.length.toString().padStart(TRANSACTION_SIZE_LENGTH, '0') + txStr
+const pack = (elements) => elements.map((el) => {
+	const str = Object.entries(el).map(([k, v]) => `"${k}":"${v}"`).join('')
+	return PREFIX + str.length.toString().padStart(SIZE_LENGTH, '0') + str
 }).join('')
 
 /** 
@@ -205,12 +205,12 @@ test('get_nonce', async (t) => {
 test('execute fail wallet2', async (t) => {
 	const args = await gen_args({
 		nonce,
-		transactions: packTransactions([
+		transactions: pack([
 			{
 				receiver_id: accountId,
-				actions: [{
+				actions: pack([{
 					hello: 'world!'
-				}],
+				}]),
 			}
 		]),
 	}, wallet2);
@@ -238,12 +238,12 @@ test('execute fail wallet2', async (t) => {
 test('execute actions fail incorrect nonce', async (t) => {
 	const args = await gen_args({
 		nonce: '1',
-		transactions: packTransactions([
+		transactions: pack([
 			{
 				receiver_id: accountId,
-				actions: [{
+				actions: pack([{
 					hello: 'world!'
-				}],
+				}]),
 			}
 		])
 	});
@@ -271,12 +271,12 @@ test('execute actions fail incorrect nonce', async (t) => {
 test('execute fail from another account', async (t) => {
 	const args = await gen_args({
 		nonce,
-		transactions: packTransactions([
+		transactions: pack([
 			{
 				receiver_id: accountId,
-				actions: [{
+				actions: pack([{
 					hello: 'world!'
-				}],
+				}]),
 			}
 		])
 	});
@@ -302,7 +302,7 @@ test('execute fail from another account', async (t) => {
  * it adds an access key with a 1 N allowance that can only call the execute method on the contract
  */
 test('execute batch transaction on account', async (t) => {
-	const actions = [
+	let actions = [
 		{
 			type: 'AddKey',
 			public_key: PublicKey.fromString(keyPair.publicKey).data.hexSlice(),
@@ -316,14 +316,6 @@ test('execute batch transaction on account', async (t) => {
 		},
 	];
 
-	const payload = {
-		nonce,
-		transactions: packTransactions([{
-			receiver_id: accountId,
-			actions,
-		}])
-	}
-
 	/// check keys
 	const public_key = keyPair.publicKey.toString();
 	const accessKeys = await account.getAccessKeys();
@@ -332,6 +324,16 @@ test('execute batch transaction on account', async (t) => {
 			type: 'DeleteKey',
 			public_key: PublicKey.fromString(keyPair.publicKey).data.hexSlice(),
 		});
+	}
+
+	actions = pack(actions)
+
+	const payload = {
+		nonce,
+		transactions: pack([{
+			receiver_id: accountId,
+			actions,
+		}])
 	}
 
 	/// get sig args
@@ -377,10 +379,10 @@ test('execute actions on some other contracts', async (t) => {
 
 	const args = await gen_args({
 		nonce,
-		transactions: packTransactions([
+		transactions: pack([
 			{
 				receiver_id: 'testnet',
-				actions: [
+				actions: pack([
 					{
 						type: 'FunctionCall',
 						method_name: 'create_account',
@@ -391,16 +393,16 @@ test('execute actions on some other contracts', async (t) => {
 						amount: parseNearAmount('0.02'),
 						gas: '50000000000000',
 					}
-				]
+				])
 			},
 			{
 				receiver_id: 'a.testnet',
-				actions: [
+				actions: pack([
 					{
 						type: 'Transfer',
 						amount: parseNearAmount('0.00017'),
 					}
-				]
+				])
 			},
 		])
 	});
@@ -453,10 +455,10 @@ test('rotate app key', async (t) => {
 	/// get sig args
 	const args = await gen_args({
 		nonce,
-		transactions: packTransactions([
+		transactions: pack([
 			{
 				receiver_id: accountId,
-				actions
+				actions: pack(actions)
 			}
 		])
 	});
