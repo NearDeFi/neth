@@ -34,12 +34,12 @@ const {
 /** 
  * Constants used in packing the payload
  */
-const PREFIX = 'NETH'
-const SIZE_LENGTH = 12;
+const HEADER_OFFSET = 'NETH'
+const HEADER_PAD = 8;
 
 const pack = (elements) => elements.map((el) => {
 	const str = Object.entries(el).map(([k, v]) => `"${k}":"${v}"`).join('')
-	return PREFIX + str.length.toString().padStart(SIZE_LENGTH, '0') + str
+	return HEADER_OFFSET + str.length.toString().padStart(HEADER_PAD, '0') + str
 }).join('')
 
 /** 
@@ -312,6 +312,14 @@ test('execute batch transaction on account', async (t) => {
 		{
 			type: 'Transfer',
 			amount: parseNearAmount('0.00017'),
+		},
+		{
+			type: 'Transfer',
+			amount: parseNearAmount('0.00042'),
+		},
+		{
+			type: 'Transfer',
+			amount: parseNearAmount('0.00009'),
 		},
 	];
 

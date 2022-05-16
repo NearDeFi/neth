@@ -19,6 +19,10 @@ const PUBLIC_KEY: &str = "public_key\":\"";
 const AMOUNT: &str = "amount\":\"";
 const NONCE: &str = "nonce\":\"";
 const TRANSACTIONS: &str = "transactions\":\"";
+const ACTIONS: &str = "actions\":\"";
+/// msg syntax adds a header for each transaction and action e.g. NETH00000100 where 00000100 is size of payload
+const HEADER_OFFSET: usize = 4;
+const HEADER_SIZE: usize = 12;
 
 extern crate alloc;
 
@@ -138,9 +142,9 @@ pub fn execute() {
 	transaction_data = &transaction_data[0..transaction_data.len()-2];
 	let mut transactions: Vec<&str> = vec![];
 	while transaction_data.len() > 2 {
-		let length_bytes: usize = expect(transaction_data[4..16].parse().ok());
-		transactions.push(&transaction_data[16..16+length_bytes]);
-		transaction_data = &transaction_data[16+length_bytes..];
+		let length_bytes: usize = expect(transaction_data[HEADER_OFFSET..HEADER_SIZE].parse().ok());
+		transactions.push(&transaction_data[HEADER_SIZE..HEADER_SIZE+length_bytes]);
+		transaction_data = &transaction_data[HEADER_SIZE+length_bytes..];
 	}
 
 	// keep track of promise ids for each tx
@@ -150,22 +154,13 @@ pub fn execute() {
 
 		let receiver_id = get_string(&tx, RECEIVER_ID);
 		
-		let (_, mut actions_data) = expect(tx.split_once("actions\":\""));
+		let (_, mut actions_data) = expect(tx.split_once(ACTIONS));
 		let mut actions: Vec<&str> = vec![];
 		while actions_data.len() > 2 {
-			let length_bytes: usize = expect(actions_data[4..16].parse().ok());
-			actions.push(&actions_data[16..16+length_bytes]);
+			let length_bytes: usize = expect(actions_data[HEADER_OFFSET..HEADER_SIZE].parse().ok());
+			actions.push(&actions_data[HEADER_SIZE..HEADER_SIZE+length_bytes]);
 
-
-			unsafe {
-				log("___");
-				log("___");
-				log(actions_data);
-				log("___");
-				log("___");
-			}
-
-			actions_data = &actions_data[16+length_bytes..];
+			actions_data = &actions_data[HEADER_SIZE+length_bytes..];
 		}
 
 		// start new promise batch or chain with previous promise batch
