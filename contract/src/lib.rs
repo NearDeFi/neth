@@ -137,20 +137,10 @@ pub fn execute() {
 	let (_, mut transaction_data) = expect(data.split_once(TRANSACTIONS));
 	transaction_data = &transaction_data[0..transaction_data.len()-2];
 	let mut transactions: Vec<&str> = vec![];
-	while transaction_data.len() > 0 {
+	while transaction_data.len() > 2 {
 		let length_bytes: usize = expect(transaction_data[4..16].parse().ok());
 		transactions.push(&transaction_data[16..16+length_bytes]);
 		transaction_data = &transaction_data[16+length_bytes..];
-
-
-        unsafe {
-            log("___");
-            log("___");
-            log(transaction_data);
-            log("___");
-            log("___");
-        }
-
 	}
 
 	// keep track of promise ids for each tx
@@ -160,21 +150,21 @@ pub fn execute() {
 
 		let receiver_id = get_string(&tx, RECEIVER_ID);
 		
-		let (_, mut actions_data) = expect(tx.split_once("actions\":"));
-
-
-
-
-
-    
-    
-
-
-
+		let (_, mut actions_data) = expect(tx.split_once("actions\":\""));
 		let mut actions: Vec<&str> = vec![];
-		while actions_data.len() > 0 {
+		while actions_data.len() > 2 {
 			let length_bytes: usize = expect(actions_data[4..16].parse().ok());
 			actions.push(&actions_data[16..16+length_bytes]);
+
+
+			unsafe {
+				log("___");
+				log("___");
+				log(actions_data);
+				log("___");
+				log("___");
+			}
+
 			actions_data = &actions_data[16+length_bytes..];
 		}
 

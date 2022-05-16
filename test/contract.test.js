@@ -92,7 +92,6 @@ const gen_args = async (json, w = wallet) => {
 			name: k,
 		});
 	});
-	console.log(json.transactions)
 	/// convenience for devs so they can pass in JSON
 	// if (json.transactions) json.transactions = JSON.stringify(json.transactions);
 	/// this is automatically done by ethers.js
@@ -125,7 +124,7 @@ const gen_args = async (json, w = wallet) => {
 		sig: flatSig,
 		msg: json,
 	};
-	// console.log('\nargs\n', JSON.stringify(args), '\n');
+	console.log('\nargs\n', JSON.stringify(args), '\n');
 	return args;
 };
 
