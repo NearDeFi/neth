@@ -18,13 +18,16 @@ const RECEIVER_ID: &str = "receiver_id\":\"";
 const PUBLIC_KEY: &str = "public_key\":\"";
 const AMOUNT: &str = "amount\":\"";
 const NONCE: &str = "nonce\":\"";
+const RECEIVERS: &str = "receivers\":\"";
 const TRANSACTIONS: &str = "transactions\":\"";
-const ACTIONS: &str = "actions\":\"";
 /// msg syntax adds a header for each transaction and action e.g. NETH00000100 where 00000100 is size of payload
 const HEADER_OFFSET: usize = 4;
 const HEADER_SIZE: usize = 12;
 
 extern crate alloc;
+
+/// DEBUGGING REMOVE
+// use alloc::format;
 
 use alloc::vec;
 use alloc::vec::Vec;
@@ -130,13 +133,16 @@ pub fn remove_storage() {
 pub fn execute() {
     assert_predecessor();
 
-	// validate msg payload and signature with current nonce
-    let nonce = unsafe { sread_u64(NONCE_KEY) };
-    let data = assert_valid_tx(nonce);
+    let (nonce, data) = assert_valid_tx();
 
     // increase nonce
     let new_nonce = nonce + 1;
     swrite(NONCE_KEY, &new_nonce.to_le_bytes());
+
+	let (_, receivers_vec) = expect(data.split_once(RECEIVERS));
+    let (mut receivers_vec_2, _) = expect(receivers_vec.split_once(TRANSACTIONS));
+	receivers_vec_2 = &receivers_vec_2[0..receivers_vec_2.len()-3];
+	let receivers: Vec<&str> = receivers_vec_2.split(",").collect();
 
 	let (_, mut transaction_data) = expect(data.split_once(TRANSACTIONS));
 	transaction_data = &transaction_data[0..transaction_data.len()-2];
@@ -150,16 +156,15 @@ pub fn execute() {
 	// keep track of promise ids for each tx
 	let mut promises: Vec<u64> = vec![];
 
-    for tx in transactions {
+    for (i, tx) in transactions.iter().enumerate() {
 
-		let receiver_id = get_string(&tx, RECEIVER_ID);
+		let receiver_id = receivers[i];
 		
-		let (_, mut actions_data) = expect(tx.split_once(ACTIONS));
+		let mut actions_data = *tx;
 		let mut actions: Vec<&str> = vec![];
 		while actions_data.len() > 2 {
 			let length_bytes: usize = expect(actions_data[HEADER_OFFSET..HEADER_SIZE].parse().ok());
 			actions.push(&actions_data[HEADER_SIZE..HEADER_SIZE+length_bytes]);
-
 			actions_data = &actions_data[HEADER_SIZE+length_bytes..];
 		}
 
@@ -250,7 +255,11 @@ pub fn execute() {
 				}
 				b"FunctionCall" => {
 					let method_name = get_string(action, "method_name\":\"");
-					let args = hex_decode(&get_string(action, "args\":\""));
+					let (_, args_1) = expect(action.split_once("args\":"));
+					let (args_2, _) = expect(args_1.split_once("}\""));
+					let mut args = vec![];
+					args.extend_from_slice(args_2.as_bytes());
+					args.extend_from_slice("}".as_bytes());
 					let amount = get_u128(action, AMOUNT);
 					let gas = get_u128(action, "gas\":\"") as u64;
 					unsafe {
@@ -308,12 +317,6 @@ mod tests {
     use super::*;
 
     #[test]
-    fn test_get_empty_string() {
-        let str = get_string("\"args\":\"\"", "args\":\"");
-        assert_eq!(str, "");
-    }
-
-    #[test]
     fn test_get_empty_amount() {
         let amount = get_u128("\"amount\":\"0\"", "amount\":\"");
         assert_eq!(amount, 0);
@@ -326,10 +329,4 @@ mod tests {
         assert_eq!(decoded.len(), 0);
     }
 
-    #[test]
-    fn test_empty_args() {
-        let str = get_string("\"args\":\"\"", "args\":\"");
-        let decoded = hex_decode(&str);
-        assert_eq!(decoded.len(), 0);
-    }
 }

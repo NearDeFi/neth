@@ -11,10 +11,10 @@ const DOMAIN_HASH: [u8; 34] = [
 /// compile time constant for the eth typed signed data payloads
 /// matches keccak256("Transaction(string nonce,string transactions)")
 const TX_TYPE_HASH: [u8; 32] = [
-	12, 163, 146, 108, 68, 228, 145, 185,
-	80, 103,  50,  49, 34,  90, 111, 250,
-	92,  30,  60,  56, 44,  61,  47, 243,
-	75, 107,  66, 156, 10,   2,  16, 150
+    85, 118, 122, 132, 189, 227, 132, 213,
+    28, 159, 178, 146,  47, 112, 237, 222,
+   238,  45,  52,  51, 183, 128, 219,  75,
+    92,  97, 228, 183,  34, 157, 145,   4
 ];
 
 /// checks to ensure call is coming from the NEAR account that this contract is deployed on
@@ -43,7 +43,11 @@ pub(crate) fn assert_predecessor() {
 /// 
 /// If the result is true (1) we will check the recovered address and the nonce against values in storage and
 /// return the msg payload to execute() so the transactions in the payload can be executed.
-pub(crate) fn assert_valid_tx(nonce: u64) -> String {
+pub(crate) fn assert_valid_tx() -> (u64, String) {
+
+	// validate msg payload and signature with current nonce
+    let nonce = unsafe { sread_u64(NONCE_KEY) };
+
     unsafe { near_sys::input(TEMP_REGISTER) };
     let data = register_read(TEMP_REGISTER);
 
@@ -53,6 +57,10 @@ pub(crate) fn assert_valid_tx(nonce: u64) -> String {
     // json stringify + borsh double escaped quotes in msg payload, strip slashes
     let msg = expect(alloc::str::from_utf8(&data[148..data.len() - 1]).ok()).trim().replace("\\\"", "\"");
 
+    let (_, receivers_vec) = expect(msg.as_str().split_once(RECEIVERS));
+    let (receivers_vec_2, _) = expect(receivers_vec.split_once(TRANSACTIONS));
+    let receivers = &receivers_vec_2.as_bytes()[0..receivers_vec_2.len() - 3];
+    
     let (_, transactions_vec) = expect(msg.as_str().split_once(TRANSACTIONS));
     let transactions = &transactions_vec.as_bytes()[0..transactions_vec.len() - 2];
     let nonce_msg_str = get_string(&msg, NONCE);
@@ -61,6 +69,7 @@ pub(crate) fn assert_valid_tx(nonce: u64) -> String {
     let mut values = Vec::with_capacity(TX_TYPE_HASH.len() + 96);
     values.extend_from_slice(&TX_TYPE_HASH);
     values.extend_from_slice(&keccak256(nonce_msg_str.as_bytes()));
+    values.extend_from_slice(&keccak256(receivers));
     values.extend_from_slice(&keccak256(transactions));
 
     // build wrapped msg payload for DOMAIN: {"name":"NETH","version":"1","chainId":1313161554}
@@ -90,14 +99,21 @@ pub(crate) fn assert_valid_tx(nonce: u64) -> String {
 
         let address_bytes_storage = storage_read(ADDRESS_KEY);
         if address_bytes != address_bytes_storage {
+            // log("---");
+            // log("address_bytes != address_bytes_storage");
+            // log("---");
             sys::panic();
         }
 
         let nonce_msg = get_u128(&msg, NONCE);
         if nonce != nonce_msg as u64 {
+            // log("---");
+            // log("nonce != nonce_msg");
+            // log("---");
             sys::panic();
         }
-        msg
+        
+        (nonce, msg)
     } else {
         sys::panic()
     }

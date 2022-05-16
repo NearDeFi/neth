@@ -38,7 +38,9 @@ const HEADER_OFFSET = 'NETH'
 const HEADER_PAD = 8;
 
 const pack = (elements) => elements.map((el) => {
-	const str = Object.entries(el).map(([k, v]) => `"${k}":"${v}"`).join('')
+	const str = typeof el === 'string' ? el : Object.entries(el).map(
+		([k, v]) => `"${k}":${typeof v === 'string' ? `"${v}"` : JSON.stringify(v)}`
+	).join('')
 	return HEADER_OFFSET + str.length.toString().padStart(HEADER_PAD, '0') + str
 }).join('')
 
@@ -93,7 +95,11 @@ const gen_args = async (json, w = wallet) => {
 		});
 	});
 	/// convenience for devs so they can pass in JSON
-	// if (json.transactions) json.transactions = JSON.stringify(json.transactions);
+	if (json.receivers) json.receivers = json.receivers.join(',');
+	if (json.transactions) json.transactions = pack(json.transactions.map(({ actions }) => pack(actions)));
+	
+	console.log(JSON.stringify(json, null, 4))
+	
 	/// this is automatically done by ethers.js
 	const flatSig = await w._signTypedData(domain, types, json);
 	/** 
@@ -101,9 +107,11 @@ const gen_args = async (json, w = wallet) => {
 	 */
 	const prelim = "0x1901";
 	const domainHash = '0x1259f716ef38d519cab86b12674f6980042d2c429b3d0b7aa6b6dfa942dcdac2';
-	const transactionTypeHash = ethers.utils.id("Transaction(string nonce,string transactions)");
+	const transactionTypeHash = ethers.utils.id("Transaction(string nonce,string receivers,string transactions)");
+	
 	/// matches compile time constant TX type hash in contract
 	// console.log(ethers.utils.arrayify(transactionTypeHash))
+	
 	const messageHash = ethers.utils.keccak256([
 		prelim,
 		domainHash.substring(2),
@@ -112,11 +120,12 @@ const gen_args = async (json, w = wallet) => {
 			...Object.values(json)
 		])).substring(2)
 	].join(''));
+
 	const messageHashBytes = ethers.utils.arrayify(messageHash);
 	
 	const flatSigExample = ethers.utils.joinSignature(await w._signingKey().signDigest(messageHashBytes));
 	/// should match
-	// console.log(flatSig, flatSigExample);
+	// console.log('SIG MATCH?\n\n', flatSig, '\n', flatSigExample, '\n\n');
 	/** 
 	 * End of example
 	 */
@@ -124,7 +133,7 @@ const gen_args = async (json, w = wallet) => {
 		sig: flatSig,
 		msg: json,
 	};
-	console.log('\nargs\n', JSON.stringify(args), '\n');
+	// console.log('\nargs\n', JSON.stringify(args), '\n');
 	return args;
 };
 
@@ -204,14 +213,14 @@ test('get_nonce', async (t) => {
 test('execute fail wallet2', async (t) => {
 	const args = await gen_args({
 		nonce,
-		transactions: pack([
+		receivers: [accountId],
+		transactions: [
 			{
-				receiver_id: accountId,
-				actions: pack([{
+				actions: [{
 					hello: 'world!'
-				}]),
+				}],
 			}
-		]),
+		],
 	}, wallet2);
 
 	try {
@@ -237,14 +246,14 @@ test('execute fail wallet2', async (t) => {
 test('execute actions fail incorrect nonce', async (t) => {
 	const args = await gen_args({
 		nonce: '1',
-		transactions: pack([
+		receivers: [accountId],
+		transactions: [
 			{
-				receiver_id: accountId,
-				actions: pack([{
+				actions: [{
 					hello: 'world!'
-				}]),
+				}],
 			}
-		])
+		],
 	});
 
 	try {
@@ -270,14 +279,14 @@ test('execute actions fail incorrect nonce', async (t) => {
 test('execute fail from another account', async (t) => {
 	const args = await gen_args({
 		nonce,
-		transactions: pack([
+		receivers: [accountId],
+		transactions: [
 			{
-				receiver_id: accountId,
-				actions: pack([{
+				actions: [{
 					hello: 'world!'
-				}]),
+				}],
 			}
-		])
+		],
 	});
 
 	try {
@@ -333,14 +342,14 @@ test('execute batch transaction on account', async (t) => {
 		});
 	}
 
-	actions = pack(actions)
-
 	const payload = {
 		nonce,
-		transactions: pack([{
-			receiver_id: accountId,
-			actions,
-		}])
+		receivers: [accountId],
+		transactions: [
+			{
+				actions,
+			}
+		]
 	}
 
 	/// get sig args
@@ -386,32 +395,31 @@ test('execute actions on some other contracts', async (t) => {
 
 	const args = await gen_args({
 		nonce,
-		transactions: pack([
+		receivers: ['testnet', 'a.testnet'],
+		transactions: [
 			{
-				receiver_id: 'testnet',
-				actions: pack([
+				actions: [
 					{
 						type: 'FunctionCall',
 						method_name: 'create_account',
-						args: obj2hex({
+						args: {
 							new_account_id: 'meow-' + Date.now() + '.testnet',
 							new_public_key: newKeyPair.publicKey.toString(),
-						}),
+						},
 						amount: parseNearAmount('0.02'),
 						gas: '50000000000000',
 					}
-				])
+				]
 			},
 			{
-				receiver_id: 'a.testnet',
-				actions: pack([
+				actions: [
 					{
 						type: 'Transfer',
 						amount: parseNearAmount('0.00017'),
 					}
-				])
+				]
 			},
-		])
+		]
 	});
 
 	const res = await account.functionCall({
@@ -462,12 +470,10 @@ test('rotate app key', async (t) => {
 	/// get sig args
 	const args = await gen_args({
 		nonce,
-		transactions: pack([
-			{
-				receiver_id: accountId,
-				actions: pack(actions)
-			}
-		])
+		receivers: [accountId],
+		transactions: [{
+			actions
+		}]
 	});
 
 	const res = await account.functionCall({
