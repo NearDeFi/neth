@@ -57,13 +57,16 @@ pub(crate) fn assert_valid_tx() -> (u64, String) {
     // json stringify + borsh double escaped quotes in msg payload, strip slashes
     let msg = expect(alloc::str::from_utf8(&data[148..data.len() - 1]).ok()).trim().replace("\\\"", "\"");
 
+    let (_, nonce_vec) = expect(msg.as_str().split_once(NONCE));
+    let (nonce_vec_2, _) = expect(nonce_vec.split_once(RECEIVERS));
+    let nonce_msg_str = expect(nonce_vec_2.strip_suffix("\",\""));
+
     let (_, receivers_vec) = expect(msg.as_str().split_once(RECEIVERS));
     let (receivers_vec_2, _) = expect(receivers_vec.split_once(TRANSACTIONS));
     let receivers = &receivers_vec_2.as_bytes()[0..receivers_vec_2.len() - 3];
     
     let (_, transactions_vec) = expect(msg.as_str().split_once(TRANSACTIONS));
     let transactions = &transactions_vec.as_bytes()[0..transactions_vec.len() - 2];
-    let nonce_msg_str = get_string(&msg, NONCE);
 
     // build the inner msg payload for TX_TYPE: Transaction(string nonce,string transactions)
     let mut values = Vec::with_capacity(TX_TYPE_HASH.len() + 96);
@@ -105,7 +108,7 @@ pub(crate) fn assert_valid_tx() -> (u64, String) {
             sys::panic();
         }
 
-        let nonce_msg = get_u128(&msg, NONCE);
+        let nonce_msg: u128 = expect(nonce_msg_str.parse().ok());
         if nonce != nonce_msg as u64 {
             // log("---");
             // log("nonce != nonce_msg");

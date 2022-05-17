@@ -31,18 +31,6 @@ const {
 	NEW_ACCOUNT_AMOUNT,
 } = getConfig();
 
-/** 
- * Constants used in packing the payload
- */
-const HEADER_OFFSET = 'NETH'
-const HEADER_PAD = 8;
-
-const pack = (elements) => elements.map((el) => {
-	const str = typeof el === 'string' ? el : Object.entries(el).map(
-		([k, v]) => `"${k}":${typeof v === 'string' ? `"${v}"` : JSON.stringify(v)}`
-	).join('')
-	return HEADER_OFFSET + str.length.toString().padStart(HEADER_PAD, '0') + str
-}).join('')
 
 /** 
  * this allows you to delete and recreate the existing NEAR account (hardcoded below)
@@ -83,7 +71,19 @@ const encode = (arr) => {
 	});
 	return '0x' + res.join('');
 };
+
 /// helper generates the arguments for a call to execute() in the contract
+
+const HEADER_OFFSET = 'NETH'
+const HEADER_PAD = 8;
+
+const pack = (elements) => elements.map((el) => {
+	const str = typeof el === 'string' ? el : Object.entries(el).map(
+		([k, v]) => `|~${k}:${typeof v === 'string' ? v : JSON.stringify(v)}~|`
+	).join('')
+	return HEADER_OFFSET + str.length.toString().padStart(HEADER_PAD, '0') + str
+}).join('')
+
 const gen_args = async (json, w = wallet) => {
 	const types = {
 		Transaction: []
@@ -98,7 +98,7 @@ const gen_args = async (json, w = wallet) => {
 	if (json.receivers) json.receivers = json.receivers.join(',');
 	if (json.transactions) json.transactions = pack(json.transactions.map(({ actions }) => pack(actions)));
 	
-	console.log(JSON.stringify(json, null, 4))
+	// console.log(JSON.stringify(json, null, 4))
 	
 	/// this is automatically done by ethers.js
 	const flatSig = await w._signTypedData(domain, types, json);
@@ -111,6 +111,10 @@ const gen_args = async (json, w = wallet) => {
 	
 	/// matches compile time constant TX type hash in contract
 	// console.log(ethers.utils.arrayify(transactionTypeHash))
+	// console.log('\n\n', [
+	// 	// transactionTypeHash,
+	// 	...Object.values(json)
+	// ].join(''), '\n\n')
 	
 	const messageHash = ethers.utils.keccak256([
 		prelim,
@@ -133,7 +137,7 @@ const gen_args = async (json, w = wallet) => {
 		sig: flatSig,
 		msg: json,
 	};
-	// console.log('\nargs\n', JSON.stringify(args), '\n');
+	// console.log('\nargs\n', JSON.stringify(args, null, 4), '\n');
 	return args;
 };
 

@@ -12,11 +12,23 @@ const NONCE_APP_KEY: &[u8] = b"k";
 /// register constants used
 const TEMP_REGISTER: u64 = 0;
 const REGISTER_1: u64 = 1;
-/// repeated string literals (reduce contract size, improve readability)
+/// string literals (improve readability)
 const DOUBLE_QUOTE_BYTE: u8 = b'\"';
-const RECEIVER_ID: &str = "receiver_id\":\"";
-const PUBLIC_KEY: &str = "public_key\":\"";
-const AMOUNT: &str = "amount\":\"";
+const EXECUTE: &str = "execute";
+/// string literals in payload parsing (improve readability)
+const RECEIVER_ID: &str = "|~receiver_id:";
+const PUBLIC_KEY: &str = "|~public_key:";
+const AMOUNT: &str = "|~amount:";
+const TYPE: &str = "|~type:";
+const ALLOWANCE: &str = "|~allowance:";
+const METHOD_NAMES: &str = "|~method_names:";
+const METHOD_NAME: &str = "|~method_name:";
+const ARGS: &str = "|~args:";
+const GAS: &str = "|~gas:";
+const CODE: &str = "|~code:";
+const VALUE_TERMINATOR: &str = "~|";
+/// json stringified payload from borsh
+const ADDRESS: &str = "address\":\"0x";
 const NONCE: &str = "nonce\":\"";
 const RECEIVERS: &str = "receivers\":\"";
 const TRANSACTIONS: &str = "transactions\":\"";
@@ -88,8 +100,8 @@ pub fn setup() {
     assert_predecessor();
     unsafe { near_sys::input(TEMP_REGISTER) };
     let data = register_read(TEMP_REGISTER);
-    let data = expect(alloc::str::from_utf8(&data).ok());
-    swrite(ADDRESS_KEY, &hex_decode(&get_string(data, "address\":\"")[2..]));
+	let (_, address) = expect(expect(alloc::str::from_utf8(&data).ok()).split_once(ADDRESS));
+    swrite(ADDRESS_KEY, &hex_decode(&address[0..address.len()-2]));
     let nonce: u64 = 0;
     swrite(NONCE_KEY, &nonce.to_le_bytes());
     swrite(NONCE_APP_KEY, &nonce.to_le_bytes());
@@ -189,7 +201,7 @@ pub fn execute() {
 
 		// execute all actions for this promise
 		for action in actions {
-			match get_string(action, "type\":\"").as_bytes() {
+			match get_string(action, TYPE).as_bytes() {
 				b"Transfer" => {
 					let amount = get_u128(action, AMOUNT);
 					unsafe {
@@ -204,7 +216,7 @@ pub fn execute() {
 					let mut public_key = vec![0];
 					public_key.extend_from_slice(&hex_decode(&get_string(action, PUBLIC_KEY)));
 					// special case: allowance 0 means full access key, user would never want to add key with 0 allowance
-					let allowance = get_u128(action, "allowance\":\"");
+					let allowance = get_u128(action, ALLOWANCE);
 					if allowance == 0 {
 						unsafe {
 							near_sys::promise_batch_action_add_key_with_full_access(
@@ -218,13 +230,13 @@ pub fn execute() {
 					}
 					// not a full access key get rest of args
 					let receiver_id = get_string(action, RECEIVER_ID);
-					let method_names = get_string(action, "method_names\":\"");
+					let method_names = get_string(action, METHOD_NAMES);
 					// special case
 					// set app key nonce to the nonce in sig used for entropy for the app key keypair
 					// apps call get_app_key_nonce and ask for signature during sign in
 					unsafe { near_sys::predecessor_account_id(TEMP_REGISTER) };
 					let predecessor_account = register_read(TEMP_REGISTER);
-					if receiver_id.as_bytes() == predecessor_account && method_names == "execute" {
+					if receiver_id.as_bytes() == predecessor_account && method_names == EXECUTE {
 						swrite(NONCE_APP_KEY, &nonce.to_le_bytes());
 					}
 
@@ -254,14 +266,10 @@ pub fn execute() {
 					};
 				}
 				b"FunctionCall" => {
-					let method_name = get_string(action, "method_name\":\"");
-					let (_, args_1) = expect(action.split_once("args\":"));
-					let (args_2, _) = expect(args_1.split_once("}\""));
-					let mut args = vec![];
-					args.extend_from_slice(args_2.as_bytes());
-					args.extend_from_slice("}".as_bytes());
+					let method_name = get_string(action, METHOD_NAME);
+					let args = get_string(action, ARGS);
 					let amount = get_u128(action, AMOUNT);
-					let gas = get_u128(action, "gas\":\"") as u64;
+					let gas = get_u128(action, GAS) as u64;
 					unsafe {
 						near_sys::promise_batch_action_function_call(
 							id,
@@ -275,7 +283,7 @@ pub fn execute() {
 					};
 				}
 				b"DeployContract" => {
-					let code = hex_decode(&get_string(action, "code\":\""));
+					let code = hex_decode(&get_string(action, CODE));
 					unsafe {
 						near_sys::promise_batch_action_deploy_contract(
 							id,
