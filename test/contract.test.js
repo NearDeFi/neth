@@ -76,10 +76,13 @@ const encode = (arr) => {
 
 const HEADER_OFFSET = 'NETH'
 const HEADER_PAD = 8;
+const RECEIVER_MARKER = 'NETH_RECEIVER_ID'
+const PREFIX = '|NETH_'
+const SUFFIX = '_NETH|'
 
 const pack = (elements) => elements.map((el) => {
 	const str = typeof el === 'string' ? el : Object.entries(el).map(
-		([k, v]) => `|~${k}:${typeof v === 'string' ? v : JSON.stringify(v)}~|`
+		([k, v]) => `${PREFIX}${k}:${typeof v === 'string' ? v : JSON.stringify(v)}${SUFFIX}`
 	).join('')
 	return HEADER_OFFSET + str.length.toString().padStart(HEADER_PAD, '0') + str
 }).join('')
@@ -95,10 +98,28 @@ const gen_args = async (json, w = wallet) => {
 		});
 	});
 	/// convenience for devs so they can pass in JSON
+
+	/// hoist any functionCall args containing receiver|account in their key to top level receivers
+	/// replaces value with marker, contract fills in marker
+
+	if (json.transactions) {
+		Object.values(json.transactions).forEach((tx, i) => {
+			tx.actions.forEach((action) => {
+				if (!action.args) return
+				Object.entries(action.args).forEach(([key, value]) => {
+					if (/receiver|account/g.test(key)) {
+						action.args[key] = RECEIVER_MARKER
+						json.receivers.splice(i+1, 0, value)
+					}
+				})
+			})
+		})
+
+		json.transactions = pack(json.transactions.map(({ actions }) => pack(actions)));
+	}
 	if (json.receivers) json.receivers = json.receivers.join(',');
-	if (json.transactions) json.transactions = pack(json.transactions.map(({ actions }) => pack(actions)));
 	
-	// console.log(JSON.stringify(json, null, 4))
+	console.log(JSON.stringify(json, null, 4))
 	
 	/// this is automatically done by ethers.js
 	const flatSig = await w._signTypedData(domain, types, json);

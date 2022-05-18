@@ -15,18 +15,19 @@ const REGISTER_1: u64 = 1;
 /// string literals (improve readability)
 const DOUBLE_QUOTE_BYTE: u8 = b'\"';
 const EXECUTE: &str = "execute";
-/// string literals in payload parsing (improve readability)
-const RECEIVER_ID: &str = "|~receiver_id:";
-const PUBLIC_KEY: &str = "|~public_key:";
-const AMOUNT: &str = "|~amount:";
-const TYPE: &str = "|~type:";
-const ALLOWANCE: &str = "|~allowance:";
-const METHOD_NAMES: &str = "|~method_names:";
-const METHOD_NAME: &str = "|~method_name:";
-const ARGS: &str = "|~args:";
-const GAS: &str = "|~gas:";
-const CODE: &str = "|~code:";
-const VALUE_TERMINATOR: &str = "~|";
+/// string literals in action payload parsing (improve readability)
+const RECEIVER_ID: &str = "|NETH_receiver_id:";
+const PUBLIC_KEY: &str = "|NETH_public_key:";
+const AMOUNT: &str = "|NETH_amount:";
+const TYPE: &str = "|NETH_type:";
+const ALLOWANCE: &str = "|NETH_allowance:";
+const METHOD_NAMES: &str = "|NETH_method_names:";
+const METHOD_NAME: &str = "|NETH_method_name:";
+const ARGS: &str = "|NETH_args:";
+const GAS: &str = "|NETH_gas:";
+const CODE: &str = "|NETH_code:";
+const VALUE_TERMINATOR: &str = "_NETH|";
+const RECEIVER_MARKER: &str = "NETH_RECEIVER_ID";
 /// json stringified payload from borsh
 const ADDRESS: &str = "address\":\"0x";
 const NONCE: &str = "nonce\":\"";
@@ -41,6 +42,7 @@ extern crate alloc;
 /// DEBUGGING REMOVE
 // use alloc::format;
 
+// use alloc::format;
 use alloc::vec;
 use alloc::vec::Vec;
 
@@ -154,25 +156,29 @@ pub fn execute() {
 	let (_, receivers_vec) = expect(data.split_once(RECEIVERS));
     let (mut receivers_vec_2, _) = expect(receivers_vec.split_once(TRANSACTIONS));
 	receivers_vec_2 = &receivers_vec_2[0..receivers_vec_2.len()-3];
-	let receivers: Vec<&str> = receivers_vec_2.split(",").collect();
+	let mut receivers: Vec<&str> = receivers_vec_2.split(",").collect();
 
 	let (_, mut transaction_data) = expect(data.split_once(TRANSACTIONS));
 	transaction_data = &transaction_data[0..transaction_data.len()-2];
 	let mut transactions: Vec<&str> = vec![];
-	while transaction_data.len() > 2 {
+	while transaction_data.len() > 0 {
 		let length_bytes: usize = expect(transaction_data[HEADER_OFFSET..HEADER_SIZE].parse().ok());
 		transactions.push(&transaction_data[HEADER_SIZE..HEADER_SIZE+length_bytes]);
 		transaction_data = &transaction_data[HEADER_SIZE+length_bytes..];
 	}
 
+	if transaction_data.len() != 0 || transactions.len() > receivers.len() {
+		sys::panic();
+	}
+
 	// keep track of promise ids for each tx
 	let mut promises: Vec<u64> = vec![];
 
-    for (i, tx) in transactions.iter().enumerate() {
+    for tx in transactions {
 
-		let receiver_id = receivers[i];
+		let receiver_id = receivers.remove(0);
 		
-		let mut actions_data = *tx;
+		let mut actions_data = tx;
 		let mut actions: Vec<&str> = vec![];
 		while actions_data.len() > 2 {
 			let length_bytes: usize = expect(actions_data[HEADER_OFFSET..HEADER_SIZE].parse().ok());
@@ -267,9 +273,26 @@ pub fn execute() {
 				}
 				b"FunctionCall" => {
 					let method_name = get_string(action, METHOD_NAME);
-					let args = get_string(action, ARGS);
+					let args_vec: Vec<Vec<u8>> = get_string(action, ARGS)
+						.split(RECEIVER_MARKER)
+						.enumerate()
+						.map(|(j, x)| {
+							let mut result = vec![];
+							if j % 2 == 0 {
+								result.extend_from_slice(x.as_bytes());
+							} else {
+								let receiver_id = receivers.remove(0);
+								result.extend_from_slice(receiver_id.as_bytes());
+								result.extend_from_slice(x.as_bytes());
+							}
+							result
+						})
+						.collect();
+
+					let args: Vec<u8> = args_vec.into_iter().flatten().collect();
 					let amount = get_u128(action, AMOUNT);
 					let gas = get_u128(action, GAS) as u64;
+
 					unsafe {
 						near_sys::promise_batch_action_function_call(
 							id,

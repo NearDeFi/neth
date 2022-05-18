@@ -2,12 +2,12 @@ use crate::*;
 use core::mem::MaybeUninit;
 
 /// debugging only
-use near_sys::log_utf8;
-pub fn log(message: &str) {
-    unsafe {
-        log_utf8(message.len() as _, message.as_ptr() as _);
-    }
-}
+// use near_sys::log_utf8;
+// pub fn log(message: &str) {
+//     unsafe {
+//         log_utf8(message.len() as _, message.as_ptr() as _);
+//     }
+// }
 
 /// Reads into uninitialized 32 byte buffer. This assumes register is exactly 32 bytes
 /// or there will be undefined behaviour.
