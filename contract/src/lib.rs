@@ -16,6 +16,7 @@ const REGISTER_1: u64 = 1;
 const DOUBLE_QUOTE_BYTE: u8 = b'\"';
 const EXECUTE: &str = "execute";
 /// string literals in action payload parsing (improve readability)
+const ARG_PREFIX: &str = "|NETH_";
 const RECEIVER_ID: &str = "|NETH_receiver_id:";
 const PUBLIC_KEY: &str = "|NETH_public_key:";
 const AMOUNT: &str = "|NETH_amount:";
@@ -26,8 +27,8 @@ const METHOD_NAME: &str = "|NETH_method_name:";
 const ARGS: &str = "|NETH_args:";
 const GAS: &str = "|NETH_gas:";
 const CODE: &str = "|NETH_code:";
-const VALUE_TERMINATOR: &str = "_NETH|";
-const RECEIVER_MARKER: &str = "NETH_RECEIVER_ID";
+const RECEIVER_MARKER: &str = "|NETH-RECEIVER|";
+const ARG_SUFFIX: &str = "_NETH|";
 /// json stringified payload from borsh
 const ADDRESS: &str = "address\":\"0x";
 const NONCE: &str = "nonce\":\"";
@@ -42,9 +43,9 @@ extern crate alloc;
 /// DEBUGGING REMOVE
 // use alloc::format;
 
-// use alloc::format;
 use alloc::vec;
 use alloc::vec::Vec;
+use alloc::string::ToString;
 
 mod sys;
 use sys::*;
@@ -158,34 +159,16 @@ pub fn execute() {
 	receivers_vec_2 = &receivers_vec_2[0..receivers_vec_2.len()-3];
 	let mut receivers: Vec<&str> = receivers_vec_2.split(",").collect();
 
-	let (_, mut transaction_data) = expect(data.split_once(TRANSACTIONS));
-	transaction_data = &transaction_data[0..transaction_data.len()-2];
-	let mut transactions: Vec<&str> = vec![];
-	while transaction_data.len() > 0 {
-		let length_bytes: usize = expect(transaction_data[HEADER_OFFSET..HEADER_SIZE].parse().ok());
-		transactions.push(&transaction_data[HEADER_SIZE..HEADER_SIZE+length_bytes]);
-		transaction_data = &transaction_data[HEADER_SIZE+length_bytes..];
-	}
-
-	if transaction_data.len() != 0 || transactions.len() > receivers.len() {
-		sys::panic();
-	}
-
 	// keep track of promise ids for each tx
 	let mut promises: Vec<u64> = vec![];
 
-    for tx in transactions {
+	// execute transactions
+	let (_, mut transaction_data) = expect(data.split_once(TRANSACTIONS));
+	transaction_data = &transaction_data[0..transaction_data.len()-2];
+	while transaction_data.len() > 0 {
 
+		// will panic if len 0 (potentially malicious tx injected)
 		let receiver_id = receivers.remove(0);
-		
-		let mut actions_data = tx;
-		let mut actions: Vec<&str> = vec![];
-		while actions_data.len() > 2 {
-			let length_bytes: usize = expect(actions_data[HEADER_OFFSET..HEADER_SIZE].parse().ok());
-			actions.push(&actions_data[HEADER_SIZE..HEADER_SIZE+length_bytes]);
-			actions_data = &actions_data[HEADER_SIZE+length_bytes..];
-		}
-
 		// start new promise batch or chain with previous promise batch
 		let id = if promises.len() == 0 {
 			unsafe {
@@ -205,11 +188,22 @@ pub fn execute() {
 		};
 		promises.push(id);
 
-		// execute all actions for this promise
-		for action in actions {
+		// execute actions in transaction
+		let transaction_len: usize = expect(transaction_data[HEADER_OFFSET..HEADER_SIZE].parse().ok());
+		let mut actions_data = &transaction_data[HEADER_SIZE..HEADER_SIZE+transaction_len];
+		while actions_data.len() > 0 {
+
+			let action_len: usize = expect(actions_data[HEADER_OFFSET..HEADER_SIZE].parse().ok());
+			let action = &actions_data[HEADER_SIZE..HEADER_SIZE+action_len];
+
 			match get_string(action, TYPE).as_bytes() {
 				b"Transfer" => {
+					// type, amount
+					if action.matches(ARG_PREFIX).count() != 2 || action.matches(ARG_SUFFIX).count() != 2 {
+						sys::panic();
+					}
 					let amount = get_u128(action, AMOUNT);
+
 					unsafe {
 						near_sys::promise_batch_action_transfer(
 							id,
@@ -224,6 +218,10 @@ pub fn execute() {
 					// special case: allowance 0 means full access key, user would never want to add key with 0 allowance
 					let allowance = get_u128(action, ALLOWANCE);
 					if allowance == 0 {
+						// type, public_key, allowance
+						if action.matches(ARG_PREFIX).count() != 3 || action.matches(ARG_SUFFIX).count() != 3 {
+							sys::panic();
+						}
 						unsafe {
 							near_sys::promise_batch_action_add_key_with_full_access(
 								id,
@@ -235,8 +233,12 @@ pub fn execute() {
 						return;
 					}
 					// not a full access key get rest of args
-					let receiver_id = get_string(action, RECEIVER_ID);
+					// type, public_key, allowance, method_names, receiver_id
+					if action.matches(ARG_PREFIX).count() != 5 || action.matches(ARG_SUFFIX).count() != 5 {
+						sys::panic();
+					}
 					let method_names = get_string(action, METHOD_NAMES);
+					let receiver_id = get_string(action, RECEIVER_ID);
 					// special case
 					// set app key nonce to the nonce in sig used for entropy for the app key keypair
 					// apps call get_app_key_nonce and ask for signature during sign in
@@ -261,8 +263,13 @@ pub fn execute() {
 					}
 				}
 				b"DeleteKey" => {
+					// type, public_key
+					if action.matches(ARG_PREFIX).count() != 2 || action.matches(ARG_SUFFIX).count() != 2 {
+						sys::panic();
+					}
 					let mut public_key = vec![0];
 					public_key.extend_from_slice(&hex_decode(&get_string(action, PUBLIC_KEY)));
+
 					unsafe {
 						near_sys::promise_batch_action_delete_key(
 							id,
@@ -272,26 +279,20 @@ pub fn execute() {
 					};
 				}
 				b"FunctionCall" => {
+					// type, method_name, amount, gas, args
+					if action.matches(ARG_PREFIX).count() != 5 || action.matches(ARG_SUFFIX).count() != 5 {
+						sys::panic();
+					}
 					let method_name = get_string(action, METHOD_NAME);
-					let args_vec: Vec<Vec<u8>> = get_string(action, ARGS)
-						.split(RECEIVER_MARKER)
-						.enumerate()
-						.map(|(j, x)| {
-							let mut result = vec![];
-							if j % 2 == 0 {
-								result.extend_from_slice(x.as_bytes());
-							} else {
-								let receiver_id = receivers.remove(0);
-								result.extend_from_slice(receiver_id.as_bytes());
-								result.extend_from_slice(x.as_bytes());
-							}
-							result
-						})
-						.collect();
-
-					let args: Vec<u8> = args_vec.into_iter().flatten().collect();
 					let amount = get_u128(action, AMOUNT);
 					let gas = get_u128(action, GAS) as u64;
+					// fill any functionCall args that matched account|receiver and were replaced by RECEIVER_MARKER
+					// from the receivers list
+					let mut args = get_string(action, ARGS).to_string();
+					while args.matches(RECEIVER_MARKER).count() > 0 {
+						let receiver_id = receivers.remove(0);
+						args = args.replacen(RECEIVER_MARKER, receiver_id, 1);
+					}
 
 					unsafe {
 						near_sys::promise_batch_action_function_call(
@@ -306,7 +307,12 @@ pub fn execute() {
 					};
 				}
 				b"DeployContract" => {
+					// type, code
+					if action.matches(ARG_PREFIX).count() != 2 || action.matches(ARG_SUFFIX).count() != 2 {
+						sys::panic();
+					}
 					let code = hex_decode(&get_string(action, CODE));
+
 					unsafe {
 						near_sys::promise_batch_action_deploy_contract(
 							id,
@@ -317,8 +323,15 @@ pub fn execute() {
 				}
 				_ => {}
 			};
+
+			// action_data read forward
+			actions_data = &actions_data[HEADER_SIZE+action_len..];
 		}
+
+		// transaction_data read forward
+		transaction_data = &transaction_data[HEADER_SIZE+transaction_len..];
     }
+
 }
 
 /// views
