@@ -76,7 +76,7 @@ const encode = (arr) => {
 
 const HEADER_OFFSET = 'NETH'
 const HEADER_PAD = 8;
-const RECEIVER_MARKER = '|NETH-RECEIVER|'
+const RECEIVER_MARKER = '|~-_NETH~-_-~RECEIVER_-~|'
 const PREFIX = '|NETH_'
 const SUFFIX = '_NETH|'
 

@@ -27,7 +27,7 @@ const METHOD_NAME: &str = "|NETH_method_name:";
 const ARGS: &str = "|NETH_args:";
 const GAS: &str = "|NETH_gas:";
 const CODE: &str = "|NETH_code:";
-const RECEIVER_MARKER: &str = "|NETH-RECEIVER|";
+const RECEIVER_MARKER: &str = "|~-_NETH~-_-~RECEIVER_-~|";
 const ARG_SUFFIX: &str = "_NETH|";
 /// json stringified payload from borsh
 const ADDRESS: &str = "address\":\"0x";
@@ -87,6 +87,13 @@ fn expect<T>(v: Option<T>) -> T {
     } else {
         v.unwrap()
     }
+}
+
+/// Helper function to check arg bounds and count on payload
+fn check_args_count(args: &str, count: usize) {
+	if args.matches(ARG_PREFIX).count() != count || args.matches(ARG_SUFFIX).count() != count {
+		sys::panic();
+	}
 }
 
 /// This method allows a users (with a full NEAR access key) to initialize
@@ -199,9 +206,8 @@ pub fn execute() {
 			match get_string(action, TYPE).as_bytes() {
 				b"Transfer" => {
 					// type, amount
-					if action.matches(ARG_PREFIX).count() != 2 || action.matches(ARG_SUFFIX).count() != 2 {
-						sys::panic();
-					}
+					check_args_count(action, 2);
+
 					let amount = get_u128(action, AMOUNT);
 
 					unsafe {
@@ -219,9 +225,8 @@ pub fn execute() {
 					let allowance = get_u128(action, ALLOWANCE);
 					if allowance == 0 {
 						// type, public_key, allowance
-						if action.matches(ARG_PREFIX).count() != 3 || action.matches(ARG_SUFFIX).count() != 3 {
-							sys::panic();
-						}
+						check_args_count(action, 3);
+
 						unsafe {
 							near_sys::promise_batch_action_add_key_with_full_access(
 								id,
@@ -234,9 +239,8 @@ pub fn execute() {
 					}
 					// not a full access key get rest of args
 					// type, public_key, allowance, method_names, receiver_id
-					if action.matches(ARG_PREFIX).count() != 5 || action.matches(ARG_SUFFIX).count() != 5 {
-						sys::panic();
-					}
+					check_args_count(action, 5);
+
 					let method_names = get_string(action, METHOD_NAMES);
 					let receiver_id = get_string(action, RECEIVER_ID);
 					// special case
@@ -264,9 +268,8 @@ pub fn execute() {
 				}
 				b"DeleteKey" => {
 					// type, public_key
-					if action.matches(ARG_PREFIX).count() != 2 || action.matches(ARG_SUFFIX).count() != 2 {
-						sys::panic();
-					}
+					check_args_count(action, 2);
+
 					let mut public_key = vec![0];
 					public_key.extend_from_slice(&hex_decode(&get_string(action, PUBLIC_KEY)));
 
@@ -280,9 +283,8 @@ pub fn execute() {
 				}
 				b"FunctionCall" => {
 					// type, method_name, amount, gas, args
-					if action.matches(ARG_PREFIX).count() != 5 || action.matches(ARG_SUFFIX).count() != 5 {
-						sys::panic();
-					}
+					check_args_count(action, 5);
+
 					let method_name = get_string(action, METHOD_NAME);
 					let amount = get_u128(action, AMOUNT);
 					let gas = get_u128(action, GAS) as u64;
@@ -308,9 +310,8 @@ pub fn execute() {
 				}
 				b"DeployContract" => {
 					// type, code
-					if action.matches(ARG_PREFIX).count() != 2 || action.matches(ARG_SUFFIX).count() != 2 {
-						sys::panic();
-					}
+					check_args_count(action, 2);
+
 					let code = hex_decode(&get_string(action, CODE));
 
 					unsafe {
