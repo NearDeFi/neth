@@ -166,12 +166,24 @@ pub fn execute() {
 	receivers_vec_2 = &receivers_vec_2[0..receivers_vec_2.len()-3];
 	let mut receivers: Vec<&str> = receivers_vec_2.split(",").collect();
 
+	let (_, mut transaction_data) = expect(data.split_once(TRANSACTIONS));
+	transaction_data = &transaction_data[0..transaction_data.len()-2];
+
+	let mut transaction_data_copy = transaction_data;
+	let mut num_txs = 0;
+	while transaction_data_copy.len() > 0 {
+		let transaction_len: usize = expect(transaction_data_copy[HEADER_OFFSET..HEADER_SIZE].parse().ok());
+		transaction_data_copy = &transaction_data_copy[HEADER_SIZE+transaction_len..];
+		num_txs += 1;
+	}
+	if num_txs + transaction_data.matches(RECEIVER_MARKER).count() != receivers.len() {
+		sys::panic();
+	}
+
 	// keep track of promise ids for each tx
 	let mut promises: Vec<u64> = vec![];
 
 	// execute transactions
-	let (_, mut transaction_data) = expect(data.split_once(TRANSACTIONS));
-	transaction_data = &transaction_data[0..transaction_data.len()-2];
 	while transaction_data.len() > 0 {
 
 		// will panic if len 0 (potentially malicious tx injected)
