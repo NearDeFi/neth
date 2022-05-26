@@ -165,18 +165,11 @@ pub fn execute() {
 	let (_, receivers_data) = expect(data.split_once(RECEIVERS));
     let (mut receivers_data, _) = expect(receivers_data.split_once(TRANSACTIONS));
 	receivers_data = &receivers_data[0..receivers_data.len()-3];
-	
-	let mut receivers: Vec<&str> = vec![];
-	let mut num_receivers: usize = 0;
-	while receivers_data.len() > 0 {
-		let receivers_len: usize = expect(receivers_data[HEADER_OFFSET+3..HEADER_SIZE].parse().ok());
-		num_receivers = expect(receivers_data[HEADER_OFFSET..HEADER_OFFSET+3].parse().ok());
-		receivers_data = &receivers_data[PAYLOAD_START..PAYLOAD_START+receivers_len];
-		receivers = receivers_data.split(",").collect();
-		receivers_data = &receivers_data[receivers_len..];
-	}
-
-	if num_receivers != receivers.len() {
+	let receivers_len: usize = expect(receivers_data[HEADER_OFFSET+3..HEADER_SIZE].parse().ok());
+	let num_receivers: usize = expect(receivers_data[HEADER_OFFSET..HEADER_OFFSET+3].parse().ok());
+	receivers_data = &receivers_data[PAYLOAD_START..PAYLOAD_START+receivers_len];
+	let mut receivers: Vec<&str> = receivers_data.split(",").collect();
+	if num_receivers != receivers.len() || receivers_len != receivers_data.len() {
 		sys::panic();
 	}
 
