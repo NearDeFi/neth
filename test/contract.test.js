@@ -84,7 +84,7 @@ const pack = (elements) => elements.map((el) => {
 	const str = typeof el === 'string' ? el : Object.entries(el).map(
 		([k, v]) => `${PREFIX}${k}:${typeof v === 'string' ? v : JSON.stringify(v)}${SUFFIX}`
 	).join('')
-	return HEADER_OFFSET + str.length.toString().padStart(HEADER_PAD, '0') + str
+	return HEADER_OFFSET + str.length.toString().padStart(HEADER_PAD, '0') + '__' + str
 }).join('')
 
 const gen_args = async (json, w = wallet) => {
@@ -107,7 +107,10 @@ const gen_args = async (json, w = wallet) => {
 			tx.actions.forEach((action) => {
 				if (!action.args) return
 				Object.entries(action.args).forEach(([key, value]) => {
-					if (/receiver|account/g.test(key)) {
+
+					/// TODO include check on value to determine valid account_id to be replaced
+
+					if (/receiver_id|account_id/g.test(key)) {
 						action.args[key] = RECEIVER_MARKER
 						json.receivers.splice(i+1, 0, value)
 					}
@@ -117,7 +120,14 @@ const gen_args = async (json, w = wallet) => {
 
 		json.transactions = pack(json.transactions.map(({ actions }) => pack(actions)));
 	}
-	if (json.receivers) json.receivers = json.receivers.join(',');
+	if (json.receivers) {
+		const numReceivers = json.receivers.length.toString()
+		json.receivers = HEADER_OFFSET + 
+			json.receivers.join(',').length.toString().padStart(HEADER_PAD, '0') +
+			'__' +
+			json.receivers.join(',');
+		json.receivers = json.receivers.substring(0, 4) + numReceivers.padStart(3, '0') + json.receivers.substring(7)	
+	}
 	
 	console.log(JSON.stringify(json, null, 4))
 	

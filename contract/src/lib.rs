@@ -37,6 +37,7 @@ const TRANSACTIONS: &str = "transactions\":\"";
 /// msg syntax adds a header for each transaction and action e.g. NETH00000100 where 00000100 is size of payload
 const HEADER_OFFSET: usize = 4;
 const HEADER_SIZE: usize = 12;
+const PAYLOAD_START: usize = 14;
 
 extern crate alloc;
 
@@ -161,10 +162,23 @@ pub fn execute() {
     let new_nonce = nonce + 1;
     swrite(NONCE_KEY, &new_nonce.to_le_bytes());
 
-	let (_, receivers_vec) = expect(data.split_once(RECEIVERS));
-    let (mut receivers_vec_2, _) = expect(receivers_vec.split_once(TRANSACTIONS));
-	receivers_vec_2 = &receivers_vec_2[0..receivers_vec_2.len()-3];
-	let mut receivers: Vec<&str> = receivers_vec_2.split(",").collect();
+	let (_, receivers_data) = expect(data.split_once(RECEIVERS));
+    let (mut receivers_data, _) = expect(receivers_data.split_once(TRANSACTIONS));
+	receivers_data = &receivers_data[0..receivers_data.len()-3];
+	
+	let mut receivers: Vec<&str> = vec![];
+	let mut num_receivers: usize = 0;
+	while receivers_data.len() > 0 {
+		let receivers_len: usize = expect(receivers_data[HEADER_OFFSET+3..HEADER_SIZE].parse().ok());
+		num_receivers = expect(receivers_data[HEADER_OFFSET..HEADER_OFFSET+3].parse().ok());
+		receivers_data = &receivers_data[PAYLOAD_START..PAYLOAD_START+receivers_len];
+		receivers = receivers_data.split(",").collect();
+		receivers_data = &receivers_data[receivers_len..];
+	}
+
+	if num_receivers != receivers.len() {
+		sys::panic();
+	}
 
 	let (_, mut transaction_data) = expect(data.split_once(TRANSACTIONS));
 	transaction_data = &transaction_data[0..transaction_data.len()-2];
@@ -173,7 +187,7 @@ pub fn execute() {
 	let mut num_txs = 0;
 	while transaction_data_copy.len() > 0 {
 		let transaction_len: usize = expect(transaction_data_copy[HEADER_OFFSET..HEADER_SIZE].parse().ok());
-		transaction_data_copy = &transaction_data_copy[HEADER_SIZE+transaction_len..];
+		transaction_data_copy = &transaction_data_copy[PAYLOAD_START+transaction_len..];
 		num_txs += 1;
 	}
 	if num_txs + transaction_data.matches(RECEIVER_MARKER).count() != receivers.len() {
@@ -209,11 +223,11 @@ pub fn execute() {
 
 		// execute actions in transaction
 		let transaction_len: usize = expect(transaction_data[HEADER_OFFSET..HEADER_SIZE].parse().ok());
-		let mut actions_data = &transaction_data[HEADER_SIZE..HEADER_SIZE+transaction_len];
+		let mut actions_data = &transaction_data[PAYLOAD_START..PAYLOAD_START+transaction_len];
 		while actions_data.len() > 0 {
 
 			let action_len: usize = expect(actions_data[HEADER_OFFSET..HEADER_SIZE].parse().ok());
-			let action = &actions_data[HEADER_SIZE..HEADER_SIZE+action_len];
+			let action = &actions_data[PAYLOAD_START..PAYLOAD_START+action_len];
 
 			match get_string(action, TYPE).as_bytes() {
 				b"Transfer" => {
@@ -338,11 +352,11 @@ pub fn execute() {
 			};
 
 			// action_data read forward
-			actions_data = &actions_data[HEADER_SIZE+action_len..];
+			actions_data = &actions_data[PAYLOAD_START+action_len..];
 		}
 
 		// transaction_data read forward
-		transaction_data = &transaction_data[HEADER_SIZE+transaction_len..];
+		transaction_data = &transaction_data[PAYLOAD_START+transaction_len..];
     }
 
 }
