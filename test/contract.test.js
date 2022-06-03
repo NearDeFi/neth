@@ -74,21 +74,21 @@ const encode = (arr) => {
 
 /// helper generates the arguments for a call to execute() in the contract
 
-const HEADER_OFFSET = 'NETH'
+const HEADER_OFFSET = 'NETH';
 const HEADER_PAD = 8;
-const RECEIVER_MARKER = '|~-_NETH~-_-~RECEIVER_-~|'
-const PREFIX = '|NETH_'
-const SUFFIX = '_NETH|'
+const RECEIVER_MARKER = '|~-_NETH~-_-~RECEIVER_-~|';
+const PREFIX = '|NETH_';
+const SUFFIX = '_NETH|';
 
 const pack = (elements) => elements.map((el) => {
 	const str = typeof el === 'string' ? el : Object.entries(el).map(
 		([k, v]) => `${PREFIX}${k}:${typeof v === 'string' ? v : JSON.stringify(v)}${SUFFIX}`
-	).join('')
+	).join('');
 
-	const len = str.length.toString().padStart(HEADER_PAD, '0')
+	const len = str.length.toString().padStart(HEADER_PAD, '0');
 
-	return HEADER_OFFSET + len + '__' + str
-}).join('')
+	return HEADER_OFFSET + len + '__' + str;
+}).join('');
 
 const gen_args = async (json, w = wallet) => {
 	const types = {
@@ -108,31 +108,31 @@ const gen_args = async (json, w = wallet) => {
 	if (json.transactions) {
 		Object.values(json.transactions).forEach((tx, i) => {
 			tx.actions.forEach((action) => {
-				if (!action.args) return
+				if (!action.args) return;
 				Object.entries(action.args).forEach(([key, value]) => {
 
 					/// TODO include check on value to determine valid account_id to be replaced
 
 					if (/receiver_id|account_id/g.test(key)) {
-						action.args[key] = RECEIVER_MARKER
-						json.receivers.splice(i+1, 0, value)
+						action.args[key] = RECEIVER_MARKER;
+						json.receivers.splice(i+1, 0, value);
 					}
-				})
-			})
-		})
+				});
+			});
+		});
 
 		json.transactions = pack(json.transactions.map(({ actions }) => pack(actions)));
 	}
 	if (json.receivers) {
-		const numReceivers = json.receivers.length.toString()
+		const numReceivers = json.receivers.length.toString();
 		json.receivers = HEADER_OFFSET + 
 			json.receivers.join(',').length.toString().padStart(HEADER_PAD, '0') +
 			'__' +
 			json.receivers.join(',');
-		json.receivers = json.receivers.substring(0, 4) + numReceivers.padStart(3, '0') + json.receivers.substring(7)	
+		json.receivers = json.receivers.substring(0, 4) + numReceivers.padStart(3, '0') + json.receivers.substring(7);	
 	}
 	
-	console.log(JSON.stringify(json, null, 4))
+	console.log(JSON.stringify(json, null, 4));
 	
 	/// this is automatically done by ethers.js
 	const flatSig = await w._signTypedData(domain, types, json);
@@ -388,7 +388,7 @@ test('execute batch transaction on account', async (t) => {
 				actions,
 			}
 		]
-	}
+	};
 
 	/// get sig args
 	const args = await gen_args(payload);
