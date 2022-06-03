@@ -84,7 +84,10 @@ const pack = (elements) => elements.map((el) => {
 	const str = typeof el === 'string' ? el : Object.entries(el).map(
 		([k, v]) => `${PREFIX}${k}:${typeof v === 'string' ? v : JSON.stringify(v)}${SUFFIX}`
 	).join('')
-	return HEADER_OFFSET + str.length.toString().padStart(HEADER_PAD, '0') + '__' + str
+
+	const len = str.length.toString().padStart(HEADER_PAD, '0')
+
+	return HEADER_OFFSET + len + '__' + str
 }).join('')
 
 const gen_args = async (json, w = wallet) => {
@@ -440,6 +443,10 @@ test('execute actions on some other contracts', async (t) => {
 						args: {
 							new_account_id: 'meow-' + Date.now() + '.testnet',
 							new_public_key: newKeyPair.publicKey.toString(),
+
+							msg: JSON.stringify({
+								iam: 'nested_json'
+							})
 						},
 						amount: parseNearAmount('0.02'),
 						gas: '50000000000000',

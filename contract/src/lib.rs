@@ -177,6 +177,8 @@ pub fn execute() {
 	transaction_data = &transaction_data[0..transaction_data.len()-2];
 
 	let mut transaction_data_copy = transaction_data;
+
+
 	let mut num_txs = 0;
 	while transaction_data_copy.len() > 0 {
 		let transaction_len: usize = expect(transaction_data_copy[HEADER_OFFSET..HEADER_SIZE].parse().ok());
@@ -217,6 +219,8 @@ pub fn execute() {
 		// execute actions in transaction
 		let transaction_len: usize = expect(transaction_data[HEADER_OFFSET..HEADER_SIZE].parse().ok());
 		let mut actions_data = &transaction_data[PAYLOAD_START..PAYLOAD_START+transaction_len];
+
+
 		while actions_data.len() > 0 {
 
 			let action_len: usize = expect(actions_data[HEADER_OFFSET..HEADER_SIZE].parse().ok());
@@ -310,6 +314,7 @@ pub fn execute() {
 					// fill any functionCall args that matched account|receiver and were replaced by RECEIVER_MARKER
 					// from the receivers list
 					let mut args = get_string(action, ARGS).to_string();
+					
 					while args.matches(RECEIVER_MARKER).count() > 0 {
 						let receiver_id = receivers.remove(0);
 						args = args.replacen(RECEIVER_MARKER, receiver_id, 1);

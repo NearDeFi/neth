@@ -615,8 +615,8 @@ export const convertActions = (actions, accountId, receiverId) => actions.map((_
         gas: (gas && gas.toString()) || undefined,
         public_key: (publicKey && pub2hex(publicKey)) || undefined,
         method_name: methodName,
-        args: (args && obj2hex(args)) || undefined,
-        code: (code && obj2hex(code)) || undefined,
+        args: args || undefined,
+        code: code || undefined,
         amount: (deposit && deposit.toString()) || undefined,
         permission: undefined,
     };

@@ -55,7 +55,10 @@ pub(crate) fn assert_valid_tx() -> (u64, String) {
     // known offset for final byte of ethereum signatures, reduces to either 0 or 1 from 27 or 28
     sig_bytes[64] -= 27;
     // json stringify + borsh double escaped quotes in msg payload, strip slashes
-    let msg = expect(alloc::str::from_utf8(&data[148..data.len() - 1]).ok()).trim().replace("\\\"", "\"");
+    let msg = expect(alloc::str::from_utf8(&data[148..data.len() - 1]).ok()).trim()
+    .replace("\\\"", "\"")
+    // for nested json e.g. { args: { msg: JSON.stringify({ some: "more json" }) } }
+    .replace("\\\\\"", "\\\"");
 
     let (_, nonce_vec) = expect(msg.as_str().split_once(NONCE));
     let (nonce_vec_2, _) = expect(nonce_vec.split_once(RECEIVERS));
