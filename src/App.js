@@ -1,10 +1,11 @@
 import React, { useContext, useState, useEffect } from 'react';
-import { ethers } from "ethers";
+import * as nearAPI from "near-api-js";
 import { accountSuffix } from '../utils/near-utils'
 import { accountExists } from '../test/test-utils'
 import { appStore, onAppMount } from './state/app';
 import {
 	getNear,
+	getConnection,
 	getEthereum,
 	handleCreate,
 	switchEthereum,
@@ -17,14 +18,19 @@ import {
 	signIn,
 	signOut,
 	isSignedIn,
-	signAndSendTransaction,
+	signAndSendTransactions,
+	initConnection,
 } from './utils/neth';
-
+import getConfig from "../utils/config";
 /// example app transactions
-import { addKey, deleteKey, functionCall, transfer, functionCallAccessKey } from 'near-api-js/lib/transaction';
-
+import { transfer } from 'near-api-js/lib/transaction';
 import './App.scss';
 
+/// destructure
+const { nodeUrl, walletUrl, helperUrl, networkId, contractId, isBrowser } = getConfig();
+const { Account } = nearAPI
+
+/// valid accounts
 const ACCOUNT_REGEX = new RegExp('^(([a-z0-9]+[\-_])*[a-z0-9]+\.)*([a-z0-9]+[\-_])*[a-z0-9]+$')
 
 const App = () => {
@@ -39,6 +45,12 @@ const App = () => {
 	const [ethAddress, setEthAddress] = useState('')
 
 	const updateEthState = async () => {
+		await initConnection({
+			networkId,
+			nodeUrl,
+			walletUrl,
+			helperUrl,
+		})
 		const { signer, ethAddress } = await getEthereum();
 		setSigner(signer)
 		setEthAddress(ethAddress)
@@ -46,7 +58,12 @@ const App = () => {
 		if (ethAddress) {
 			const accountId = await getNearMap(ethAddress)
 			setMapAccountId(accountId)
-			if (!!accountId) setShowApps(await hasAppKey(accountId))
+			if (!!accountId) {
+				const { connection } = getConnection();
+				const account = new Account(connection, accountId);
+				const accessKeys = await account.getAccessKeys()
+				setShowApps(await hasAppKey(accessKeys))
+			}
 		}
 		setLoading(false)
 	}
@@ -165,11 +182,15 @@ const App = () => {
 											<button aria-busy={loading} disabled={loading} onClick={handleAction(async () => {
 
 												const { accountId } = await getNear()
-												const res = await signAndSendTransaction({
-													receiverId: accountId,
-													actions: [
-														transfer('1'),
-													],
+												const res = await signAndSendTransactions({
+													transactions: [
+														{
+															receiverId: accountId,
+															actions: [
+																transfer('1'),
+															],
+														}
+													]
 												})
 												if (!!res?.status?.SuccessValue) {
 													console.warn('error')
