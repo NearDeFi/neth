@@ -29,6 +29,7 @@
 	],
 	"scripts": {
 		"prebuild": "yarn clean",
+		"build-lib": "cd neth && npx tsc && cd ..",
 		"build": "parcel build src/index.html --public-url ./ --no-source-maps",
 		"clean": "rimraf ./dist",
 		"start": "parcel src/index.html --open",

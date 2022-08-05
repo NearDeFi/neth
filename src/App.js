@@ -1,9 +1,9 @@
 import React, { useContext, useState, useEffect } from 'react';
 import * as nearAPI from "near-api-js";
-import { accountSuffix } from '../utils/near-utils'
-import { accountExists } from '../test/test-utils'
 import { appStore, onAppMount } from './state/app';
 import {
+	accountSuffix,
+	accountExists,
 	getNear,
 	getConnection,
 	getEthereum,
@@ -20,7 +20,7 @@ import {
 	isSignedIn,
 	signAndSendTransactions,
 	initConnection,
-} from './utils/neth';
+} from '../neth/lib';
 import getConfig from "../utils/config";
 /// example app transactions
 import { transfer } from 'near-api-js/lib/transaction';

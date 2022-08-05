@@ -13,6 +13,7 @@ export function handleSetupContract(): any;
 export function handleMapping(): any;
 export function handleKeys(): any;
 export function handleCheckAccount(ethAddress: any): any;
+export function hasAppKey(accessKeys: any): any;
 export function handleRefreshAppKey(signer: any, ethAddress: any): Promise<void | {
     publicKey: string;
     secretKey: any;

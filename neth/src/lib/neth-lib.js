@@ -250,7 +250,7 @@ export const handleCheckAccount = async (ethAddress) => {
 
 /// on same domain as setup
 
-const hasAppKey = (accessKeys) =>
+export const hasAppKey = (accessKeys) =>
   accessKeys.some((k) => {
     const functionCallPermission = k?.access_key?.permission?.FunctionCall;
     return (

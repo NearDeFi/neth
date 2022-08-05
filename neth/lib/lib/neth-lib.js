@@ -70,7 +70,7 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
     }
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.convertActions = exports.signAndSendTransactions = exports.getAppKey = exports.isSignedIn = exports.signOut = exports.signIn = exports.getNear = exports.getNearMap = exports.switchEthereum = exports.getEthereum = exports.handleDisconnect = exports.handleUpdateContract = exports.handleRefreshAppKey = exports.handleCheckAccount = exports.handleKeys = exports.handleMapping = exports.handleSetupContract = exports.handleDeployContract = exports.handleCreate = exports.getConnection = exports.initConnection = void 0;
+exports.convertActions = exports.signAndSendTransactions = exports.getAppKey = exports.isSignedIn = exports.signOut = exports.signIn = exports.getNear = exports.getNearMap = exports.switchEthereum = exports.getEthereum = exports.handleDisconnect = exports.handleUpdateContract = exports.handleRefreshAppKey = exports.hasAppKey = exports.handleCheckAccount = exports.handleKeys = exports.handleMapping = exports.handleSetupContract = exports.handleDeployContract = exports.handleCreate = exports.getConnection = exports.initConnection = void 0;
 var ethers_1 = require("ethers");
 var nearAPI = __importStar(require("near-api-js"));
 var near_seed_phrase_1 = require("near-seed-phrase");
@@ -388,6 +388,7 @@ var hasAppKey = function (accessKeys) {
             functionCallPermission.method_names[0] === "execute");
     });
 };
+exports.hasAppKey = hasAppKey;
 var handleRefreshAppKey = function (signer, ethAddress) { return __awaiter(void 0, void 0, void 0, function () {
     var _a, account, accountId, nonce, _b, _c, publicKey, secretKey, public_key, actions, accessKeys, appKeyNonce, _d, oldPublicKey, oldPublicKeyHex, args, res;
     var _e;
@@ -417,7 +418,7 @@ var handleRefreshAppKey = function (signer, ethAddress) { return __awaiter(void 
                 return [4 /*yield*/, account.getAccessKeys()];
             case 4:
                 accessKeys = _f.sent();
-                if (!hasAppKey(accessKeys)) return [3 /*break*/, 7];
+                if (!(0, exports.hasAppKey)(accessKeys)) return [3 /*break*/, 7];
                 _d = parseInt;
                 return [4 /*yield*/, account.viewFunction(accountId, "get_app_key_nonce")];
             case 5:
@@ -929,7 +930,7 @@ var getAppKey = function (_a) {
                     return [4 /*yield*/, account.getAccessKeys()];
                 case 7:
                     accessKeys = _d.sent();
-                    if (!!hasAppKey(accessKeys)) return [3 /*break*/, 9];
+                    if (!!(0, exports.hasAppKey)(accessKeys)) return [3 /*break*/, 9];
                     return [4 /*yield*/, (0, exports.handleRefreshAppKey)(signer, eth_address)];
                 case 8:
                     _d.sent();
