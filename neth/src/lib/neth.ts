@@ -83,6 +83,55 @@ const Neth: WalletBehaviourFactory<InjectedWallet> = async ({ metadata, logger, 
       await signOut();
     },
 
+    async verifyOwner({ message }) {
+      // logger.log("Sender:verifyOwner", { message });
+
+      // const account = _state.wallet.account();
+
+      // if (!account) {
+      //   throw new Error("Wallet not signed in");
+      // }
+
+      // // Note: When the wallet is locked, Sender returns an empty Signer interface.
+      // // Even after unlocking the wallet, the user will need to refresh to gain
+      // // access to these methods.
+      // if (!account.connection.signer.signMessage) {
+      //   throw new Error("Wallet is locked");
+      // }
+
+      // const networkId = options.network.networkId;
+      // const accountId = account.accountId;
+      // const pubKey = await account.connection.signer.getPublicKey(
+      //   accountId,
+      //   networkId
+      // );
+      // const block = await provider.block({ finality: "final" });
+
+      // const data = {
+      //   accountId,
+      //   message,
+      //   blockId: block.header.hash,
+      //   publicKey: Buffer.from(pubKey.data).toString("base64"),
+      //   keyType: pubKey.keyType,
+      // };
+      // const encoded = JSON.stringify(data);
+
+      // const signed = await account.connection.signer.signMessage(
+      //   new Uint8Array(Buffer.from(encoded)),
+      //   accountId,
+      //   networkId
+      // );
+
+      return {
+        accountId: '',
+        message: '',
+        blockId: '',
+        publicKey: '',
+        keyType: 0,
+        signature: '',
+      };
+    },
+
     async getAccounts() {
       const { accountId } = await getNear();
       return [{ accountId }];

@@ -6,6 +6,7 @@ export {
 	getConnection,
 	getEthereum,
 	handleCreate,
+	accountExists,
 	switchEthereum,
 	handleCheckAccount,
 	getNearMap,

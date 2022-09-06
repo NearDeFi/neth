@@ -70,13 +70,12 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
     }
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.convertActions = exports.signAndSendTransactions = exports.getAppKey = exports.isSignedIn = exports.signOut = exports.signIn = exports.getNear = exports.getNearMap = exports.switchEthereum = exports.getEthereum = exports.handleDisconnect = exports.handleUpdateContract = exports.handleRefreshAppKey = exports.hasAppKey = exports.handleCheckAccount = exports.handleKeys = exports.handleMapping = exports.handleSetupContract = exports.handleDeployContract = exports.handleCreate = exports.getConnection = exports.initConnection = void 0;
+exports.convertActions = exports.signAndSendTransactions = exports.getAppKey = exports.isSignedIn = exports.signOut = exports.signIn = exports.getNear = exports.getNearMap = exports.switchEthereum = exports.getEthereum = exports.handleDisconnect = exports.handleUpdateContract = exports.handleRefreshAppKey = exports.hasAppKey = exports.handleCheckAccount = exports.handleKeys = exports.handleMapping = exports.handleSetupContract = exports.handleDeployContract = exports.handleCreate = exports.accountExists = exports.getConnection = exports.initConnection = void 0;
 var ethers_1 = require("ethers");
 var nearAPI = __importStar(require("near-api-js"));
 var near_seed_phrase_1 = require("near-seed-phrase");
 var Near = nearAPI.Near, Account = nearAPI.Account, KeyPair = nearAPI.KeyPair, BrowserLocalStorageKeyStore = nearAPI.keyStores.BrowserLocalStorageKeyStore, _a = nearAPI.transactions, addKey = _a.addKey, deleteKey = _a.deleteKey, functionCallAccessKey = _a.functionCallAccessKey, _b = nearAPI.utils, PublicKey = _b.PublicKey, parseNearAmount = _b.format.parseNearAmount;
-var FUNDING_ACCOUNT_ID = "neth.testnet";
-var MAP_ACCOUNT_ID = "map.neth.testnet";
+var TESTNET_FUNDING_ACCOUNT_ID = "neth.testnet";
 var ATTEMPT_SECRET_KEY = "__ATTEMPT_SECRET_KEY";
 var ATTEMPT_ACCOUNT_ID = "__ATTEMPT_ACCOUNT_ID";
 var ATTEMPT_ETH_ADDRESS = "__ATTEMPT_ETH_ADDRESS";
@@ -87,6 +86,14 @@ var half_gas = "50000000000000";
 /// this is the new account amount 0.21 for account name, keys, contract and 0.01 for mapping contract storage cost
 var attachedDeposit = parseNearAmount("0.3");
 var attachedDepositMapping = parseNearAmount("0.02");
+var networks = {
+    testnet: {
+        mapAccountId: "map.neth.testnet",
+    },
+    mainnet: {
+        mapAccountId: "map.neth.near",
+    }
+};
 /// LocalStorage Helpers
 var get = function (k) {
     var v = localStorage.getItem(k);
@@ -139,6 +146,7 @@ var accountExists = function (accountId) { return __awaiter(void 0, void 0, void
         }
     });
 }); };
+exports.accountExists = accountExists;
 var buf2hex = function (buf) { return ethers_1.ethers.utils.hexlify(buf).substring(2); };
 var pub2hex = function (publicKey) {
     return ethers_1.ethers.utils.hexlify(PublicKey.fromString(publicKey).data).substring(2);
@@ -249,7 +257,7 @@ var handleMapping = function () { return __awaiter(void 0, void 0, void 0, funct
             case 1:
                 _c.trys.push([1, 3, , 4]);
                 return [4 /*yield*/, account.functionCall({
-                        contractId: MAP_ACCOUNT_ID,
+                        contractId: networks[networkId].mapAccountId,
                         methodName: "set",
                         args: { eth_address: ethAddress },
                         gas: gas,
@@ -325,7 +333,7 @@ var handleCheckAccount = function (ethAddress) { return __awaiter(void 0, void 0
                     newAccountId = mapAccountId;
                 }
                 console.log("checking account created");
-                return [4 /*yield*/, accountExists(newAccountId)];
+                return [4 /*yield*/, (0, exports.accountExists)(newAccountId)];
             case 2:
                 if (!(_d.sent())) {
                     keyPair = KeyPair.fromString(newSecretKey);
@@ -358,7 +366,7 @@ var handleCheckAccount = function (ethAddress) { return __awaiter(void 0, void 0
                 return [2 /*return*/, (0, exports.handleSetupContract)()];
             case 7:
                 console.log("checking account address mapping");
-                return [4 /*yield*/, account.viewFunction(MAP_ACCOUNT_ID, "get_eth", {
+                return [4 /*yield*/, account.viewFunction(networks[networkId].mapAccountId, "get_eth", {
                         account_id: newAccountId,
                     })];
             case 8:
@@ -603,7 +611,7 @@ var handleDisconnect = function (signer, ethAddress) { return __awaiter(void 0, 
             case 9:
                 _g.trys.push([9, 11, , 12]);
                 return [4 /*yield*/, account.functionCall({
-                        contractId: MAP_ACCOUNT_ID,
+                        contractId: networks[networkId].mapAccountId,
                         methodName: "del",
                         args: {},
                         gas: gas,
@@ -830,7 +838,7 @@ exports.switchEthereum = switchEthereum;
 /// near
 var getNearMap = function (ethAddress) { return __awaiter(void 0, void 0, void 0, function () {
     return __generator(this, function (_a) {
-        return [2 /*return*/, contractAccount.viewFunction(MAP_ACCOUNT_ID, "get_near", { eth_address: ethAddress })];
+        return [2 /*return*/, contractAccount.viewFunction(networks[networkId].mapAccountId, "get_near", { eth_address: ethAddress })];
     });
 }); };
 exports.getNearMap = getNearMap;
@@ -891,7 +899,7 @@ var promptValidAccountId = function (msg) { return __awaiter(void 0, void 0, voi
                     newAccountId.length > 64) {
                     return [2 /*return*/, promptValidAccountId("account is invalid (a-z, 0-9 and -,_ only; min 2; max 64; ".concat(accountSuffix, " applied automatically)"))];
                 }
-                return [4 /*yield*/, accountExists(newAccountId)];
+                return [4 /*yield*/, (0, exports.accountExists)(newAccountId)];
             case 1:
                 if (_a.sent()) {
                     return [2 /*return*/, promptValidAccountId("account already exists")];

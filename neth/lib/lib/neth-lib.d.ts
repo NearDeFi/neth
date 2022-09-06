@@ -7,6 +7,7 @@ export function getConnection(): {
     contractAccount: any;
     accountSuffix: any;
 };
+export function accountExists(accountId: any): Promise<boolean>;
 export function handleCreate(signer: any, ethAddress: any, newAccountId: any): Promise<any>;
 export function handleDeployContract(contractPath: any): any;
 export function handleSetupContract(): any;
@@ -34,7 +35,7 @@ export function signOut(): Promise<void | {
     accountId: any;
 }>;
 export function isSignedIn(): boolean;
-export function getAppKey({ signer, ethAddress: eth_address }: {
+export function getAppKey({ signer, ethAddress }: {
     signer: any;
     ethAddress: any;
 }): Promise<{
@@ -46,3 +47,5 @@ export function signAndSendTransactions({ transactions }: {
     transactions: any;
 }): Promise<any>;
 export function convertActions(actions: any, accountId: any, receiverId: any): any;
+import * as nearAPI from "near-api-js";
+import { ethers } from "ethers";
