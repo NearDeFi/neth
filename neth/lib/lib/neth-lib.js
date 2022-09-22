@@ -77,7 +77,6 @@ exports.convertActions = exports.signAndSendTransactions = exports.getAppKey = e
 var ethers_1 = require("ethers");
 var nearAPI = __importStar(require("near-api-js"));
 var near_seed_phrase_1 = require("near-seed-phrase");
-<<<<<<< HEAD
 var bn_js_1 = __importDefault(require("bn.js"));
 var Near = nearAPI.Near, Account = nearAPI.Account, KeyPair = nearAPI.KeyPair, BrowserLocalStorageKeyStore = nearAPI.keyStores.BrowserLocalStorageKeyStore, _a = nearAPI.transactions, addKey = _a.addKey, deleteKey = _a.deleteKey, functionCallAccessKey = _a.functionCallAccessKey, _b = nearAPI.utils, PublicKey = _b.PublicKey, _c = _b.format, parseNearAmount = _c.parseNearAmount, formatNearAmount = _c.formatNearAmount;
 var NETWORK = {
@@ -89,10 +88,6 @@ var NETWORK = {
         MAP_ACCOUNT_ID: "nethmap.near",
     }
 };
-=======
-var Near = nearAPI.Near, Account = nearAPI.Account, KeyPair = nearAPI.KeyPair, BrowserLocalStorageKeyStore = nearAPI.keyStores.BrowserLocalStorageKeyStore, _a = nearAPI.transactions, addKey = _a.addKey, deleteKey = _a.deleteKey, functionCallAccessKey = _a.functionCallAccessKey, _b = nearAPI.utils, PublicKey = _b.PublicKey, parseNearAmount = _b.format.parseNearAmount;
-var TESTNET_FUNDING_ACCOUNT_ID = "neth.testnet";
->>>>>>> 635e01f5799ea7739418a0e5c55ed6fd03372cd4
 var ATTEMPT_SECRET_KEY = "__ATTEMPT_SECRET_KEY";
 var ATTEMPT_ACCOUNT_ID = "__ATTEMPT_ACCOUNT_ID";
 var ATTEMPT_ETH_ADDRESS = "__ATTEMPT_ETH_ADDRESS";
@@ -309,11 +304,7 @@ var handleMapping = function () { return __awaiter(void 0, void 0, void 0, funct
             case 1:
                 _c.trys.push([1, 3, , 4]);
                 return [4 /*yield*/, account.functionCall({
-<<<<<<< HEAD
                         contractId: NETWORK[networkId].MAP_ACCOUNT_ID,
-=======
-                        contractId: networks[networkId].mapAccountId,
->>>>>>> 635e01f5799ea7739418a0e5c55ed6fd03372cd4
                         methodName: "set",
                         args: { eth_address: ethAddress },
                         gas: gas,
@@ -422,11 +413,7 @@ var handleCheckAccount = function (ethAddress) { return __awaiter(void 0, void 0
                 return [2 /*return*/, (0, exports.handleSetupContract)()];
             case 7:
                 console.log("checking account address mapping");
-<<<<<<< HEAD
                 return [4 /*yield*/, account.viewFunction(NETWORK[networkId].MAP_ACCOUNT_ID, "get_eth", {
-=======
-                return [4 /*yield*/, account.viewFunction(networks[networkId].mapAccountId, "get_eth", {
->>>>>>> 635e01f5799ea7739418a0e5c55ed6fd03372cd4
                         account_id: newAccountId,
                     })];
             case 8:
@@ -671,11 +658,7 @@ var handleDisconnect = function (signer, ethAddress) { return __awaiter(void 0, 
             case 9:
                 _g.trys.push([9, 11, , 12]);
                 return [4 /*yield*/, account.functionCall({
-<<<<<<< HEAD
                         contractId: NETWORK[networkId].MAP_ACCOUNT_ID,
-=======
-                        contractId: networks[networkId].mapAccountId,
->>>>>>> 635e01f5799ea7739418a0e5c55ed6fd03372cd4
                         methodName: "del",
                         args: {},
                         gas: gas,
@@ -902,11 +885,7 @@ exports.switchEthereum = switchEthereum;
 /// near
 var getNearMap = function (ethAddress) { return __awaiter(void 0, void 0, void 0, function () {
     return __generator(this, function (_a) {
-<<<<<<< HEAD
         return [2 /*return*/, contractAccount.viewFunction(NETWORK[networkId].MAP_ACCOUNT_ID, "get_near", { eth_address: ethAddress })];
-=======
-        return [2 /*return*/, contractAccount.viewFunction(networks[networkId].mapAccountId, "get_near", { eth_address: ethAddress })];
->>>>>>> 635e01f5799ea7739418a0e5c55ed6fd03372cd4
     });
 }); };
 exports.getNearMap = getNearMap;

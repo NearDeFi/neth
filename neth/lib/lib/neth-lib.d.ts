@@ -8,11 +8,7 @@ export function getConnection(): {
     accountSuffix: any;
 };
 export function accountExists(accountId: any): Promise<boolean>;
-<<<<<<< HEAD
 export function handleCreate(signer: any, ethAddress: any, newAccountId: any, withImplicit?: boolean): Promise<any>;
-=======
-export function handleCreate(signer: any, ethAddress: any, newAccountId: any): Promise<any>;
->>>>>>> 635e01f5799ea7739418a0e5c55ed6fd03372cd4
 export function handleDeployContract(contractPath: any): any;
 export function handleSetupContract(): any;
 export function handleMapping(): any;

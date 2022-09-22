@@ -1,10 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-<<<<<<< HEAD
 exports.initConnection = exports.signAndSendTransactions = exports.isSignedIn = exports.signOut = exports.signIn = exports.hasAppKey = exports.handleRefreshAppKey = exports.handleUpdateContract = exports.handleDisconnect = exports.getNearMap = exports.handleCheckAccount = exports.switchEthereum = exports.handleCreate = exports.getEthereum = exports.getConnection = exports.accountExists = exports.getNear = exports.setupNeth = void 0;
-=======
-exports.initConnection = exports.signAndSendTransactions = exports.isSignedIn = exports.signOut = exports.signIn = exports.hasAppKey = exports.handleRefreshAppKey = exports.handleUpdateContract = exports.handleDisconnect = exports.getNearMap = exports.handleCheckAccount = exports.switchEthereum = exports.accountExists = exports.handleCreate = exports.getEthereum = exports.getConnection = exports.getNear = exports.setupNeth = void 0;
->>>>>>> 635e01f5799ea7739418a0e5c55ed6fd03372cd4
 var neth_1 = require("./lib/neth");
 Object.defineProperty(exports, "setupNeth", { enumerable: true, get: function () { return neth_1.setupNeth; } });
 var neth_lib_1 = require("./lib/neth-lib");
