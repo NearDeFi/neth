@@ -12,7 +12,7 @@ const {
     format: { parseNearAmount },
   },
 } = nearAPI;
-import { get, set, del } from "./store";
+import { get, set, del } from "../utils/store";
 import contractPath from "url:../../out/main.wasm";
 
 const FUNDING_ACCOUNT_ID = "neth.testnet";

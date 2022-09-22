@@ -2,7 +2,6 @@ import React, { useContext, useState, useEffect } from 'react';
 import * as nearAPI from "near-api-js";
 import { appStore, onAppMount } from './state/app';
 import {
-	accountSuffix,
 	accountExists,
 	getNear,
 	getConnection,
@@ -27,7 +26,7 @@ import { transfer } from 'near-api-js/lib/transaction';
 import './App.scss';
 
 /// destructure
-const { nodeUrl, walletUrl, helperUrl, networkId, contractId, isBrowser } = getConfig();
+const { nodeUrl, walletUrl, helperUrl, networkId } = getConfig();
 const { Account } = nearAPI
 
 /// valid accounts
@@ -36,6 +35,7 @@ const ACCOUNT_REGEX = new RegExp('^(([a-z0-9]+[\-_])*[a-z0-9]+\.)*([a-z0-9]+[\-_
 const App = () => {
 	const { state, dispatch, update } = useContext(appStore);
 
+	const [suffix, setSuffix] = useState('.testnet')
 	const [loading, setLoading] = useState(true)
 	const [mapAccountId, setMapAccountId] = useState(null)
 	const [accountId, setAccountId] = useState('')
@@ -51,6 +51,8 @@ const App = () => {
 			walletUrl,
 			helperUrl,
 		})
+		const { accountSuffix } = getConnection()
+		setSuffix(accountSuffix)
 		const { signer, ethAddress } = await getEthereum();
 		setSigner(signer)
 		setEthAddress(ethAddress)
@@ -75,9 +77,9 @@ const App = () => {
 
 	const handleAccountInput = async ({ target: { value } }) => {
 		setAccountId(value)
-		const newAccountId = value + accountSuffix
+		const newAccountId = value + suffix
 		if (value < 2 || accountId.indexOf('.') > -1 || !ACCOUNT_REGEX.test(newAccountId) || newAccountId.length > 64) {
-			return setError(`account is invalid (a-z, 0-9 and -,_ only; min 2; max 64; ${accountSuffix} applied automatically)`)
+			return setError(`account is invalid (a-z, 0-9 and -,_ only; min 2; max 64; ${suffix} applied automatically)`)
 		}
 		if (await accountExists(newAccountId)) {
 			setError(`account already exists`)
@@ -123,10 +125,10 @@ const App = () => {
 									<p>Choose NEAR Account ID</p>
 									<input value={accountId} onChange={handleAccountInput} />
 									<button aria-busy={loading} disabled={!!error || loading} onClick={handleAction(async () => {
-										const { account } = await handleCreate(signer, ethAddress, accountId + accountSuffix)
+										const { account } = await handleCreate(signer, ethAddress, accountId + suffix)
 										alert('Account: ' + account.accountId + ' paired with: ' + ethAddress)
 										setMapAccountId(await getNearMap(ethAddress))
-									})}>Create Account {accountId}.testnet</button>
+									})}>Create Account {accountId}{suffix}</button>
 									{error && <p>{error}</p>}
 								</>
 								:
