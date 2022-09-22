@@ -11,6 +11,6 @@
   "author": "mattlockyer",
   "license": "MIT",
   "dependencies": {
-    "@near-wallet-selector/core": "^5.0.1"
+    "@near-wallet-selector/core": "^6.0.1"
   }
 }

@@ -61,7 +61,8 @@ const App = () => {
 			const accountId = await getNearMap(ethAddress)
 			setMapAccountId(accountId)
 			if (!!accountId) {
-				const { connection } = getConnection();
+				const { connection, accountSuffix } = getConnection();
+				setSuffix(accountSuffix)
 				const account = new Account(connection, accountId);
 				const accessKeys = await account.getAccessKeys()
 				setShowApps(await hasAppKey(accessKeys))

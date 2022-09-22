@@ -11,6 +11,7 @@ const {
 	transactions: { addKey, deleteKey, functionCallAccessKey },
 	utils: {
 		PublicKey,
+<<<<<<< HEAD
 		format: { parseNearAmount, formatNearAmount },
 	},
 } = nearAPI;
@@ -25,6 +26,13 @@ const NETWORK = {
 	}
 }
 
+=======
+		format: { parseNearAmount },
+	},
+} = nearAPI;
+
+const TESTNET_FUNDING_ACCOUNT_ID = "neth.testnet";
+>>>>>>> 635e01f5799ea7739418a0e5c55ed6fd03372cd4
 const ATTEMPT_SECRET_KEY = "__ATTEMPT_SECRET_KEY";
 const ATTEMPT_ACCOUNT_ID = "__ATTEMPT_ACCOUNT_ID";
 const ATTEMPT_ETH_ADDRESS = "__ATTEMPT_ETH_ADDRESS";
@@ -39,6 +47,15 @@ const MIN_NEW_ACCOUNT = parseNearAmount("1.5");
 
 const attachedDeposit = parseNearAmount("0.3");
 const attachedDepositMapping = parseNearAmount("0.02");
+
+const networks = {
+	testnet: {
+		mapAccountId: "map.neth.testnet",
+	},
+	mainnet: {
+		mapAccountId: "nethmap.near",
+	}
+}
 
 /// LocalStorage Helpers
 
@@ -95,9 +112,17 @@ const pub2hex = (publicKey) =>
 
 const ACCOUNT_REGEX = new RegExp("^(([a-z0-9]+[-_])*[a-z0-9]+.)*([a-z0-9]+[-_])*[a-z0-9]+$");
 
+<<<<<<< HEAD
 /// account creation and connection flow
 
 export const handleCreate = async (signer, ethAddress, newAccountId, withImplicit = true) => {
+=======
+export { };
+
+/// account creation and connection flow
+
+export const handleCreate = async (signer, ethAddress, newAccountId) => {
+>>>>>>> 635e01f5799ea7739418a0e5c55ed6fd03372cd4
 	/// get keypair from eth sig entropy for the near-eth account
 	const { publicKey: new_public_key, secretKey: new_secret_key } = await keyPairFromEthSig(
 		signer,
@@ -111,12 +136,16 @@ export const handleCreate = async (signer, ethAddress, newAccountId, withImplici
 	del(APP_KEY_ACCOUNT_ID);
 	del(APP_KEY_SECRET);
 
+<<<<<<< HEAD
 	/// TODO wait for implicit funding here and then continue to createAccount
 
+=======
+>>>>>>> 635e01f5799ea7739418a0e5c55ed6fd03372cd4
 	return await createAccount(newAccountId, new_public_key);
 };
 
 const createAccount = async (newAccountId, new_public_key) => {
+<<<<<<< HEAD
 	const { publicKey, secretKey } = parseSeedPhrase(process.env.REACT_APP_FUNDING_SEED_PHRASE);
 	/// assumes implicit is funded, otherwise will warn and cycle here
 
@@ -161,6 +190,26 @@ const createAccount = async (newAccountId, new_public_key) => {
 	/// check
 	console.log(res);
 
+=======
+	/// uses neth.testnet account for funding
+	const { secretKey } = parseSeedPhrase(process.env.REACT_APP_FUNDING_SEED_PHRASE);
+	const keyPair = KeyPair.fromString(secretKey);
+	keyStore.setKey(networkId, FUNDING_ACCOUNT_ID, keyPair);
+	const account = new Account(connection, FUNDING_ACCOUNT_ID);
+	const res = await account.functionCall({
+		contractId: "testnet",
+		methodName: "create_account",
+		args: {
+			new_account_id: newAccountId,
+			new_public_key,
+		},
+		gas,
+		attachedDeposit,
+	});
+	/// check
+	console.log(res);
+
+>>>>>>> 635e01f5799ea7739418a0e5c55ed6fd03372cd4
 	return await handleDeployContract();
 };
 
@@ -193,7 +242,11 @@ export const handleMapping = async () => {
 	const { account, ethAddress } = setupFromStorage();
 	try {
 		const res = await account.functionCall({
+<<<<<<< HEAD
 			contractId: NETWORK[networkId].MAP_ACCOUNT_ID,
+=======
+			contractId: networks[networkId].mapAccountId,
+>>>>>>> 635e01f5799ea7739418a0e5c55ed6fd03372cd4
 			methodName: "set",
 			args: { eth_address: ethAddress },
 			gas,
@@ -270,7 +323,11 @@ export const handleCheckAccount = async (ethAddress) => {
 	}
 
 	console.log("checking account address mapping");
+<<<<<<< HEAD
 	const mapRes = await account.viewFunction(NETWORK[networkId].MAP_ACCOUNT_ID, "get_eth", {
+=======
+	const mapRes = await account.viewFunction(networks[networkId].mapAccountId, "get_eth", {
+>>>>>>> 635e01f5799ea7739418a0e5c55ed6fd03372cd4
 		account_id: newAccountId,
 	});
 	if (mapRes === null) {
@@ -482,7 +539,11 @@ export const handleDisconnect = async (signer, ethAddress) => {
 	keyStore.setKey(networkId, accountId, newSecretKey);
 	try {
 		const res = await account.functionCall({
+<<<<<<< HEAD
 			contractId: NETWORK[networkId].MAP_ACCOUNT_ID,
+=======
+			contractId: networks[networkId].mapAccountId,
+>>>>>>> 635e01f5799ea7739418a0e5c55ed6fd03372cd4
 			methodName: "del",
 			args: {},
 			gas,
@@ -674,7 +735,11 @@ export const switchEthereum = async () => {
 /// near
 
 export const getNearMap = async (ethAddress) => {
+<<<<<<< HEAD
 	return contractAccount.viewFunction(NETWORK[networkId].MAP_ACCOUNT_ID, "get_near", { eth_address: ethAddress });
+=======
+	return contractAccount.viewFunction(networks[networkId].mapAccountId, "get_near", { eth_address: ethAddress });
+>>>>>>> 635e01f5799ea7739418a0e5c55ed6fd03372cd4
 };
 
 export const getNear = async () => {
