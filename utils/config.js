@@ -1,8 +1,4 @@
-<<<<<<< HEAD
 const contractName = process.env.REACT_APP_CONTRACT_ID || 'neth.testnet';
-=======
-const contractName = process.env.REACT_APP_CONTRACT_ID || 'testnet';
->>>>>>> 635e01f5799ea7739418a0e5c55ed6fd03372cd4
 
 console.log(process.env.REACT_APP_NETWORK_ID, process.env.REACT_APP_CONTRACT_ID)
 

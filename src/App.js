@@ -25,6 +25,8 @@ import getConfig from "../utils/config";
 import { transfer } from 'near-api-js/lib/transaction';
 import './App.scss';
 
+const ATTEMPT_ACCOUNT_ID = '__ATTEMPT_ACCOUNT_ID'
+
 /// destructure
 const { nodeUrl, walletUrl, helperUrl, networkId } = getConfig();
 const { Account } = nearAPI
@@ -45,30 +47,40 @@ const App = () => {
 	const [ethAddress, setEthAddress] = useState('')
 
 	const updateEthState = async () => {
-		await initConnection({
-			networkId,
-			nodeUrl,
-			walletUrl,
-			helperUrl,
-		})
-		const { accountSuffix } = getConnection()
-		setSuffix(accountSuffix)
-		const { signer, ethAddress } = await getEthereum();
-		setSigner(signer)
-		setEthAddress(ethAddress)
-		console.log(ethAddress)
-		if (ethAddress) {
-			const accountId = await getNearMap(ethAddress)
-			setMapAccountId(accountId)
-			if (!!accountId) {
-				const { connection, accountSuffix } = getConnection();
-				setSuffix(accountSuffix)
-				const account = new Account(connection, accountId);
-				const accessKeys = await account.getAccessKeys()
-				setShowApps(await hasAppKey(accessKeys))
+		try {
+			await initConnection({
+				networkId,
+				nodeUrl,
+				walletUrl,
+				helperUrl,
+			})
+			const { accountSuffix } = getConnection()
+			setSuffix(accountSuffix)
+			const { signer, ethAddress } = await getEthereum();
+			setSigner(signer)
+			setEthAddress(ethAddress)
+			console.log('ethAddress', ethAddress)
+			if (ethAddress) {
+				const accountId = await getNearMap(ethAddress)
+				setMapAccountId(accountId)
+				if (!!accountId) {
+					const { connection, accountSuffix } = getConnection();
+					setSuffix(accountSuffix)
+					const account = new Account(connection, accountId);
+					const accessKeys = await account.getAccessKeys()
+					setShowApps(await hasAppKey(accessKeys))
+				}
+	
+				const attemptAccountId = localStorage.getItem(ATTEMPT_ACCOUNT_ID);
+				if (attemptAccountId && !(await accountExists(attemptAccountId))) {
+					await handleCreate(signer, ethAddress, attemptAccountId);
+				}
 			}
+		} catch(e) {
+			console.warn(e)
+		} finally {
+			setLoading(false)
 		}
-		setLoading(false)
 	}
 
 	useEffect(() => {

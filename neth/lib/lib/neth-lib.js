@@ -96,16 +96,18 @@ var APP_KEY_ACCOUNT_ID = "__APP_KEY_ACCOUNT_ID";
 var gas = "200000000000000";
 var half_gas = "50000000000000";
 /// this is the new account amount 0.21 for account name, keys, contract and 0.01 for mapping contract storage cost
-var MIN_NEW_ACCOUNT = parseNearAmount("1.5");
+var MIN_NEW_ACCOUNT = parseNearAmount("0.4");
+var MIN_NEW_ACCOUNT_THRESH = parseNearAmount("0.49");
+var MIN_NEW_ACCOUNT_ASK = parseNearAmount("0.5");
+var FUNDING_CHECK_TIMEOUT = 5000;
 /// lkmfawl
-var attachedDeposit = parseNearAmount("0.3");
 var attachedDepositMapping = parseNearAmount("0.02");
 var networks = {
     testnet: {
         mapAccountId: "map.neth.testnet",
     },
     mainnet: {
-        mapAccountId: "map.neth.near",
+        mapAccountId: "nethmap.near",
     }
 };
 /// LocalStorage Helpers
@@ -193,17 +195,16 @@ var handleCreate = function (signer, ethAddress, newAccountId, withImplicit) {
 };
 exports.handleCreate = handleCreate;
 var createAccount = function (newAccountId, new_public_key) { return __awaiter(void 0, void 0, void 0, function () {
-    var _a, publicKey, secretKey, checkImplicitFunded, implicitAccountId, account, res;
-    return __generator(this, function (_b) {
-        switch (_b.label) {
+    var implicitAccountId, checkImplicitFunded, account, res;
+    return __generator(this, function (_a) {
+        switch (_a.label) {
             case 0:
-                _a = (0, near_seed_phrase_1.parseSeedPhrase)(process.env.REACT_APP_FUNDING_SEED_PHRASE), publicKey = _a.publicKey, secretKey = _a.secretKey;
                 checkImplicitFunded = function () { return __awaiter(void 0, void 0, void 0, function () {
-                    var implicitAccountId, account, balance, available, e_2;
+                    var account, balance, available, e_2;
                     return __generator(this, function (_a) {
                         switch (_a.label) {
                             case 0:
-                                implicitAccountId = PublicKey.from(publicKey).data.toString('hex');
+                                implicitAccountId = PublicKey.from(new_public_key).data.toString('hex');
                                 console.log('checking for funding of implicit account', implicitAccountId);
                                 account = new Account(connection, implicitAccountId);
                                 _a.label = 1;
@@ -213,8 +214,8 @@ var createAccount = function (newAccountId, new_public_key) { return __awaiter(v
                             case 2:
                                 balance = _a.sent();
                                 available = balance.available;
-                                if (new bn_js_1.default(available).sub(new bn_js_1.default(MIN_NEW_ACCOUNT)).lt(new bn_js_1.default('0'))) {
-                                    alert("There is not enough NEAR (".concat(formatNearAmount(MIN_NEW_ACCOUNT, 4), " minimum) to create a new account and deploy NETH contract. Please deposit more and try again."));
+                                if (new bn_js_1.default(available).sub(new bn_js_1.default(MIN_NEW_ACCOUNT_THRESH)).lt(new bn_js_1.default('0'))) {
+                                    alert("There is not enough NEAR (".concat(formatNearAmount(MIN_NEW_ACCOUNT_ASK, 4), " minimum) to create a new account and deploy NETH contract. Please deposit more and try again."));
                                     return [2 /*return*/, false];
                                 }
                                 return [3 /*break*/, 6];
@@ -223,7 +224,7 @@ var createAccount = function (newAccountId, new_public_key) { return __awaiter(v
                                 if (!/does not exist/gi.test(e_2.toString()))
                                     throw e_2;
                                 console.log('not funded, checking again');
-                                return [4 /*yield*/, new Promise(function (r) { return setTimeout(r, 4000); })];
+                                return [4 /*yield*/, new Promise(function (r) { return setTimeout(r, FUNDING_CHECK_TIMEOUT); })];
                             case 4:
                                 _a.sent();
                                 return [4 /*yield*/, checkImplicitFunded()];
@@ -235,16 +236,31 @@ var createAccount = function (newAccountId, new_public_key) { return __awaiter(v
                 return [4 /*yield*/, checkImplicitFunded()];
             case 1:
                 /// if not funded properly, return and reload
-                if (!(_b.sent()))
+                if (!(_a.sent()))
                     return [2 /*return*/, window.location.reload()];
                 console.log('implicit account funded', implicitAccountId);
-                return [2 /*return*/];
+                account = setupFromStorage(implicitAccountId).account;
+                return [4 /*yield*/, account.functionCall({
+                        contractId: "testnet",
+                        methodName: "create_account",
+                        args: {
+                            new_account_id: newAccountId,
+                            new_public_key: new_public_key,
+                        },
+                        gas: gas,
+                        attachedDeposit: MIN_NEW_ACCOUNT,
+                    })];
             case 2:
-                res = _b.sent();
+                res = _a.sent();
                 /// check
                 console.log(res);
+                /// drain implicit
+                return [4 /*yield*/, account.deleteAccount(newAccountId)];
+            case 3:
+                /// drain implicit
+                _a.sent();
                 return [4 /*yield*/, (0, exports.handleDeployContract)()];
-            case 3: return [2 /*return*/, _b.sent()];
+            case 4: return [2 /*return*/, _a.sent()];
         }
     });
 }); };
@@ -680,8 +696,8 @@ var handleDisconnect = function (signer, ethAddress) { return __awaiter(void 0, 
 }); };
 exports.handleDisconnect = handleDisconnect;
 /// helpers for account creation and connection domain
-var setupFromStorage = function () {
-    var newAccountId = get(ATTEMPT_ACCOUNT_ID);
+var setupFromStorage = function (accountId) {
+    var newAccountId = accountId || get(ATTEMPT_ACCOUNT_ID);
     var newSecretKey = get(ATTEMPT_SECRET_KEY);
     var ethAddress = get(ATTEMPT_ETH_ADDRESS);
     var account = new Account(connection, newAccountId);

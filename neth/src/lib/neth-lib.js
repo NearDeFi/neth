@@ -33,11 +33,12 @@ const APP_KEY_ACCOUNT_ID = "__APP_KEY_ACCOUNT_ID";
 const gas = "200000000000000";
 const half_gas = "50000000000000";
 /// this is the new account amount 0.21 for account name, keys, contract and 0.01 for mapping contract storage cost
-const MIN_NEW_ACCOUNT = parseNearAmount("1.5");
-
+const MIN_NEW_ACCOUNT = parseNearAmount("0.4");
+const MIN_NEW_ACCOUNT_THRESH = parseNearAmount("0.49");
+const MIN_NEW_ACCOUNT_ASK = parseNearAmount("0.5");
+const FUNDING_CHECK_TIMEOUT = 5000;
 /// lkmfawl
 
-const attachedDeposit = parseNearAmount("0.3");
 const attachedDepositMapping = parseNearAmount("0.02");
 
 const networks = {
@@ -126,24 +127,25 @@ export const handleCreate = async (signer, ethAddress, newAccountId, withImplici
 };
 
 const createAccount = async (newAccountId, new_public_key) => {
-	const { publicKey, secretKey } = parseSeedPhrase(process.env.REACT_APP_FUNDING_SEED_PHRASE);
+	// const { publicKey, secretKey } = parseSeedPhrase(process.env.REACT_APP_FUNDING_SEED_PHRASE);
 	/// assumes implicit is funded, otherwise will warn and cycle here
 
+	let implicitAccountId
 	const checkImplicitFunded = async () => {
-		const implicitAccountId = PublicKey.from(publicKey).data.toString('hex')
+		implicitAccountId = PublicKey.from(new_public_key).data.toString('hex')
 		console.log('checking for funding of implicit account', implicitAccountId)
 		const account = new Account(connection, implicitAccountId)
 		try {
 			const balance = await account.getAccountBalance()
 			const { available } = balance
-			if (new BN(available).sub(new BN(MIN_NEW_ACCOUNT)).lt(new BN('0'))) {
-				alert(`There is not enough NEAR (${formatNearAmount(MIN_NEW_ACCOUNT, 4)} minimum) to create a new account and deploy NETH contract. Please deposit more and try again.`)
+			if (new BN(available).sub(new BN(MIN_NEW_ACCOUNT_THRESH)).lt(new BN('0'))) {
+				alert(`There is not enough NEAR (${formatNearAmount(MIN_NEW_ACCOUNT_ASK, 4)} minimum) to create a new account and deploy NETH contract. Please deposit more and try again.`)
 				return false
 			}
 		} catch(e) {
 			if (!/does not exist/gi.test(e.toString())) throw e
 			console.log('not funded, checking again')
-			await new Promise((r) => setTimeout(r, 4000))
+			await new Promise((r) => setTimeout(r, FUNDING_CHECK_TIMEOUT))
 			return await checkImplicitFunded()
 		}
 		return true
@@ -151,11 +153,8 @@ const createAccount = async (newAccountId, new_public_key) => {
 	/// if not funded properly, return and reload
 	if (!(await checkImplicitFunded())) return window.location.reload()
 	console.log('implicit account funded', implicitAccountId)
-	return
 
-	const implicitAccountId = PublicKey.from(publicKey).data.toString('hex')
-	console.log('checking for funding of implicit account', implicitAccountId)
-	const account = new Account(connection, implicitAccountId)
+	const { account } = setupFromStorage(implicitAccountId);
 	
 	const res = await account.functionCall({
 		contractId: "testnet",
@@ -165,11 +164,13 @@ const createAccount = async (newAccountId, new_public_key) => {
 			new_public_key,
 		},
 		gas,
-		attachedDeposit,
+		attachedDeposit: MIN_NEW_ACCOUNT,
 	});
 	/// check
 	console.log(res);
-
+	/// drain implicit
+	await account.deleteAccount(newAccountId);
+	
 	return await handleDeployContract();
 };
 
@@ -509,8 +510,8 @@ export const handleDisconnect = async (signer, ethAddress) => {
 
 /// helpers for account creation and connection domain
 
-const setupFromStorage = () => {
-	const newAccountId = get(ATTEMPT_ACCOUNT_ID);
+const setupFromStorage = (accountId) => {
+	const newAccountId = accountId || get(ATTEMPT_ACCOUNT_ID);
 	const newSecretKey = get(ATTEMPT_SECRET_KEY);
 	const ethAddress = get(ATTEMPT_ETH_ADDRESS);
 	const account = new Account(connection, newAccountId);

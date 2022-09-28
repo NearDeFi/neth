@@ -3,7 +3,6 @@ export type { NethParams } from "./lib/neth";
 export { setupNeth } from "./lib/neth";
 export {
 	getNear,
-	accountExists,
 	getConnection,
 	getEthereum,
 	handleCreate,
