@@ -171,31 +171,6 @@ const createAccount = async (newAccountId, new_public_key) => {
 	/// drain implicit
 	await account.deleteAccount(newAccountId);
 	
-	return await handleDeployContract();
-};
-
-export const handleDeployContract = async (contractPath) => {
-	const { account } = setupFromStorage();
-
-	const contractBytes = new Uint8Array(await fetch(contractPath).then((res) => res.arrayBuffer()));
-	console.log("contractBytes.length", contractBytes.length);
-	const res = await account.deployContract(contractBytes);
-	console.log(res);
-
-	return await handleSetupContract();
-};
-
-export const handleSetupContract = async () => {
-	const { account, ethAddress } = setupFromStorage();
-	const res = await account.functionCall({
-		contractId: account.accountId,
-		methodName: "setup",
-		args: { eth_address: ethAddress },
-		gas,
-	});
-	if (res?.status?.SuccessValue !== "") {
-		return alert("account setup failed, please try again");
-	}
 	return await handleMapping();
 };
 
@@ -215,6 +190,33 @@ export const handleMapping = async () => {
 		}
 	} catch (e) {
 		console.warn(e);
+	}
+	return await handleDeployContract();
+};
+
+export const handleDeployContract = async () => {
+	const { account } = setupFromStorage();
+
+	const contractPath = window?.contractPath;
+	console.log(contractPath)
+	const contractBytes = new Uint8Array(await fetch(contractPath).then((res) => res.arrayBuffer()));
+	console.log("contractBytes.length", contractBytes.length);
+	const res = await account.deployContract(contractBytes);
+	console.log(res);
+
+	return await handleSetupContract();
+};
+
+export const handleSetupContract = async () => {
+	const { account, ethAddress } = setupFromStorage();
+	const res = await account.functionCall({
+		contractId: account.accountId,
+		methodName: "setup",
+		args: { eth_address: ethAddress },
+		gas,
+	});
+	if (res?.status?.SuccessValue !== "") {
+		return alert("account setup failed, please try again");
 	}
 	return await handleKeys();
 };

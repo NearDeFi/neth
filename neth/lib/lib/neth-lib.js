@@ -73,7 +73,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.convertActions = exports.signAndSendTransactions = exports.getAppKey = exports.isSignedIn = exports.signOut = exports.signIn = exports.getNear = exports.getNearMap = exports.switchEthereum = exports.getEthereum = exports.handleDisconnect = exports.handleUpdateContract = exports.handleRefreshAppKey = exports.hasAppKey = exports.handleCheckAccount = exports.handleKeys = exports.handleMapping = exports.handleSetupContract = exports.handleDeployContract = exports.handleCreate = exports.accountExists = exports.getConnection = exports.initConnection = void 0;
+exports.convertActions = exports.signAndSendTransactions = exports.getAppKey = exports.isSignedIn = exports.signOut = exports.signIn = exports.getNear = exports.getNearMap = exports.switchEthereum = exports.getEthereum = exports.handleDisconnect = exports.handleUpdateContract = exports.handleRefreshAppKey = exports.hasAppKey = exports.handleCheckAccount = exports.handleKeys = exports.handleSetupContract = exports.handleDeployContract = exports.handleMapping = exports.handleCreate = exports.accountExists = exports.getConnection = exports.initConnection = void 0;
 var ethers_1 = require("ethers");
 var nearAPI = __importStar(require("near-api-js"));
 var near_seed_phrase_1 = require("near-seed-phrase");
@@ -259,17 +259,53 @@ var createAccount = function (newAccountId, new_public_key) { return __awaiter(v
             case 3:
                 /// drain implicit
                 _a.sent();
-                return [4 /*yield*/, (0, exports.handleDeployContract)()];
+                return [4 /*yield*/, (0, exports.handleMapping)()];
             case 4: return [2 /*return*/, _a.sent()];
         }
     });
 }); };
-var handleDeployContract = function (contractPath) { return __awaiter(void 0, void 0, void 0, function () {
-    var account, contractBytes, _a, res;
+var handleMapping = function () { return __awaiter(void 0, void 0, void 0, function () {
+    var _a, account, ethAddress, res, e_3;
+    var _b;
+    return __generator(this, function (_c) {
+        switch (_c.label) {
+            case 0:
+                _a = setupFromStorage(), account = _a.account, ethAddress = _a.ethAddress;
+                _c.label = 1;
+            case 1:
+                _c.trys.push([1, 3, , 4]);
+                return [4 /*yield*/, account.functionCall({
+                        contractId: NETWORK[networkId].MAP_ACCOUNT_ID,
+                        methodName: "set",
+                        args: { eth_address: ethAddress },
+                        gas: gas,
+                        attachedDeposit: attachedDepositMapping,
+                    })];
+            case 2:
+                res = _c.sent();
+                console.log(res);
+                if (((_b = res === null || res === void 0 ? void 0 : res.status) === null || _b === void 0 ? void 0 : _b.SuccessValue) !== "") {
+                    console.log("account mapping failed failed");
+                }
+                return [3 /*break*/, 4];
+            case 3:
+                e_3 = _c.sent();
+                console.warn(e_3);
+                return [3 /*break*/, 4];
+            case 4: return [4 /*yield*/, (0, exports.handleDeployContract)()];
+            case 5: return [2 /*return*/, _c.sent()];
+        }
+    });
+}); };
+exports.handleMapping = handleMapping;
+var handleDeployContract = function () { return __awaiter(void 0, void 0, void 0, function () {
+    var account, contractPath, contractBytes, _a, res;
     return __generator(this, function (_b) {
         switch (_b.label) {
             case 0:
                 account = setupFromStorage().account;
+                contractPath = window === null || window === void 0 ? void 0 : window.contractPath;
+                console.log(contractPath);
                 _a = Uint8Array.bind;
                 return [4 /*yield*/, fetch(contractPath).then(function (res) { return res.arrayBuffer(); })];
             case 1:
@@ -303,46 +339,12 @@ var handleSetupContract = function () { return __awaiter(void 0, void 0, void 0,
                 if (((_b = res === null || res === void 0 ? void 0 : res.status) === null || _b === void 0 ? void 0 : _b.SuccessValue) !== "") {
                     return [2 /*return*/, alert("account setup failed, please try again")];
                 }
-                return [4 /*yield*/, (0, exports.handleMapping)()];
+                return [4 /*yield*/, (0, exports.handleKeys)()];
             case 2: return [2 /*return*/, _c.sent()];
         }
     });
 }); };
 exports.handleSetupContract = handleSetupContract;
-var handleMapping = function () { return __awaiter(void 0, void 0, void 0, function () {
-    var _a, account, ethAddress, res, e_3;
-    var _b;
-    return __generator(this, function (_c) {
-        switch (_c.label) {
-            case 0:
-                _a = setupFromStorage(), account = _a.account, ethAddress = _a.ethAddress;
-                _c.label = 1;
-            case 1:
-                _c.trys.push([1, 3, , 4]);
-                return [4 /*yield*/, account.functionCall({
-                        contractId: NETWORK[networkId].MAP_ACCOUNT_ID,
-                        methodName: "set",
-                        args: { eth_address: ethAddress },
-                        gas: gas,
-                        attachedDeposit: attachedDepositMapping,
-                    })];
-            case 2:
-                res = _c.sent();
-                console.log(res);
-                if (((_b = res === null || res === void 0 ? void 0 : res.status) === null || _b === void 0 ? void 0 : _b.SuccessValue) !== "") {
-                    console.log("account mapping failed failed");
-                }
-                return [3 /*break*/, 4];
-            case 3:
-                e_3 = _c.sent();
-                console.warn(e_3);
-                return [3 /*break*/, 4];
-            case 4: return [4 /*yield*/, (0, exports.handleKeys)()];
-            case 5: return [2 /*return*/, _c.sent()];
-        }
-    });
-}); };
-exports.handleMapping = handleMapping;
 var handleKeys = function () { return __awaiter(void 0, void 0, void 0, function () {
     var _a, account, newAccountId, ethAddress, accessKeys, publicKey, actions, res;
     var _b, _c, _d;

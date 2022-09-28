@@ -23,13 +23,18 @@ import {
 import getConfig from "../utils/config";
 /// example app transactions
 import { transfer } from 'near-api-js/lib/transaction';
+import contractPath from 'url:../out/main.wasm'
+window.contractPath = contractPath
+
 import './App.scss';
 
 const ATTEMPT_ACCOUNT_ID = '__ATTEMPT_ACCOUNT_ID'
+const ATTEMPT_SECRET_KEY = "__ATTEMPT_SECRET_KEY";
 
 /// destructure
 const { nodeUrl, walletUrl, helperUrl, networkId } = getConfig();
 const { Account } = nearAPI
+
 
 /// valid accounts
 const ACCOUNT_REGEX = new RegExp('^(([a-z0-9]+[\-_])*[a-z0-9]+\.)*([a-z0-9]+[\-_])*[a-z0-9]+$')
@@ -63,6 +68,7 @@ const App = () => {
 			if (ethAddress) {
 				const accountId = await getNearMap(ethAddress)
 				setMapAccountId(accountId)
+				console.log(accountId)
 				if (!!accountId) {
 					const { connection, accountSuffix } = getConnection();
 					setSuffix(accountSuffix)
@@ -72,8 +78,8 @@ const App = () => {
 				}
 	
 				const attemptAccountId = localStorage.getItem(ATTEMPT_ACCOUNT_ID);
-				if (attemptAccountId && !(await accountExists(attemptAccountId))) {
-					await handleCreate(signer, ethAddress, attemptAccountId);
+				if (attemptAccountId) {
+					await handleCheckAccount(ethAddress)
 				}
 			}
 		} catch(e) {

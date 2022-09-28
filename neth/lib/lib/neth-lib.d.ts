@@ -9,9 +9,9 @@ export function getConnection(): {
 };
 export function accountExists(accountId: any): Promise<boolean>;
 export function handleCreate(signer: any, ethAddress: any, newAccountId: any, withImplicit?: boolean): Promise<any>;
-export function handleDeployContract(contractPath: any): any;
-export function handleSetupContract(): any;
 export function handleMapping(): any;
+export function handleDeployContract(): any;
+export function handleSetupContract(): any;
 export function handleKeys(): any;
 export function handleCheckAccount(ethAddress: any): any;
 export function hasAppKey(accessKeys: any): any;
