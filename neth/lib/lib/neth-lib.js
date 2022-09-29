@@ -447,6 +447,9 @@ var handleCheckAccount = function (ethAddress) { return __awaiter(void 0, void 0
                     return [2 /*return*/, (0, exports.handleKeys)(account)];
                 }
                 console.log("Success! account created, contract deployed, setup, mapping added, keys rotated");
+                del(ATTEMPT_ACCOUNT_ID);
+                del(ATTEMPT_SECRET_KEY);
+                del(ATTEMPT_ETH_ADDRESS);
                 return [2 /*return*/, { account: account }];
         }
     });

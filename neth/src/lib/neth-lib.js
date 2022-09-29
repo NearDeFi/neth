@@ -296,6 +296,9 @@ export const handleCheckAccount = async (ethAddress) => {
 	}
 
 	console.log("Success! account created, contract deployed, setup, mapping added, keys rotated");
+	del(ATTEMPT_ACCOUNT_ID);
+	del(ATTEMPT_SECRET_KEY);
+	del(ATTEMPT_ETH_ADDRESS);
 
 	return { account };
 };

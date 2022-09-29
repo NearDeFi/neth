@@ -4,7 +4,15 @@ import { State } from '../utils/state';
 const initialState = {
 	app: {
 		mounted: false
-	}
+	},
+	suffix: '.testnet',
+	loading: true,
+	mapAccountId: null,
+	accountId: '',
+	showApps: false,
+	error: 'enter an account ID',
+	signer: '',
+	ethAddress: '',
 };
 
 export const { appStore, AppProvider } = State(initialState, 'app');
