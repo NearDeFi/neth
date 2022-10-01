@@ -187,9 +187,10 @@ export const handleMapping = async () => {
 			gas,
 			attachedDeposit: attachedDepositMapping,
 		});
-		logger(res);
 		if (res?.status?.SuccessValue !== "") {
 			logger("account mapping failed failed");
+		} else {
+			logger(`account mapping success`);
 		}
 	} catch (e) {
 		console.warn(e);

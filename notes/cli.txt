@@ -1,0 +1,4 @@
+
+DELETE ACCOUNT
+
+near repl --accountId=neth-4.testnet --seedPhrase="gasp uphold noodle deer album mistake harvest police worry melt destroy right"

@@ -55,7 +55,10 @@ export default Main = ({
 					<p>Choose NEAR Account ID</p>
 					<input value={accountId} onChange={handleAccountInput} />
 					<button aria-busy={loading} disabled={!!error || loading} onClick={handleAction(async () => {
+						
+						/// TODO get implicit account for funding in parallel to waiting
 						const { account } = await handleCreate(signer, ethAddress, accountId + suffix)
+
 						alert('Account: ' + account.accountId + ' paired with: ' + ethAddress)
 						update('mapAccountId', (await getNearMap(ethAddress)))
 					})}>Create Account {accountId}{suffix}</button>
