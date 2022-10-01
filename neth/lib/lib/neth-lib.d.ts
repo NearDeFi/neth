@@ -1,4 +1,4 @@
-export function initConnection(network: any): void;
+export function initConnection(network: any, logFn: any): void;
 export function getConnection(): {
     near: any;
     connection: any;

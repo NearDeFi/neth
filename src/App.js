@@ -1,6 +1,6 @@
 import React, { useContext, useState, useEffect } from 'react';
 import * as nearAPI from "near-api-js";
-import { appStore, onAppMount } from './state/app';
+import { appStore, onAppMount, pushLog } from './state/app';
 import {
 	accountExists,
 	getConnection,
@@ -27,6 +27,7 @@ const ACCOUNT_REGEX = new RegExp('^(([a-z0-9]+[\-_])*[a-z0-9]+\.)*([a-z0-9]+[\-_
 
 /// Components
 import Main from './components/Main'
+import Modal from './components/Modal'
 
 const App = () => {
 	const { state, dispatch, update } = useContext(appStore);
@@ -34,25 +35,31 @@ const App = () => {
 	const [signer, setSigner] = useState(null)
 
 	const {
+		log,
 		suffix,
 		loading,
 		accountId,
 		ethAddress,
 	} = state
 
+	const logger = (args) => dispatch(pushLog(args))
+
 	const updateEthState = async () => {
+
 		try {
 			await initConnection({
 				networkId,
 				nodeUrl,
 				walletUrl,
 				helperUrl,
-			})
+			}, logger)
 			const { accountSuffix } = getConnection()
 			update('suffix', accountSuffix)
+
 			const { signer, ethAddress } = await getEthereum();
 			setSigner(signer)
 			update('ethAddress', ethAddress)
+
 			console.log('ethAddress', ethAddress)
 			if (ethAddress) {
 				const accountId = await getNearMap(ethAddress)
@@ -65,13 +72,13 @@ const App = () => {
 					const accessKeys = await account.getAccessKeys()
 					update('showApps', await hasAppKey(accessKeys))
 				}
-	
+
 				const attemptAccountId = localStorage.getItem(ATTEMPT_ACCOUNT_ID);
 				if (attemptAccountId) {
 					await handleCheckAccount(ethAddress)
 				}
 			}
-		} catch(e) {
+		} catch (e) {
 			console.warn(e)
 		} finally {
 			update('loading', false)
@@ -115,7 +122,8 @@ const App = () => {
 		handleAction,
 	}
 
-	return (
+	return <>
+		<Modal {...{state, update}} />
 		<main className="container">
 			<h2>Account Creation & Pairing</h2>
 			{
@@ -126,7 +134,7 @@ const App = () => {
 					<Main {...componentState} />
 			}
 		</main>
-	);
+	</>
 };
 
 export default App;

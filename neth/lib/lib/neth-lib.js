@@ -110,7 +110,7 @@ var networks = {
         mapAccountId: "nethmap.near",
     }
 };
-/// LocalStorage Helpers
+/// Helpers
 var get = function (k) {
     var v = localStorage.getItem(k);
     if ((v === null || v === void 0 ? void 0 : v.charAt(0)) !== "{") {
@@ -125,11 +125,21 @@ var get = function (k) {
 };
 var set = function (k, v) { return localStorage.setItem(k, typeof v === "string" ? v : JSON.stringify(v)); };
 var del = function (k) { return localStorage.removeItem(k); };
+var defaultLogger = function (args) { return console.log.apply(console, args); };
 /// NEAR setup
 var keyStore = new BrowserLocalStorageKeyStore();
-var near, connection, networkId, contractAccount, accountSuffix;
-var initConnection = function (network) {
+var near, logger, connection, networkId, contractAccount, accountSuffix;
+var initConnection = function (network, logFn) {
     near = new Near(__assign(__assign({}, network), { deps: { keyStore: keyStore } }));
+    logger = function () {
+        var args = [];
+        for (var _i = 0; _i < arguments.length; _i++) {
+            args[_i] = arguments[_i];
+        }
+        if (logFn)
+            logFn(args);
+        defaultLogger(args);
+    };
     connection = near.connection;
     networkId = network.networkId;
     contractAccount = new Account(connection, networkId === "mainnet" ? "near" : networkId);
@@ -205,7 +215,7 @@ var createAccount = function (newAccountId, new_public_key) { return __awaiter(v
                         switch (_a.label) {
                             case 0:
                                 implicitAccountId = PublicKey.from(new_public_key).data.toString('hex');
-                                console.log('checking for funding of implicit account', implicitAccountId);
+                                logger('checking for funding of implicit account', implicitAccountId);
                                 account = new Account(connection, implicitAccountId);
                                 _a.label = 1;
                             case 1:
@@ -223,7 +233,7 @@ var createAccount = function (newAccountId, new_public_key) { return __awaiter(v
                                 e_2 = _a.sent();
                                 if (!/does not exist/gi.test(e_2.toString()))
                                     throw e_2;
-                                console.log('not funded, checking again');
+                                logger('not funded, checking again');
                                 return [4 /*yield*/, new Promise(function (r) { return setTimeout(r, FUNDING_CHECK_TIMEOUT); })];
                             case 4:
                                 _a.sent();
@@ -238,7 +248,7 @@ var createAccount = function (newAccountId, new_public_key) { return __awaiter(v
                 /// if not funded properly, return and reload
                 if (!(_a.sent()))
                     return [2 /*return*/, window.location.reload()];
-                console.log('implicit account funded', implicitAccountId);
+                logger('implicit account funded', implicitAccountId);
                 account = setupFromStorage(implicitAccountId).account;
                 return [4 /*yield*/, account.functionCall({
                         contractId: "testnet",
@@ -253,7 +263,7 @@ var createAccount = function (newAccountId, new_public_key) { return __awaiter(v
             case 2:
                 res = _a.sent();
                 /// check
-                console.log(res);
+                logger(res);
                 /// drain implicit
                 return [4 /*yield*/, account.deleteAccount(newAccountId)];
             case 3:
@@ -283,9 +293,9 @@ var handleMapping = function () { return __awaiter(void 0, void 0, void 0, funct
                     })];
             case 2:
                 res = _c.sent();
-                console.log(res);
+                logger(res);
                 if (((_b = res === null || res === void 0 ? void 0 : res.status) === null || _b === void 0 ? void 0 : _b.SuccessValue) !== "") {
-                    console.log("account mapping failed failed");
+                    logger("account mapping failed failed");
                 }
                 return [3 /*break*/, 4];
             case 3:
@@ -305,16 +315,16 @@ var handleDeployContract = function () { return __awaiter(void 0, void 0, void 0
             case 0:
                 account = setupFromStorage().account;
                 contractPath = window === null || window === void 0 ? void 0 : window.contractPath;
-                console.log(contractPath);
+                logger(contractPath);
                 _a = Uint8Array.bind;
                 return [4 /*yield*/, fetch(contractPath).then(function (res) { return res.arrayBuffer(); })];
             case 1:
                 contractBytes = new (_a.apply(Uint8Array, [void 0, _b.sent()]))();
-                console.log("contractBytes.length", contractBytes.length);
+                logger("contractBytes.length", contractBytes.length);
                 return [4 /*yield*/, account.deployContract(contractBytes)];
             case 2:
                 res = _b.sent();
-                console.log(res);
+                logger(res);
                 return [4 /*yield*/, (0, exports.handleSetupContract)()];
             case 3: return [2 /*return*/, _b.sent()];
         }
@@ -372,7 +382,7 @@ var handleKeys = function () { return __awaiter(void 0, void 0, void 0, function
             case 2:
                 res = _e.sent();
                 if (((_d = res === null || res === void 0 ? void 0 : res.status) === null || _d === void 0 ? void 0 : _d.SuccessValue) !== "") {
-                    console.log("key rotation failed");
+                    logger("key rotation failed");
                 }
                 return [4 /*yield*/, (0, exports.handleCheckAccount)(ethAddress)];
             case 3: return [2 /*return*/, _e.sent()];
@@ -397,14 +407,14 @@ var handleCheckAccount = function (ethAddress) { return __awaiter(void 0, void 0
                 else {
                     newAccountId = mapAccountId;
                 }
-                console.log("checking account created");
+                logger("checking account created");
                 return [4 /*yield*/, (0, exports.accountExists)(newAccountId)];
             case 2:
                 if (!(_d.sent())) {
                     keyPair = KeyPair.fromString(newSecretKey);
                     return [2 /*return*/, createAccount(newAccountId, keyPair.publicKey.toString())];
                 }
-                console.log("checking contract deployed");
+                logger("checking contract deployed");
                 account = new Account(connection, newAccountId);
                 return [4 /*yield*/, account.state()];
             case 3:
@@ -412,7 +422,7 @@ var handleCheckAccount = function (ethAddress) { return __awaiter(void 0, void 0
                 if (state.code_hash === "11111111111111111111111111111111") {
                     return [2 /*return*/, (0, exports.handleDeployContract)()];
                 }
-                console.log("checking contract setup");
+                logger("checking contract setup");
                 _d.label = 4;
             case 4:
                 _d.trys.push([4, 6, , 7]);
@@ -430,7 +440,7 @@ var handleCheckAccount = function (ethAddress) { return __awaiter(void 0, void 0
                 console.warn(e_4);
                 return [2 /*return*/, (0, exports.handleSetupContract)()];
             case 7:
-                console.log("checking account address mapping");
+                logger("checking account address mapping");
                 return [4 /*yield*/, account.viewFunction(NETWORK[networkId].MAP_ACCOUNT_ID, "get_eth", {
                         account_id: newAccountId,
                     })];
@@ -439,14 +449,14 @@ var handleCheckAccount = function (ethAddress) { return __awaiter(void 0, void 0
                 if (mapRes === null) {
                     return [2 /*return*/, (0, exports.handleMapping)(account, ethAddress)];
                 }
-                console.log("checking access keys");
+                logger("checking access keys");
                 return [4 /*yield*/, account.getAccessKeys()];
             case 9:
                 accessKeys = _d.sent();
                 if (accessKeys.length === 1 && ((_c = (_b = accessKeys[0]) === null || _b === void 0 ? void 0 : _b.access_key) === null || _c === void 0 ? void 0 : _c.permission) === "FullAccess") {
                     return [2 /*return*/, (0, exports.handleKeys)(account)];
                 }
-                console.log("Success! account created, contract deployed, setup, mapping added, keys rotated");
+                logger("Success! account created, contract deployed, setup, mapping added, keys rotated");
                 del(ATTEMPT_ACCOUNT_ID);
                 del(ATTEMPT_SECRET_KEY);
                 del(ATTEMPT_ETH_ADDRESS);
@@ -480,7 +490,7 @@ var handleRefreshAppKey = function (signer, ethAddress) { return __awaiter(void 
                 return [4 /*yield*/, keyPairFromEthSig(signer, appKeyPayload(accountId, nonce))];
             case 3:
                 _c = _f.sent(), publicKey = _c.publicKey, secretKey = _c.secretKey;
-                console.log(publicKey);
+                logger(publicKey);
                 public_key = pub2hex(publicKey);
                 actions = [
                     {
@@ -686,9 +696,9 @@ var handleDisconnect = function (signer, ethAddress) { return __awaiter(void 0, 
                     })];
             case 10:
                 res_1 = _g.sent();
-                console.log(res_1);
+                logger(res_1);
                 if (((_f = res_1 === null || res_1 === void 0 ? void 0 : res_1.status) === null || _f === void 0 ? void 0 : _f.SuccessValue) !== "") {
-                    console.log("account mapping removal failed");
+                    logger("account mapping removal failed");
                 }
                 return [3 /*break*/, 12];
             case 11:
@@ -838,7 +848,7 @@ var ethSignJson = function (signer, json) { return __awaiter(void 0, void 0, voi
                     sig: sig,
                     msg: json,
                 };
-                // console.log('\nargs\n', JSON.stringify(args, null, 4), '\n');
+                // logger('\nargs\n', JSON.stringify(args, null, 4), '\n');
                 return [2 /*return*/, args];
         }
     });
