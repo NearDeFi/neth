@@ -73,7 +73,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.convertActions = exports.signAndSendTransactions = exports.getAppKey = exports.isSignedIn = exports.signOut = exports.signIn = exports.getNear = exports.getNearMap = exports.switchEthereum = exports.getEthereum = exports.handleDisconnect = exports.handleUpdateContract = exports.handleRefreshAppKey = exports.hasAppKey = exports.handleCheckAccount = exports.handleKeys = exports.handleSetupContract = exports.handleDeployContract = exports.handleMapping = exports.handleCreate = exports.accountExists = exports.getConnection = exports.initConnection = void 0;
+exports.convertActions = exports.signAndSendTransactions = exports.getAppKey = exports.isSignedIn = exports.signOut = exports.signIn = exports.getNear = exports.getNearMap = exports.switchEthereum = exports.getEthereum = exports.handleDisconnect = exports.handleUpdateContract = exports.handleRefreshAppKey = exports.hasAppKey = exports.handleCheckAccount = exports.handleKeys = exports.handleSetupContract = exports.handleDeployContract = exports.handleMapping = exports.handleCreate = exports.accountExists = exports.getConnection = exports.initConnection = exports.MIN_NEW_ACCOUNT_ASK = void 0;
 var ethers_1 = require("ethers");
 var nearAPI = __importStar(require("near-api-js"));
 var near_seed_phrase_1 = require("near-seed-phrase");
@@ -98,7 +98,7 @@ var half_gas = "50000000000000";
 /// this is the new account amount 0.21 for account name, keys, contract and 0.01 for mapping contract storage cost
 var MIN_NEW_ACCOUNT = parseNearAmount("0.4");
 var MIN_NEW_ACCOUNT_THRESH = parseNearAmount("0.49");
-var MIN_NEW_ACCOUNT_ASK = parseNearAmount("0.5");
+exports.MIN_NEW_ACCOUNT_ASK = parseNearAmount("0.5");
 var FUNDING_CHECK_TIMEOUT = 5000;
 /// lkmfawl
 var attachedDepositMapping = parseNearAmount("0.02");
@@ -179,30 +179,26 @@ var pub2hex = function (publicKey) {
 };
 var ACCOUNT_REGEX = new RegExp("^(([a-z0-9]+[-_])*[a-z0-9]+.)*([a-z0-9]+[-_])*[a-z0-9]+$");
 /// account creation and connection flow
-var handleCreate = function (signer, ethAddress, newAccountId, withImplicit) {
-    if (withImplicit === void 0) { withImplicit = true; }
-    return __awaiter(void 0, void 0, void 0, function () {
-        var _a, new_public_key, new_secret_key;
-        return __generator(this, function (_b) {
-            switch (_b.label) {
-                case 0: return [4 /*yield*/, keyPairFromEthSig(signer, unlimitedKeyPayload(newAccountId, ethAddress))];
-                case 1:
-                    _a = _b.sent(), new_public_key = _a.publicKey, new_secret_key = _a.secretKey;
-                    /// store attempt in localStorage so we can recover and retry / resume contract deployment
-                    set(ATTEMPT_ACCOUNT_ID, newAccountId);
-                    set(ATTEMPT_SECRET_KEY, new_secret_key);
-                    set(ATTEMPT_ETH_ADDRESS, ethAddress);
-                    // remove any existing app key
-                    del(APP_KEY_ACCOUNT_ID);
-                    del(APP_KEY_SECRET);
-                    return [4 /*yield*/, createAccount(newAccountId, new_public_key)];
-                case 2: 
-                /// TODO wait for implicit funding here and then continue to createAccount
-                return [2 /*return*/, _b.sent()];
-            }
-        });
+var handleCreate = function (signer, ethAddress, newAccountId, fundingAccountCB) { return __awaiter(void 0, void 0, void 0, function () {
+    var _a, new_public_key, new_secret_key;
+    return __generator(this, function (_b) {
+        switch (_b.label) {
+            case 0: return [4 /*yield*/, keyPairFromEthSig(signer, unlimitedKeyPayload(newAccountId, ethAddress))];
+            case 1:
+                _a = _b.sent(), new_public_key = _a.publicKey, new_secret_key = _a.secretKey;
+                /// store attempt in localStorage so we can recover and retry / resume contract deployment
+                set(ATTEMPT_ACCOUNT_ID, newAccountId);
+                set(ATTEMPT_SECRET_KEY, new_secret_key);
+                set(ATTEMPT_ETH_ADDRESS, ethAddress);
+                // remove any existing app key
+                del(APP_KEY_ACCOUNT_ID);
+                del(APP_KEY_SECRET);
+                fundingAccountCB(PublicKey.from(new_public_key).data.toString('hex'));
+                return [4 /*yield*/, createAccount(newAccountId, new_public_key)];
+            case 2: return [2 /*return*/, _b.sent()];
+        }
     });
-};
+}); };
 exports.handleCreate = handleCreate;
 var createAccount = function (newAccountId, new_public_key) { return __awaiter(void 0, void 0, void 0, function () {
     var implicitAccountId, checkImplicitFunded, account, res;
@@ -225,7 +221,7 @@ var createAccount = function (newAccountId, new_public_key) { return __awaiter(v
                                 balance = _a.sent();
                                 available = balance.available;
                                 if (new bn_js_1.default(available).sub(new bn_js_1.default(MIN_NEW_ACCOUNT_THRESH)).lt(new bn_js_1.default('0'))) {
-                                    alert("There is not enough NEAR (".concat(formatNearAmount(MIN_NEW_ACCOUNT_ASK, 4), " minimum) to create a new account and deploy NETH contract. Please deposit more and try again."));
+                                    alert("There is not enough NEAR (".concat(formatNearAmount(exports.MIN_NEW_ACCOUNT_ASK, 4), " minimum) to create a new account and deploy NETH contract. Please deposit more and try again."));
                                     return [2 /*return*/, false];
                                 }
                                 return [3 /*break*/, 6];
@@ -293,9 +289,11 @@ var handleMapping = function () { return __awaiter(void 0, void 0, void 0, funct
                     })];
             case 2:
                 res = _c.sent();
-                logger(res);
                 if (((_b = res === null || res === void 0 ? void 0 : res.status) === null || _b === void 0 ? void 0 : _b.SuccessValue) !== "") {
                     logger("account mapping failed failed");
+                }
+                else {
+                    logger("account mapping success");
                 }
                 return [3 /*break*/, 4];
             case 3:

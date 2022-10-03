@@ -35,7 +35,7 @@ const half_gas = "50000000000000";
 /// this is the new account amount 0.21 for account name, keys, contract and 0.01 for mapping contract storage cost
 const MIN_NEW_ACCOUNT = parseNearAmount("0.4");
 const MIN_NEW_ACCOUNT_THRESH = parseNearAmount("0.49");
-const MIN_NEW_ACCOUNT_ASK = parseNearAmount("0.5");
+export const MIN_NEW_ACCOUNT_ASK = parseNearAmount("0.5");
 const FUNDING_CHECK_TIMEOUT = 5000;
 /// lkmfawl
 
@@ -110,7 +110,7 @@ const ACCOUNT_REGEX = new RegExp("^(([a-z0-9]+[-_])*[a-z0-9]+.)*([a-z0-9]+[-_])*
 
 /// account creation and connection flow
 
-export const handleCreate = async (signer, ethAddress, newAccountId, withImplicit = true) => {
+export const handleCreate = async (signer, ethAddress, newAccountId, fundingAccountCB) => {
 	/// get keypair from eth sig entropy for the near-eth account
 	const { publicKey: new_public_key, secretKey: new_secret_key } = await keyPairFromEthSig(
 		signer,
@@ -124,7 +124,7 @@ export const handleCreate = async (signer, ethAddress, newAccountId, withImplici
 	del(APP_KEY_ACCOUNT_ID);
 	del(APP_KEY_SECRET);
 
-	/// TODO wait for implicit funding here and then continue to createAccount
+	fundingAccountCB(PublicKey.from(new_public_key).data.toString('hex'))
 
 	return await createAccount(newAccountId, new_public_key);
 };
@@ -133,6 +133,7 @@ const createAccount = async (newAccountId, new_public_key) => {
 	// const { publicKey, secretKey } = parseSeedPhrase(process.env.REACT_APP_FUNDING_SEED_PHRASE);
 	/// assumes implicit is funded, otherwise will warn and cycle here
 
+	/// wait for implicit funding here and then continue to createAccount
 	let implicitAccountId
 	const checkImplicitFunded = async () => {
 		implicitAccountId = PublicKey.from(new_public_key).data.toString('hex')

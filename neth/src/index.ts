@@ -19,4 +19,5 @@ export {
 	isSignedIn,
 	signAndSendTransactions,
 	initConnection,
+	MIN_NEW_ACCOUNT_ASK,
 } from './lib/neth-lib'

@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import {
 	getNear,
 	handleCreate,
@@ -12,6 +12,7 @@ import {
 	signOut,
 	isSignedIn,
 	signAndSendTransactions,
+	MIN_NEW_ACCOUNT_ASK,
 } from '../../neth/lib';
 
 import { transfer } from 'near-api-js/lib/transaction';
@@ -36,7 +37,8 @@ export default Main = ({
 		ethAddress,
 	} = state
 
-	console.log(signer)
+	const [fundingAccountId, setFundingAccountId] = useState('')
+
 
 	return <>
 		<p>{ethAddress}</p>
@@ -52,12 +54,22 @@ export default Main = ({
 			!mapAccountId
 				?
 				<>
+					{
+						fundingAccountId.length > 0 && <>
+
+							<h2>Funding Account</h2>
+							<p>Please send {MIN_NEW_ACCOUNT_ASK} to {fundingAccountId} to create your NETH account on NEAR.</p>
+							<input value={fundingAccountId} />
+						</>
+					}
 					<p>Choose NEAR Account ID</p>
 					<input value={accountId} onChange={handleAccountInput} />
 					<button aria-busy={loading} disabled={!!error || loading} onClick={handleAction(async () => {
 						
 						/// TODO get implicit account for funding in parallel to waiting
-						const { account } = await handleCreate(signer, ethAddress, accountId + suffix)
+						const { account } = await handleCreate(signer, ethAddress, accountId + suffix, (accountId) => {
+							setFundingAccountId(accountId)
+						})
 
 						alert('Account: ' + account.accountId + ' paired with: ' + ethAddress)
 						update('mapAccountId', (await getNearMap(ethAddress)))
