@@ -202,8 +202,12 @@ export default Main = ({
 								})
 								if (!!res?.status?.SuccessValue) {
 									console.warn('error')
+									alert('There was an error with the transaction, please try again!')
 								}
-								alert('TX success, view on explorer: https://explorer.testnet.near.org/transactions/' + res.transaction.hash)
+								update('dialog', <>
+									<p>Transaction success, view on the <a href={`https://explorer.${networkId}.near.org/transactions/${res.transaction.hash}`} target="_blank">explorer</a>.</p>
+									<button onClick={closeDialog}>Ok</button>
+								</>)
 
 							})}>Test Transfer <Info onClick={(e) => {
 								e.stopPropagation();
@@ -218,7 +222,12 @@ export default Main = ({
 							<button aria-busy={loading} disabled={loading} onClick={handleAction(async () => {
 
 								const { account } = await handleDisconnect(signer, ethAddress)
-								alert('Account: ' + account.accountId + ' disconnected from: ' + ethAddress)
+
+								update('dialog', <>
+									<p>Account {account.accountId} disconnected from {ethAddress} successfully!</p>
+									<button onClick={closeDialog}>Ok</button>
+								</>)
+
 								update('mapAccountId', (await getNearMap(ethAddress)))
 							})}>Disconnect Account <Info onClick={(e) => {
 								e.stopPropagation();
