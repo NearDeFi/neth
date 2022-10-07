@@ -9,12 +9,12 @@ export function getConnection(): {
     accountSuffix: any;
 };
 export function accountExists(accountId: any): Promise<boolean>;
-export function handleCreate(signer: any, ethAddress: any, newAccountId: any, fundingAccountCB: any): Promise<any>;
+export function handleCreate(signer: any, ethAddress: any, newAccountId: any, fundingAccountCB: any, fundingErrorCB: any, postFundingCB: any): Promise<any>;
 export function handleMapping(): any;
 export function handleDeployContract(): any;
 export function handleSetupContract(): any;
 export function handleKeys(): any;
-export function handleCheckAccount(ethAddress: any): any;
+export function handleCheckAccount(ethAddress: any, fundingErrorCB: any, postFundingCB: any): any;
 export function hasAppKey(accessKeys: any): any;
 export function handleRefreshAppKey(signer: any, ethAddress: any): Promise<void | {
     publicKey: string;
@@ -36,7 +36,7 @@ export function signOut(): Promise<void | {
     accountId: any;
 }>;
 export function isSignedIn(): boolean;
-export function getAppKey({ signer, ethAddress }: {
+export function getAppKey({ signer, ethAddress: eth_address }: {
     signer: any;
     ethAddress: any;
 }): Promise<{
@@ -48,5 +48,3 @@ export function signAndSendTransactions({ transactions }: {
     transactions: any;
 }): Promise<any>;
 export function convertActions(actions: any, accountId: any, receiverId: any): any;
-import * as nearAPI from "near-api-js";
-import { ethers } from "ethers";

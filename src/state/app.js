@@ -27,6 +27,10 @@ export const pushLog = (args) => async ({ update, getState }) => {
 	const newLog = [...getState().log, JSON.stringify(args)]
 	update('log', newLog)
 	setTimeout(() => {
+		const el = document.querySelector('.log')
+		if (el) el.scrollTop = 99999
+	}, 150)
+	setTimeout(() => {
 		const newLog = [...getState().log]
 		newLog.shift()
 		update('log', newLog)

@@ -1,10 +1,58 @@
 
+body, h1, h2, h3, h4, h5, p, button {
+	font-family: 'Inter', sans-serif !important;
+	margin-bottom: 16px !important;
+}
 
 .container {
-	margin-top: 32px;
-	max-width: 500px !important;
+	max-width: 400px !important;
 }
 
 .small {
 	font-size: 0.8rem;
+}
+
+input {
+	height: 48px !important;
+	padding: 0 16px !important;
+}
+
+button {
+	font-weight: bold !important;
+	font-size: 0.8rem !important;
+	text-transform: uppercase !important;
+	height: 48px;
+	line-height: 48px;
+	display: flex !important;
+	align-items: center;
+	justify-content: space-between;
+	> svg {
+		margin-right: -5px;
+	}
+
+	&.secondary {
+		background: none;
+		border-color: #eee;
+		color: var(--primary);
+	}
+}
+
+header {
+	height: 220px;
+	background: radial-gradient(50% 50% at 50% 50%, #160740 0%, #0A0123 100%);
+	margin-bottom: 32px;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	box-shadow: 0 0 16px rgba(0, 0, 0, 0.5);
+	> div {
+		max-width: 500px !important;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		flex-direction: column;
+		> img {
+			margin: 16px 0;
+		}
+	}
 }

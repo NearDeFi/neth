@@ -6,16 +6,26 @@ export default Modal = ({
 }) => {
 
 	const {
-		loading, log,
+		loading, log, dialog,
 	} = state
 
-	if (!loading) return null
+	if (!loading && !dialog) return null
 
 	return <div className="modal">
-		{log.length > 0 && <div>
+		{(log.length > 0 || dialog) && <div>
 			{
-				log.map((l, i) => <p key={i}>{l}</p>)
+				dialog && <div className='dialog'>
+					{dialog}
+				</div>
 			}
+			{ (log.length > 0 || loading) && <>
+				<h4>Log</h4>
+				<div className='log'>
+					{
+						log.map((l, i) => <p key={i}>{l}</p>)
+					}
+				</div>
+			</>}
 		</div>}
 	</div>
 }

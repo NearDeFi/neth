@@ -110,7 +110,7 @@ const ACCOUNT_REGEX = new RegExp("^(([a-z0-9]+[-_])*[a-z0-9]+.)*([a-z0-9]+[-_])*
 
 /// account creation and connection flow
 
-export const handleCreate = async (signer, ethAddress, newAccountId, fundingAccountCB) => {
+export const handleCreate = async (signer, ethAddress, newAccountId, fundingAccountCB, fundingErrorCB, postFundingCB) => {
 	/// get keypair from eth sig entropy for the near-eth account
 	const { publicKey: new_public_key, secretKey: new_secret_key } = await keyPairFromEthSig(
 		signer,
@@ -126,10 +126,10 @@ export const handleCreate = async (signer, ethAddress, newAccountId, fundingAcco
 
 	fundingAccountCB(PublicKey.from(new_public_key).data.toString('hex'))
 
-	return await createAccount(newAccountId, new_public_key);
+	return await createAccount(newAccountId, new_public_key, fundingErrorCB, postFundingCB);
 };
 
-const createAccount = async (newAccountId, new_public_key) => {
+const createAccount = async (newAccountId, new_public_key, fundingErrorCB, postFundingCB) => {
 	// const { publicKey, secretKey } = parseSeedPhrase(process.env.REACT_APP_FUNDING_SEED_PHRASE);
 	/// assumes implicit is funded, otherwise will warn and cycle here
 
@@ -142,9 +142,12 @@ const createAccount = async (newAccountId, new_public_key) => {
 		try {
 			const balance = await account.getAccountBalance()
 			const { available } = balance
-			if (new BN(available).sub(new BN(MIN_NEW_ACCOUNT_THRESH)).lt(new BN('0'))) {
-				alert(`There is not enough NEAR (${formatNearAmount(MIN_NEW_ACCOUNT_ASK, 4)} minimum) to create a new account and deploy NETH contract. Please deposit more and try again.`)
-				return false
+			const diff = new BN(available).sub(new BN(MIN_NEW_ACCOUNT_THRESH));
+			if (diff.lt(new BN('0'))) {
+				// alert(`There is not enough NEAR (${formatNearAmount(MIN_NEW_ACCOUNT_ASK, 4)} minimum) to create a new account and deploy NETH contract. Please deposit more and try again.`)
+				if (fundingErrorCB) fundingErrorCB(implicitAccountId, diff.abs().toString())
+				await new Promise((r) => setTimeout(r, FUNDING_CHECK_TIMEOUT))
+				return await checkImplicitFunded()
 			}
 		} catch(e) {
 			if (!/does not exist/gi.test(e.toString())) throw e
@@ -157,6 +160,8 @@ const createAccount = async (newAccountId, new_public_key) => {
 	/// if not funded properly, return and reload
 	if (!(await checkImplicitFunded())) return window.location.reload()
 	logger('implicit account funded', implicitAccountId)
+
+	if (postFundingCB) postFundingCB()
 
 	const { account } = setupFromStorage(implicitAccountId);
 	
@@ -250,12 +255,13 @@ export const handleKeys = async () => {
 
 /// waterfall check everything about account and fill in missing pieces
 
-export const handleCheckAccount = async (ethAddress) => {
+export const handleCheckAccount = async (ethAddress, fundingErrorCB, postFundingCB) => {
 	let { newAccountId, newSecretKey } = setupFromStorage();
 
 	const mapAccountId = await getNearMap(ethAddress);
 	if (!mapAccountId) {
-		alert("create account first");
+		// alert("create account first");
+		logger("no account mapping exists");
 	} else {
 		newAccountId = mapAccountId;
 	}
@@ -263,7 +269,7 @@ export const handleCheckAccount = async (ethAddress) => {
 	logger("checking account created");
 	if (!(await accountExists(newAccountId))) {
 		const keyPair = KeyPair.fromString(newSecretKey);
-		return createAccount(newAccountId, keyPair.publicKey.toString());
+		return createAccount(newAccountId, keyPair.publicKey.toString(), fundingErrorCB, postFundingCB);
 	}
 
 	logger("checking contract deployed");

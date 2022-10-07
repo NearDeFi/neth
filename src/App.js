@@ -14,19 +14,22 @@ import getConfig from "../utils/config";
 import contractPath from 'url:../out/main.wasm'
 window.contractPath = contractPath
 
+import Logo from './img/neth-logo.svg'
+import Text from './img/neth-text.svg'
+
 import './App.scss';
 
 const ATTEMPT_ACCOUNT_ID = '__ATTEMPT_ACCOUNT_ID'
 
 /// destructure
-const { nodeUrl, walletUrl, helperUrl, networkId } = getConfig();
+export const { nodeUrl, walletUrl, helperUrl, networkId } = getConfig();
 const { Account } = nearAPI
 
 /// valid accounts
 const ACCOUNT_REGEX = new RegExp('^(([a-z0-9]+[\-_])*[a-z0-9]+\.)*([a-z0-9]+[\-_])*[a-z0-9]+$')
 
 /// Components
-import Main from './components/Main'
+import Main, { fundingErrorCB, postFundingCB } from './components/Main'
 import Modal from './components/Modal'
 
 const App = () => {
@@ -75,7 +78,7 @@ const App = () => {
 
 				const attemptAccountId = localStorage.getItem(ATTEMPT_ACCOUNT_ID);
 				if (attemptAccountId) {
-					await handleCheckAccount(ethAddress)
+					await handleCheckAccount(ethAddress, fundingErrorCB(update), postFundingCB(update))
 				}
 			}
 		} catch (e) {
@@ -120,16 +123,26 @@ const App = () => {
 		signer,
 		handleAccountInput,
 		handleAction,
+		updateEthState,
 	}
 
 	return <>
 		<Modal {...{state, update}} />
+		<header>
+			<div>
+			<img src={Logo} />
+			<img src={Text} />
+			</div>
+		</header>
+
 		<main className="container">
-			<h2>Account Creation & Pairing</h2>
 			{
 				ethAddress.length === 0
 					?
+					<>
+					<h2>Create Account</h2>
 					<button aria-busy={loading} disabled={loading} onClick={handleAction(() => getEthereum())}>Choose Ethereum Account</button>
+					</>
 					:
 					<Main {...componentState} />
 			}

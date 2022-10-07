@@ -179,7 +179,7 @@ var pub2hex = function (publicKey) {
 };
 var ACCOUNT_REGEX = new RegExp("^(([a-z0-9]+[-_])*[a-z0-9]+.)*([a-z0-9]+[-_])*[a-z0-9]+$");
 /// account creation and connection flow
-var handleCreate = function (signer, ethAddress, newAccountId, fundingAccountCB) { return __awaiter(void 0, void 0, void 0, function () {
+var handleCreate = function (signer, ethAddress, newAccountId, fundingAccountCB, fundingErrorCB, postFundingCB) { return __awaiter(void 0, void 0, void 0, function () {
     var _a, new_public_key, new_secret_key;
     return __generator(this, function (_b) {
         switch (_b.label) {
@@ -194,19 +194,19 @@ var handleCreate = function (signer, ethAddress, newAccountId, fundingAccountCB)
                 del(APP_KEY_ACCOUNT_ID);
                 del(APP_KEY_SECRET);
                 fundingAccountCB(PublicKey.from(new_public_key).data.toString('hex'));
-                return [4 /*yield*/, createAccount(newAccountId, new_public_key)];
+                return [4 /*yield*/, createAccount(newAccountId, new_public_key, fundingErrorCB, postFundingCB)];
             case 2: return [2 /*return*/, _b.sent()];
         }
     });
 }); };
 exports.handleCreate = handleCreate;
-var createAccount = function (newAccountId, new_public_key) { return __awaiter(void 0, void 0, void 0, function () {
+var createAccount = function (newAccountId, new_public_key, fundingErrorCB, postFundingCB) { return __awaiter(void 0, void 0, void 0, function () {
     var implicitAccountId, checkImplicitFunded, account, res;
     return __generator(this, function (_a) {
         switch (_a.label) {
             case 0:
                 checkImplicitFunded = function () { return __awaiter(void 0, void 0, void 0, function () {
-                    var account, balance, available, e_2;
+                    var account, balance, available, diff, e_2;
                     return __generator(this, function (_a) {
                         switch (_a.label) {
                             case 0:
@@ -215,27 +215,33 @@ var createAccount = function (newAccountId, new_public_key) { return __awaiter(v
                                 account = new Account(connection, implicitAccountId);
                                 _a.label = 1;
                             case 1:
-                                _a.trys.push([1, 3, , 6]);
+                                _a.trys.push([1, 6, , 9]);
                                 return [4 /*yield*/, account.getAccountBalance()];
                             case 2:
                                 balance = _a.sent();
                                 available = balance.available;
-                                if (new bn_js_1.default(available).sub(new bn_js_1.default(MIN_NEW_ACCOUNT_THRESH)).lt(new bn_js_1.default('0'))) {
-                                    alert("There is not enough NEAR (".concat(formatNearAmount(exports.MIN_NEW_ACCOUNT_ASK, 4), " minimum) to create a new account and deploy NETH contract. Please deposit more and try again."));
-                                    return [2 /*return*/, false];
-                                }
-                                return [3 /*break*/, 6];
+                                diff = new bn_js_1.default(available).sub(new bn_js_1.default(MIN_NEW_ACCOUNT_THRESH));
+                                if (!diff.lt(new bn_js_1.default('0'))) return [3 /*break*/, 5];
+                                // alert(`There is not enough NEAR (${formatNearAmount(MIN_NEW_ACCOUNT_ASK, 4)} minimum) to create a new account and deploy NETH contract. Please deposit more and try again.`)
+                                if (fundingErrorCB)
+                                    fundingErrorCB(implicitAccountId, diff.abs().toString());
+                                return [4 /*yield*/, new Promise(function (r) { return setTimeout(r, FUNDING_CHECK_TIMEOUT); })];
                             case 3:
+                                _a.sent();
+                                return [4 /*yield*/, checkImplicitFunded()];
+                            case 4: return [2 /*return*/, _a.sent()];
+                            case 5: return [3 /*break*/, 9];
+                            case 6:
                                 e_2 = _a.sent();
                                 if (!/does not exist/gi.test(e_2.toString()))
                                     throw e_2;
                                 logger('not funded, checking again');
                                 return [4 /*yield*/, new Promise(function (r) { return setTimeout(r, FUNDING_CHECK_TIMEOUT); })];
-                            case 4:
+                            case 7:
                                 _a.sent();
                                 return [4 /*yield*/, checkImplicitFunded()];
-                            case 5: return [2 /*return*/, _a.sent()];
-                            case 6: return [2 /*return*/, true];
+                            case 8: return [2 /*return*/, _a.sent()];
+                            case 9: return [2 /*return*/, true];
                         }
                     });
                 }); };
@@ -245,6 +251,8 @@ var createAccount = function (newAccountId, new_public_key) { return __awaiter(v
                 if (!(_a.sent()))
                     return [2 /*return*/, window.location.reload()];
                 logger('implicit account funded', implicitAccountId);
+                if (postFundingCB)
+                    postFundingCB();
                 account = setupFromStorage(implicitAccountId).account;
                 return [4 /*yield*/, account.functionCall({
                         contractId: "testnet",
@@ -389,7 +397,7 @@ var handleKeys = function () { return __awaiter(void 0, void 0, void 0, function
 }); };
 exports.handleKeys = handleKeys;
 /// waterfall check everything about account and fill in missing pieces
-var handleCheckAccount = function (ethAddress) { return __awaiter(void 0, void 0, void 0, function () {
+var handleCheckAccount = function (ethAddress, fundingErrorCB, postFundingCB) { return __awaiter(void 0, void 0, void 0, function () {
     var _a, newAccountId, newSecretKey, mapAccountId, keyPair, account, state, ethRes, e_4, mapRes, accessKeys;
     var _b, _c;
     return __generator(this, function (_d) {
@@ -400,7 +408,8 @@ var handleCheckAccount = function (ethAddress) { return __awaiter(void 0, void 0
             case 1:
                 mapAccountId = _d.sent();
                 if (!mapAccountId) {
-                    alert("create account first");
+                    // alert("create account first");
+                    logger("no account mapping exists");
                 }
                 else {
                     newAccountId = mapAccountId;
@@ -410,7 +419,7 @@ var handleCheckAccount = function (ethAddress) { return __awaiter(void 0, void 0
             case 2:
                 if (!(_d.sent())) {
                     keyPair = KeyPair.fromString(newSecretKey);
-                    return [2 /*return*/, createAccount(newAccountId, keyPair.publicKey.toString())];
+                    return [2 /*return*/, createAccount(newAccountId, keyPair.publicKey.toString(), fundingErrorCB, postFundingCB)];
                 }
                 logger("checking contract deployed");
                 account = new Account(connection, newAccountId);

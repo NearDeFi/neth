@@ -15,16 +15,33 @@ import {
 	MIN_NEW_ACCOUNT_ASK,
 } from '../../neth/lib';
 
+import { networkId } from '../App';
+import { Info } from 'react-feather';
+
+import { formatNearAmount } from 'near-api-js/lib/utils/format'
 import { transfer } from 'near-api-js/lib/transaction';
 import contractPath from 'url:../../out/main.wasm'
 window.contractPath = contractPath
+
+export const fundingErrorCB = (update) => (fundingAccountId, remaining) => {
+	update('dialog', <>
+		<h4>Funding Account</h4>
+		<p>Please send {formatNearAmount(remaining, 4)} NEAR (or more) to the TEMPORARY account below to create your NETH account on NEAR.</p>
+		<input value={fundingAccountId} />
+	</>)
+}
+
+export const postFundingCB = (update) => () => {
+	update('dialog', null)
+}
 
 export default Main = ({
 	state,
 	update,
 	signer,
 	handleAccountInput,
-	handleAction
+	handleAction,
+	updateEthState,
 }) => {
 
 	const {
@@ -37,69 +54,105 @@ export default Main = ({
 		ethAddress,
 	} = state
 
-	const [fundingAccountId, setFundingAccountId] = useState('')
+	const closeDialog = () => update('dialog', null)
 
+	const AccountStatus = ({ account }) => <>
+		<h4>NETH Status</h4>
+		<p>Account {account.accountId} on NEAR successfully paired with {ethAddress}!</p>
+		<button onClick={closeDialog}>Ok</button>
+	</>
 
 	return <>
-		<p>{ethAddress}</p>
-		<button aria-busy={loading} disabled={loading} onClick={handleAction(async () => {
+		<p>
+			Connected Ethereum Account<br />
+			<span className='small'>{ethAddress}</span>
+		</p>
+
+		<button className="secondary" aria-busy={loading} disabled={loading} onClick={handleAction(async () => {
 
 			await switchEthereum()
 			updateEthState()
 
-		})}>Switch Ethereum Account</button>
-		<p>To sign out of your ethereum account completely, go to "Connected Sites" in your wallet (MetaMask) and disconnect this one.</p>
-		<br />
+		})}>Switch Ethereum Account <Info onClick={(e) => {
+			e.stopPropagation();
+			update('dialog', <>
+				<p>To sign out of your ethereum account completely, go to "Connected Sites" in your wallet (MetaMask) and disconnect this one.</p>
+				<button onClick={closeDialog}>Ok</button>
+			</>)
+		}} /></button>
 		{
 			!mapAccountId
 				?
 				<>
-					{
-						fundingAccountId.length > 0 && <>
-
-							<h2>Funding Account</h2>
-							<p>Please send {MIN_NEW_ACCOUNT_ASK} to {fundingAccountId} to create your NETH account on NEAR.</p>
-							<input value={fundingAccountId} />
-						</>
-					}
-					<p>Choose NEAR Account ID</p>
+					<p>Choose a NEAR Account ID</p>
 					<input value={accountId} onChange={handleAccountInput} />
 					<button aria-busy={loading} disabled={!!error || loading} onClick={handleAction(async () => {
-						
-						/// TODO get implicit account for funding in parallel to waiting
-						const { account } = await handleCreate(signer, ethAddress, accountId + suffix, (accountId) => {
-							setFundingAccountId(accountId)
-						})
 
-						alert('Account: ' + account.accountId + ' paired with: ' + ethAddress)
+						/// TODO get implicit account for funding in parallel to waiting
+						const { account } = await handleCreate(signer, ethAddress, accountId + suffix, (fundingAccountId) => {
+							update('dialog', <>
+								<h4>Funding Account</h4>
+								<p>Please send {formatNearAmount(MIN_NEW_ACCOUNT_ASK, 4)} NEAR (or more) to the TEMPORARY account below to create your NETH account on NEAR.</p>
+								<input value={fundingAccountId} />
+							</>)
+						},
+							fundingErrorCB(update),
+							postFundingCB(update))
+
 						update('mapAccountId', (await getNearMap(ethAddress)))
+
+						update('dialog', <AccountStatus {...{ account }} />)
+						// alert('Account: ' + account.accountId + ' paired with: ' + ethAddress)
 					})}>Create Account {accountId}{suffix}</button>
-					{error && <p>{error}</p>}
+					{error && <p>{error} <Info onClick={(e) => {
+						e.stopPropagation();
+						update('dialog', <>
+							<p>
+								Valid Accounts: <br />a-z, 0-9 and -,_ only<br />
+								min 2, max 64<br />
+								.{networkId} is applied automatically
+							</p>
+							<button onClick={closeDialog}>Ok</button>
+						</>)
+					}} /></p>}
 				</>
 				:
 				<>
-					<p>NEAR Account Mapping: {mapAccountId}</p>
-					<br />
+					<p>
+						NEAR Account Mapping<br />
+						<span className='small'>{mapAccountId}</span>
+					</p>
 
-					<button aria-busy={loading} disabled={loading} onClick={handleAction(async () => {
+					<button className="secondary" aria-busy={loading} disabled={loading} onClick={handleAction(async () => {
 						const { account } = await handleCheckAccount(ethAddress)
-						alert('Account: ' + account.accountId + ' paired with: ' + ethAddress)
+						update('dialog', <AccountStatus {...{ account }} />)
 						update('mapAccountId', (await getNearMap(ethAddress)))
-					})}>Check Account</button>
-					<p>This method is in case user drops off / bad network during account setup. It uses saved key material in localStorage from "Create Account" step.</p>
-					<br />
+					})}>Check NETH Account <Info onClick={(e) => {
+						e.stopPropagation();
+						update('dialog', <>
+							<p>This method is in case you closed your browser or had a bad network during account setup. It uses saved key material in localStorage to recover and complete the setup.</p>
+							<button onClick={closeDialog}>Ok</button>
+						</>)
+					}} /></button>
+
 					<button aria-busy={loading} disabled={loading} onClick={handleAction(async () => {
 
 						const { publicKey } = await handleRefreshAppKey(signer, ethAddress)
 						alert('New app key (publicKey): ' + publicKey)
 						updateEthState()
 
-					})}>Get / Change your App Key</button>
-					<p>TLDR; 1 sig to access the unlimited allowance access key (this domain only); 1 sig for addKey, (1 sig for deleteKey if user has old app key), and 1 execute sig</p>
-					<p>This method will rotate the currently active app key and bump the app key nonce so malicious apps cannot repeatedly drain a new app key allowance (1 N). The user should only sign on the setup domain which is why there is a warning in the payload that produces the app key material.</p>
+					})}>Get / Update App Key <Info onClick={(e) => {
+						e.stopPropagation();
+						update('dialog', <>
+							<p>TLDR; You will be asked for 3-4 signatures</p>
+							<p>1 sig to access an unlimited allowance access key (this domain only); 1 sig for your new app key, (1 sig for if you have an old app key to delete), and 1 sig to execute the transaction.</p>
+							<p>This method will rotate the currently active app key and bump the app key nonce so malicious apps cannot repeatedly drain a new app key allowance (1 N). You should only sign on the setup domain which is why there is a warning in the payload that produces the app key material.</p>
+							<button onClick={closeDialog}>Ok</button>
+						</>)
+					}} /></button>
 
 					{
-						showApps &&
+						false && showApps &&
 						<>
 							<h2>For Apps</h2>
 
@@ -126,6 +179,14 @@ export default Main = ({
 							})}>Sign Out</button>
 							<p>Remove the locally stored app key.</p>
 							<br />
+							<p>Transfer 1 yocto to yourself.</p>
+						</>
+					}
+
+					{
+						showApps &&
+						<>
+							<h4>Test Transfer</h4>
 							<button aria-busy={loading} disabled={loading} onClick={handleAction(async () => {
 
 								const { accountId } = await getNear()
@@ -144,26 +205,39 @@ export default Main = ({
 								}
 								alert('TX success, view on explorer: https://explorer.testnet.near.org/transactions/' + res.transaction.hash)
 
-							})}>Test Transfer</button>
-							<p>Transfer 1 yocto to yourself.</p>
+							})}>Test Transfer <Info onClick={(e) => {
+								e.stopPropagation();
+								update('dialog', <>
+									<p>Test your NETH account by transferring 1 yocto to yourself.</p>
+									<button onClick={closeDialog}>Ok</button>
+								</>)
+							}} /></button>
 
-							<h2>Account Disconnection / Contract Update</h2>
+							<h4>Disconnect Account</h4>
 
 							<button aria-busy={loading} disabled={loading} onClick={handleAction(async () => {
 
 								const { account } = await handleDisconnect(signer, ethAddress)
 								alert('Account: ' + account.accountId + ' disconnected from: ' + ethAddress)
 								update('mapAccountId', (await getNearMap(ethAddress)))
-							})}>Disconnect Account</button>
-							<p>This method is for user to get a seed phrase and disconnect NEAR account from ETH address.</p>
-							<br />
+							})}>Disconnect Account <Info onClick={(e) => {
+								e.stopPropagation();
+								update('dialog', <>
+							<p>This will prompt you with a seed phrase. Copy it somewhere safe! Then it will disconnect your NEAR account from your Ethereum Address.</p>
+							<p>You can import your seed phrase into any NEAR wallet e.g. <a href={`https://${networkId === 'testnet' ? networkId : 'app'}.mynearwallet.com`} target="_blank">MyNearWallet</a></p>
+									<button onClick={closeDialog}>Ok</button>
+								</>)
+							}} /></button>
+							<br/>
+							<br/>
+							{/* <br />
 							<button aria-busy={loading} disabled={loading} onClick={handleAction(async () => {
 
 								await handleUpdateContract(signer, ethAddress)
 								alert('Contract Updated')
 
 							})}>Update Contract</button>
-							<p>This method will ask the user to approve a contract update to their NEAR account.</p>
+							<p>This method will ask the user to approve a contract update to their NEAR account.</p> */}
 
 						</>
 					}

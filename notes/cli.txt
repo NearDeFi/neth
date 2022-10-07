@@ -1,4 +1,4 @@
 
 DELETE ACCOUNT
 
-near repl --accountId=neth-1.testnet --seedPhrase="wreck like capable decorate theme rifle book tell also era empty boost"
+near repl --accountId=neth-4.testnet --seedPhrase="exist age olive wagon puzzle mom wise plate leisure cliff prison jeans"
