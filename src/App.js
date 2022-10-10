@@ -135,6 +135,10 @@ const App = () => {
 		</header>
 
 		<main className="container">
+			<a href={networkId === 'mainnet' ? '/?network=testnet' : '/'}>
+				<button className='secondary'><span style={{color: '#008800'}}>{networkId}</span>Click to Change</button>
+			</a>
+
 			{
 				ethAddress.length === 0
 					?
