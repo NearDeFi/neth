@@ -136,7 +136,7 @@ export const Main = ({
 						</>)
 					}} /></button>
 
-					<button aria-busy={loading} disabled={loading} onClick={handleAction(async () => {
+					<button className="secondary" aria-busy={loading} disabled={loading} onClick={handleAction(async () => {
 
 						const { publicKey } = await handleRefreshAppKey(signer, ethAddress)
 						alert('New app key (publicKey): ' + publicKey)
@@ -189,12 +189,15 @@ export const Main = ({
 						<>
 
 							<h4>Guestbook Sample App</h4>
-							<p>
-								A sample app that uses <a href="https://github.com/near/wallet-selector/" target="_blank">wallet-selector</a> and <a href="https://github.com/neardefi/neth" target="_blank">NETH</a> so you can try your account.
-							</p>
-							<a href="https://neardefi.github.io/guest-book-wallet-selector/" target="_blank">
-								<button>Visit App</button>
-							</a>
+							<button onClick={() => window.open('https://neardefi.github.io/guest-book-wallet-selector/')}>Visit App <Info onClick={(e) => {
+								e.stopPropagation();
+								update('dialog', <>
+									<p>
+										A sample app that uses <a href="https://github.com/near/wallet-selector/" target="_blank">wallet-selector</a> and <a href="https://github.com/neardefi/neth" target="_blank">NETH</a> so you can try your account.
+									</p>
+									<button onClick={closeDialog}>Ok</button>
+								</>)
+							}} /></button>
 
 							<h4>Test Transfer</h4>
 							<button aria-busy={loading} disabled={loading} onClick={handleAction(async () => {
