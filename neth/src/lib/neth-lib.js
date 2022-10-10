@@ -25,6 +25,7 @@ const NETWORK = {
 	}
 }
 
+const REFRESH_MSG = `Please refresh the page and try again.`
 const ATTEMPT_SECRET_KEY = "__ATTEMPT_SECRET_KEY";
 const ATTEMPT_ACCOUNT_ID = "__ATTEMPT_ACCOUNT_ID";
 const ATTEMPT_ETH_ADDRESS = "__ATTEMPT_ETH_ADDRESS";
@@ -176,7 +177,10 @@ const createAccount = async (newAccountId, new_public_key, fundingErrorCB, postF
 		attachedDeposit: MIN_NEW_ACCOUNT,
 	});
 	/// check
-	logger(res);
+	if (!(await accountExists(newAccountId))) {
+		return logger(`Account ${newAccountId} could NOT be created. Please refresh the page and try again.`);
+	}
+	logger(`Account ${newAccountId} created successfully.`);
 	/// drain implicit
 	await account.deleteAccount(newAccountId);
 	
@@ -194,10 +198,9 @@ export const handleMapping = async () => {
 			attachedDeposit: attachedDepositMapping,
 		});
 		if (res?.status?.SuccessValue !== "") {
-			logger("account mapping failed failed");
-		} else {
-			logger(`account mapping success`);
+			return logger(`Account mapping failed`);
 		}
+		logger(`Account mapping successful`);
 	} catch (e) {
 		console.warn(e);
 	}
@@ -208,12 +211,14 @@ export const handleDeployContract = async () => {
 	const { account } = setupFromStorage();
 
 	const contractPath = window?.contractPath;
-	logger(contractPath)
+	// logger(contractPath)
 	const contractBytes = new Uint8Array(await fetch(contractPath).then((res) => res.arrayBuffer()));
-	logger("contractBytes.length", contractBytes.length);
+	// logger("contractBytes.length", contractBytes.length);
 	const res = await account.deployContract(contractBytes);
-	logger(res);
-
+	if (res?.status?.SuccessValue !== "") {
+		return logger(`Contract deployment failed. ${REFRESH_MSG}`);
+	}
+	logger(`Contract deployed successfully.`);
 	return await handleSetupContract();
 };
 
@@ -226,8 +231,9 @@ export const handleSetupContract = async () => {
 		gas,
 	});
 	if (res?.status?.SuccessValue !== "") {
-		return alert("account setup failed, please try again");
+		return logger(`Contract setup failed. ${REFRESH_MSG}`);
 	}
+	logger(`Contract setup successfully.`);
 	return await handleKeys();
 };
 
@@ -248,8 +254,9 @@ export const handleKeys = async () => {
 		actions,
 	});
 	if (res?.status?.SuccessValue !== "") {
-		logger("key rotation failed");
+		return logger(`Key rotation failed. ${REFRESH_MSG}`);
 	}
+	logger(`Key rotation successful.`);
 	return await handleCheckAccount(ethAddress);
 };
 
@@ -261,25 +268,25 @@ export const handleCheckAccount = async (ethAddress, fundingErrorCB, postFunding
 	const mapAccountId = await getNearMap(ethAddress);
 	if (!mapAccountId) {
 		// alert("create account first");
-		logger("no account mapping exists");
+		logger("No account mapping exists.");
 	} else {
 		newAccountId = mapAccountId;
 	}
 
-	logger("checking account created");
+	logger("Checking account created.");
 	if (!(await accountExists(newAccountId))) {
 		const keyPair = KeyPair.fromString(newSecretKey);
 		return createAccount(newAccountId, keyPair.publicKey.toString(), fundingErrorCB, postFundingCB);
 	}
 
-	logger("checking contract deployed");
+	logger("Checking contract deployed.");
 	const account = new Account(connection, newAccountId);
 	const state = await account.state();
 	if (state.code_hash === "11111111111111111111111111111111") {
 		return handleDeployContract();
 	}
 
-	logger("checking contract setup");
+	logger("Checking contract setup.");
 	try {
 		const ethRes = await account.viewFunction(newAccountId, "get_address");
 		// any reason the address wasn't set properly
@@ -292,7 +299,7 @@ export const handleCheckAccount = async (ethAddress, fundingErrorCB, postFunding
 		return handleSetupContract();
 	}
 
-	logger("checking account address mapping");
+	logger("Checking account address mapping.");
 	const mapRes = await account.viewFunction(NETWORK[networkId].MAP_ACCOUNT_ID, "get_eth", {
 		account_id: newAccountId,
 	});
@@ -300,13 +307,17 @@ export const handleCheckAccount = async (ethAddress, fundingErrorCB, postFunding
 		return handleMapping(account, ethAddress);
 	}
 
-	logger("checking access keys");
+	logger("Checking access keys.");
 	const accessKeys = await account.getAccessKeys();
 	if (accessKeys.length === 1 && accessKeys[0]?.access_key?.permission === "FullAccess") {
 		return handleKeys(account);
 	}
 
-	logger("Success! account created, contract deployed, setup, mapping added, keys rotated");
+	logger("Account created.");
+	logger("Contract deployed and setup.");
+	logger("Mapping added.");
+	logger("Keys rotated.");
+
 	del(ATTEMPT_ACCOUNT_ID);
 	del(ATTEMPT_SECRET_KEY);
 	del(ATTEMPT_ETH_ADDRESS);
@@ -332,7 +343,7 @@ export const handleRefreshAppKey = async (signer, ethAddress) => {
 	const nonce = parseInt(await account.viewFunction(accountId, "get_nonce"), 16).toString();
 	// new public key based on current nonce which will become the app_key_nonce in contract after this TX
 	const { publicKey, secretKey } = await keyPairFromEthSig(signer, appKeyPayload(accountId, nonce));
-	logger(publicKey);
+	// logger(publicKey);
 	const public_key = pub2hex(publicKey);
 	const actions = [
 		{
@@ -379,7 +390,7 @@ export const handleRefreshAppKey = async (signer, ethAddress) => {
 	});
 
 	if (res?.status?.SuccessValue !== "") {
-		return console.warn("app key rotation unsuccessful");
+		return logger(`App key rotation unsuccessful. ${REFRESH_MSG}`);
 	}
 	del(APP_KEY_SECRET);
 	del(APP_KEY_ACCOUNT_ID);
@@ -413,7 +424,7 @@ export const handleUpdateContract = async (signer, ethAddress) => {
 		gas,
 	});
 	if (res?.status?.SuccessValue !== "") {
-		return console.warn("redeply contract unsuccessful");
+		return logger(`Redeply contract unsuccessful. ${REFRESH_MSG}`);
 	}
 };
 
@@ -428,7 +439,7 @@ export const handleDisconnect = async (signer, ethAddress) => {
 		seedPhrase,
 	);
 	if (seedPhrase !== _seedPhrase) {
-		return alert("There was an error, try copying seed phrase again.");
+		return alert("There was an error copying seed phrase. Nothing has been done. Please try again.");
 	}
 	const oldUnlimitedKey = KeyPair.fromString(secretKey);
 

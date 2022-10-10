@@ -1,7 +1,7 @@
 
 import './Modal.scss';
 
-export default Modal = ({
+export const Modal = ({
 	state, update
 }) => {
 

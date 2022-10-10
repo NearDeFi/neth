@@ -16,11 +16,8 @@ export function handleSetupContract(): any;
 export function handleKeys(): any;
 export function handleCheckAccount(ethAddress: any, fundingErrorCB: any, postFundingCB: any): any;
 export function hasAppKey(accessKeys: any): any;
-export function handleRefreshAppKey(signer: any, ethAddress: any): Promise<void | {
-    publicKey: string;
-    secretKey: any;
-}>;
-export function handleUpdateContract(signer: any, ethAddress: any): Promise<void>;
+export function handleRefreshAppKey(signer: any, ethAddress: any): Promise<any>;
+export function handleUpdateContract(signer: any, ethAddress: any): Promise<any>;
 export function handleDisconnect(signer: any, ethAddress: any): Promise<void | {
     account: nearAPI.Account;
 }>;

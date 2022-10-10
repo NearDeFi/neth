@@ -2,7 +2,7 @@ const contractName = process.env.REACT_APP_CONTRACT_ID || 'neth.testnet';
 
 console.log(process.env.REACT_APP_NETWORK_ID, process.env.REACT_APP_CONTRACT_ID)
 
-module.exports = function getConfig(network = process.env.REACT_APP_NETWORK_ID || 'testnet') {
+module.exports = function getConfig(network = process.env.REACT_APP_NETWORK_ID || 'mainnet') {
 	let config = {
 		networkId: "testnet",
 		nodeUrl: "https://rpc.testnet.near.org",

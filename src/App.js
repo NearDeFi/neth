@@ -18,19 +18,18 @@ import Logo from './img/neth-logo.svg'
 import Text from './img/neth-text.svg'
 
 import './App.scss';
-
 const ATTEMPT_ACCOUNT_ID = '__ATTEMPT_ACCOUNT_ID'
 
-/// destructure
-export const { nodeUrl, walletUrl, helperUrl, networkId } = getConfig();
+const networkIdUrlParam = window.location.search.split('?network=')[1]
+export const { nodeUrl, walletUrl, helperUrl, networkId } = getConfig(networkIdUrlParam);
 const { Account } = nearAPI
 
 /// valid accounts
 const ACCOUNT_REGEX = new RegExp('^(([a-z0-9]+[\-_])*[a-z0-9]+\.)*([a-z0-9]+[\-_])*[a-z0-9]+$')
 
 /// Components
-import Main, { fundingErrorCB, postFundingCB } from './components/Main'
-import Modal from './components/Modal'
+import { Main, fundingErrorCB, postFundingCB } from './components/Main'
+import { Modal } from './components/Modal'
 
 const App = () => {
 	const { state, dispatch, update } = useContext(appStore);

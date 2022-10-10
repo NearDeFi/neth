@@ -35,7 +35,7 @@ export const postFundingCB = (update) => () => {
 	update('dialog', null)
 }
 
-export default Main = ({
+export const Main = ({
 	state,
 	update,
 	signer,
@@ -119,7 +119,7 @@ export default Main = ({
 				:
 				<>
 					<p>
-						NEAR Account Mapping<br />
+						NEAR Account Connected<br />
 						<span className='small'>{mapAccountId}</span>
 					</p>
 
@@ -179,7 +179,7 @@ export default Main = ({
 							})}>Sign Out</button>
 							<p>Remove the locally stored app key.</p>
 							<br />
-							<p>Transfer 1 yocto to yourself.</p>
+							<p>Transfer 1 yocto NEAR (smallest unit) to yourself.</p>
 						</>
 					}
 

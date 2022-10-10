@@ -29,10 +29,11 @@
 		"last 2 Chrome versions"
 	],
 	"scripts": {
+		"gh-pages": "yarn clean && yarn build --public-url ./ && gh-pages -d dist",
 		"prebuild": "yarn clean",
 		"build-lib": "cd neth && npx tsc && cd ..",
 		"build": "parcel build src/index.html --public-url ./ --no-source-maps",
-		"clean": "rimraf ./dist",
+		"clean": "rimraf ./dist ./.parcel-cache",
 		"start": "parcel src/index.html --open",
 		"mainnet": "REACT_APP_NETWORK_ID=mainnet parcel src/index.html --open",
 		"build-account-map": "cd account-map && ./build.sh && cd ..",
