@@ -135,7 +135,7 @@ const App = () => {
 		</header>
 
 		<main className="container">
-			<a href={networkId === 'mainnet' ? window.location.href + '?network=testnet' : window.location.href}>
+			<a href={networkId === 'mainnet' ? window.location.href + '?network=testnet' : window.location.href.split('?')[0]}>
 				<button className='secondary'><span style={{color: '#008800'}}>{networkId}</span>Click to Change</button>
 			</a>
 
