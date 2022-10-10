@@ -9,10 +9,10 @@ https://docs.google.com/document/d/1qcYWr6THYY9wibZNTxPhzjb1_aKaNIUL0l1cU9fuYu0/
 ## Live Examples
 
 React app (from this repo) to create and connect account:
-https://neardefi.github.io/near-eth
+https://neardefi.github.io/neth
 
 GuestBook app with wallet-selector + MetaMask support:
-https://neardefi.github.io/wallet-selector/
+https://neardefi.github.io/guest-book-wallet-selector/
 
 ## Warning 🚨🚨🚨
 

@@ -85,6 +85,7 @@ export const Main = ({
 				?
 				<>
 					<p>Choose a NEAR Account ID</p>
+
 					<input value={accountId} onChange={handleAccountInput} />
 					<button aria-busy={loading} disabled={!!error || loading} onClick={handleAction(async () => {
 
@@ -186,6 +187,15 @@ export const Main = ({
 					{
 						showApps &&
 						<>
+
+							<h4>Guestbook Sample App</h4>
+							<p>
+								A sample app that uses <a href="https://github.com/near/wallet-selector/" target="_blank">wallet-selector</a> and <a href="https://github.com/neardefi/neth" target="_blank">NETH</a> so you can try your account.
+							</p>
+							<a href="https://neardefi.github.io/guest-book-wallet-selector/" target="_blank">
+								<button>Visit App</button>
+							</a>
+
 							<h4>Test Transfer</h4>
 							<button aria-busy={loading} disabled={loading} onClick={handleAction(async () => {
 
@@ -232,13 +242,13 @@ export const Main = ({
 							})}>Disconnect Account <Info onClick={(e) => {
 								e.stopPropagation();
 								update('dialog', <>
-							<p>This will prompt you with a seed phrase. Copy it somewhere safe! Then it will disconnect your NEAR account from your Ethereum Address.</p>
-							<p>You can import your seed phrase into any NEAR wallet e.g. <a href={`https://${networkId === 'testnet' ? networkId : 'app'}.mynearwallet.com`} target="_blank">MyNearWallet</a></p>
+									<p>This will prompt you with a seed phrase. Copy it somewhere safe! Then it will disconnect your NEAR account from your Ethereum Address.</p>
+									<p>You can import your seed phrase into any NEAR wallet e.g. <a href={`https://${networkId === 'testnet' ? networkId : 'app'}.mynearwallet.com`} target="_blank">MyNearWallet</a></p>
 									<button onClick={closeDialog}>Ok</button>
 								</>)
 							}} /></button>
-							<br/>
-							<br/>
+							<br />
+							<br />
 							{/* <br />
 							<button aria-busy={loading} disabled={loading} onClick={handleAction(async () => {
 
