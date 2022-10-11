@@ -23,6 +23,20 @@ import { transfer } from 'near-api-js/lib/transaction';
 import contractPath from 'url:../../out/main.wasm'
 window.contractPath = contractPath
 
+const isMobile = (() => {
+	let check = false;
+	(function (a) {
+	  if (
+		/(android|bb\d+|meego).+mobile|avantgo|bada\/|blackberry|blazer|compal|elaine|fennec|hiptop|iemobile|ip(hone|od)|iris|kindle|lge |maemo|midp|mmp|mobile.+firefox|netfront|opera m(ob|in)i|palm( os)?|phone|p(ixi|re)\/|plucker|pocket|psp|series(4|6)0|symbian|treo|up\.(browser|link)|vodafone|wap|windows ce|xda|xiino|android|ipad|playbook|silk/i.test(
+		  a,
+		)
+	  )
+		check = true;
+	})(navigator.userAgent || navigator.vendor);
+	return check;
+})();
+
+
 export const fundingAccountCB = (update) => (fundingAccountId) => {
 	update('dialog', <>
 		<h4>Funding Account</h4>
@@ -194,7 +208,11 @@ export const Main = ({
 						<>
 
 							<h4>Guestbook Sample App</h4>
-							<button onClick={() => window.open('https://neardefi.github.io/guest-book-wallet-selector/' + (networkId === 'testnet' ? '?network=testnet' : ''))}>Visit App <Info onClick={(e) => {
+							<button onClick={() => {
+								const url = 'https://neardefi.github.io/guest-book-wallet-selector/' + (networkId === 'testnet' ? '?network=testnet' : '')
+								if (isMobile) return window.location.href = url
+								window.open(url)
+							}}>Visit App <Info onClick={(e) => {
 								e.stopPropagation();
 								update('dialog', <>
 									<p>
