@@ -6,6 +6,7 @@ import {
   WalletBehaviourFactory,
   waitFor,
 } from "@near-wallet-selector/core";
+import detectEthereumProvider from '@metamask/detect-provider'
 import { nearWalletIcon } from "../assets/icons";
 import { getNear, signIn, signOut, signAndSendTransactions, initConnection } from "./neth-lib";
 export { initConnection } from "./neth-lib";
@@ -22,7 +23,8 @@ export interface NethParams {
   iconUrl?: string;
 }
 
-const isInstalled = () => {
+const isInstalled = async () => {
+	await detectEthereumProvider()
   return !!window.ethereum;
 };
 
@@ -190,12 +192,12 @@ export function setupNeth({
   iconUrl = nearWalletIcon,
 }: NethParams = {}): WalletModuleFactory<InjectedWallet> {
   return async () => {
-    const mobile = isMobile();
+    // const mobile = isMobile();
     const installed = await isInstalled();
 
     useCover = useModalCover;
 
-    if (mobile || !installed) {
+    if (!installed) {
       return null;
     }
 

@@ -35,16 +35,27 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
         if (op[0] & 5) throw op[1]; return { value: op[0] ? op[1] : void 0, done: true };
     }
 };
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.setupNeth = exports.initConnection = void 0;
 var core_1 = require("@near-wallet-selector/core");
+var detect_provider_1 = __importDefault(require("@metamask/detect-provider"));
 var icons_1 = require("../assets/icons");
 var neth_lib_1 = require("./neth-lib");
 var neth_lib_2 = require("./neth-lib");
 Object.defineProperty(exports, "initConnection", { enumerable: true, get: function () { return neth_lib_2.initConnection; } });
-var isInstalled = function () {
-    return !!window.ethereum;
-};
+var isInstalled = function () { return __awaiter(void 0, void 0, void 0, function () {
+    return __generator(this, function (_a) {
+        switch (_a.label) {
+            case 0: return [4 /*yield*/, (0, detect_provider_1.default)()];
+            case 1:
+                _a.sent();
+                return [2 /*return*/, !!window.ethereum];
+        }
+    });
+}); };
 var isMobile = function () {
     var check = false;
     (function (a) {
@@ -241,16 +252,14 @@ function setupNeth(_a) {
     var _this = this;
     var _b = _a === void 0 ? {} : _a, _c = _b.useModalCover, useModalCover = _c === void 0 ? false : _c, _d = _b.iconUrl, iconUrl = _d === void 0 ? icons_1.nearWalletIcon : _d;
     return function () { return __awaiter(_this, void 0, void 0, function () {
-        var mobile, installed;
+        var installed;
         return __generator(this, function (_a) {
             switch (_a.label) {
-                case 0:
-                    mobile = isMobile();
-                    return [4 /*yield*/, isInstalled()];
+                case 0: return [4 /*yield*/, isInstalled()];
                 case 1:
                     installed = _a.sent();
                     useCover = useModalCover;
-                    if (mobile || !installed) {
+                    if (!installed) {
                         return [2 /*return*/, null];
                     }
                     return [4 /*yield*/, (0, core_1.waitFor)(function () { var _a; return !!((_a = window.near) === null || _a === void 0 ? void 0 : _a.isSignedIn()); }, { timeout: 300 }).catch(function () { return false; })];
