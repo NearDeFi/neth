@@ -78,6 +78,7 @@ const App = () => {
 				const attemptAccountId = localStorage.getItem(ATTEMPT_ACCOUNT_ID);
 				if (attemptAccountId) {
 					await handleCheckAccount(ethAddress, fundingAccountCB(update), fundingErrorCB(update), postFundingCB(update))
+					updateEthState()
 				}
 			}
 		} catch (e) {
