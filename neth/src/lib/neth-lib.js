@@ -119,10 +119,10 @@ export const handleCreate = async (signer, ethAddress, newAccountId, fundingAcco
 	del(APP_KEY_ACCOUNT_ID);
 	del(APP_KEY_SECRET);
 
-	return await createAccount({newAccountId, new_public_key, fundingAccountCB, fundingErrorCB, postFundingCB});
+	return await createAccount({ newAccountId, new_public_key, fundingAccountCB, fundingErrorCB, postFundingCB });
 };
 
-const createAccount = async ({newAccountId, new_public_key, fundingAccountCB, fundingErrorCB, postFundingCB}) => {
+const createAccount = async ({ newAccountId, new_public_key, fundingAccountCB, fundingErrorCB, postFundingCB }) => {
 	// const { publicKey, secretKey } = parseSeedPhrase(process.env.REACT_APP_FUNDING_SEED_PHRASE);
 	/// assumes implicit is funded, otherwise will warn and cycle here
 
@@ -143,7 +143,7 @@ const createAccount = async ({newAccountId, new_public_key, fundingAccountCB, fu
 				await new Promise((r) => setTimeout(r, FUNDING_CHECK_TIMEOUT))
 				return await checkImplicitFunded()
 			}
-		} catch(e) {
+		} catch (e) {
 			if (!/does not exist/gi.test(e.toString())) throw e
 			logger('not funded, checking again')
 			await new Promise((r) => setTimeout(r, FUNDING_CHECK_TIMEOUT))
@@ -158,7 +158,7 @@ const createAccount = async ({newAccountId, new_public_key, fundingAccountCB, fu
 	if (postFundingCB) postFundingCB()
 
 	const { account } = setupFromStorage(implicitAccountId);
-	
+
 	const res = await account.functionCall({
 		contractId: NETWORK[networkId].ROOT_ACCOUNT_ID,
 		methodName: 'create_account',
@@ -176,7 +176,7 @@ const createAccount = async ({newAccountId, new_public_key, fundingAccountCB, fu
 	logger(`Account ${newAccountId} created successfully.`);
 	/// drain implicit
 	await account.deleteAccount(newAccountId);
-	
+
 	return await handleMapping();
 };
 
@@ -701,22 +701,29 @@ export const getEthereum = async () => {
 			method: "wallet_switchEthereumChain",
 			params: [{ chainId: "0x" + domain.chainId.toString(16) }],
 		})
-	} catch(e) {
+	} catch (e) {
+		console.warn(e)
 		if (e?.data?.originalError?.code !== 4902) throw e
-		await window.ethereum.request({
-			method: "wallet_addEthereumChain",
-			params: [{
-                chainId: "0x" + domain.chainId.toString(16),
-                chainName: 'Aurora Mainnet',
-                nativeCurrency: {
-                  name: 'Ethereum',
-                  symbol: 'ETH',
-                  decimals: 18
-                },
-                blockExplorerUrls: ['https://explorer.mainnet.aurora.dev/'],
-                rpcUrls: ['https://mainnet.aurora.dev'],
-              }],
-		})
+		
+		try {
+			await window.ethereum.request({
+				method: "wallet_addEthereumChain",
+				params: [{
+					chainId: "0x" + domain.chainId.toString(16),
+					chainName: 'Aurora Mainnet',
+					nativeCurrency: {
+						name: 'Ethereum',
+						symbol: 'ETH',
+						decimals: 18
+					},
+					blockExplorerUrls: ['https://explorer.mainnet.aurora.dev/'],
+					rpcUrls: ['https://mainnet.aurora.dev'],
+				}],
+			})
+		} catch (e) {
+			console.warn(e)
+			alert('Error adding chain. Clear your browser and privacy data and try again please.')
+		}
 	}
 
 	const ethersProvider = new ethers.providers.Web3Provider(window.ethereum);

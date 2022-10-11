@@ -146,7 +146,10 @@ const App = () => {
 					?
 					<>
 					<h2>Create Account</h2>
-					<button aria-busy={loading} disabled={loading} onClick={handleAction(() => getEthereum())}>Choose Ethereum Account</button>
+					<button aria-busy={loading} disabled={loading} onClick={handleAction(async () => {
+						await getEthereum()
+						updateEthState()
+					})}>Choose Ethereum Account</button>
 					</>
 					:
 					<Main {...componentState} />
