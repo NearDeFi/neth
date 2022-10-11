@@ -43,7 +43,7 @@ export const MIN_NEW_ACCOUNT_ASK = parseNearAmount('0.5');
 const FUNDING_CHECK_TIMEOUT = 5000;
 /// lkmfawl
 
-const attachedDepositMapping = parseNearAmount('0.02');
+const attachedDepositMapping = parseNearAmount('0.05');
 
 /// Helpers
 const get = (k) => {
@@ -84,10 +84,18 @@ export const getConnection = () => {
 
 /// helpers
 
-export const accountExists = async (accountId) => {
+export const accountExists = async (accountId, ethAddress) => {
 	try {
 		const account = new nearAPI.Account(connection, accountId);
 		await account.state();
+
+		if (ethAddress) {
+			const mapAccountId = await getNearMap(ethAddress)
+			if (mapAccountId) {
+				return true;
+			}
+		}
+		
 		return true;
 	} catch (e) {
 		if (!/no such file|does not exist/.test(e.toString())) {
@@ -165,7 +173,15 @@ const createAccount = async ({ newAccountId, new_public_key, fundingAccountCB, f
 
 	if (postFundingCB) postFundingCB()
 
-	const { account } = setupFromStorage(implicitAccountId);
+	const { account, ethAddress } = setupFromStorage(implicitAccountId);
+
+	/// final checks, last chance to cancel funding if they fail
+	if (await accountExists(newAccountId, ethAddress)) {
+		alert(`${newAccountId} already exists. Please try another.`)
+		return await handleCancelFunding(implicitAccountId)
+	}
+
+	/// create account now
 
 	try {
 		const res = await account.functionCall({
@@ -328,8 +344,17 @@ export const handleCheckAccount = async (ethAddress, fundingAccountCB, fundingEr
 		});
 	}
 
-	logger("Checking contract deployed.");
 	const account = new Account(connection, newAccountId);
+	
+	logger("Checking account address mapping.");
+	const mapRes = await account.viewFunction(NETWORK[networkId].MAP_ACCOUNT_ID, "get_eth", {
+		account_id: newAccountId,
+	});
+	if (mapRes === null) {
+		return handleMapping(account, ethAddress);
+	}
+
+	logger("Checking contract deployed.");
 	const state = await account.state();
 	if (state.code_hash === "11111111111111111111111111111111") {
 		return handleDeployContract();
@@ -346,14 +371,6 @@ export const handleCheckAccount = async (ethAddress, fundingAccountCB, fundingEr
 		// not set at all (wasm error unreachable storage value)
 		console.warn(e);
 		return handleSetupContract();
-	}
-
-	logger("Checking account address mapping.");
-	const mapRes = await account.viewFunction(NETWORK[networkId].MAP_ACCOUNT_ID, "get_eth", {
-		account_id: newAccountId,
-	});
-	if (mapRes === null) {
-		return handleMapping(account, ethAddress);
 	}
 
 	logger("Checking access keys.");

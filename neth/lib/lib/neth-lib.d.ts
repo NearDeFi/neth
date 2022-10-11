@@ -8,7 +8,7 @@ export function getConnection(): {
     contractAccount: any;
     accountSuffix: any;
 };
-export function accountExists(accountId: any): Promise<boolean>;
+export function accountExists(accountId: any, ethAddress: any): Promise<boolean>;
 export function handleCreate(signer: any, ethAddress: any, newAccountId: any, fundingAccountCB: any, fundingErrorCB: any, postFundingCB: any): Promise<any>;
 export function handleCancelFunding(fundingAccountId: any): Promise<void>;
 export function handleMapping(): any;

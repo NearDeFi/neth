@@ -105,7 +105,7 @@ var MIN_NEW_ACCOUNT_THRESH = parseNearAmount('0.49');
 exports.MIN_NEW_ACCOUNT_ASK = parseNearAmount('0.5');
 var FUNDING_CHECK_TIMEOUT = 5000;
 /// lkmfawl
-var attachedDepositMapping = parseNearAmount('0.02');
+var attachedDepositMapping = parseNearAmount('0.05');
 /// Helpers
 var get = function (k) {
     var v = localStorage.getItem(k);
@@ -147,24 +147,32 @@ var getConnection = function () {
 };
 exports.getConnection = getConnection;
 /// helpers
-var accountExists = function (accountId) { return __awaiter(void 0, void 0, void 0, function () {
-    var account, e_1;
+var accountExists = function (accountId, ethAddress) { return __awaiter(void 0, void 0, void 0, function () {
+    var account, mapAccountId, e_1;
     return __generator(this, function (_a) {
         switch (_a.label) {
             case 0:
-                _a.trys.push([0, 2, , 3]);
+                _a.trys.push([0, 4, , 5]);
                 account = new nearAPI.Account(connection, accountId);
                 return [4 /*yield*/, account.state()];
             case 1:
                 _a.sent();
-                return [2 /*return*/, true];
+                if (!ethAddress) return [3 /*break*/, 3];
+                return [4 /*yield*/, (0, exports.getNearMap)(ethAddress)];
             case 2:
+                mapAccountId = _a.sent();
+                if (mapAccountId) {
+                    return [2 /*return*/, true];
+                }
+                _a.label = 3;
+            case 3: return [2 /*return*/, true];
+            case 4:
                 e_1 = _a.sent();
                 if (!/no such file|does not exist/.test(e_1.toString())) {
                     throw e_1;
                 }
                 return [2 /*return*/, false];
-            case 3: return [2 /*return*/];
+            case 5: return [2 /*return*/];
         }
     });
 }); };
@@ -203,9 +211,9 @@ exports.handleCreate = handleCreate;
 var createAccount = function (_a) {
     var newAccountId = _a.newAccountId, new_public_key = _a.new_public_key, fundingAccountCB = _a.fundingAccountCB, fundingErrorCB = _a.fundingErrorCB, postFundingCB = _a.postFundingCB;
     return __awaiter(void 0, void 0, void 0, function () {
-        var implicitAccountId, checkImplicitFunded, account, res, e_2;
-        return __generator(this, function (_b) {
-            switch (_b.label) {
+        var implicitAccountId, checkImplicitFunded, _b, account, ethAddress, res, e_2;
+        return __generator(this, function (_c) {
+            switch (_c.label) {
                 case 0:
                     implicitAccountId = PublicKey.from(new_public_key).data.toString('hex');
                     if (fundingAccountCB)
@@ -252,15 +260,20 @@ var createAccount = function (_a) {
                     return [4 /*yield*/, checkImplicitFunded()];
                 case 1:
                     /// if not funded properly, return and reload
-                    if (!(_b.sent()))
+                    if (!(_c.sent()))
                         return [2 /*return*/, window.location.reload()];
                     logger('implicit account funded', implicitAccountId);
                     if (postFundingCB)
                         postFundingCB();
-                    account = setupFromStorage(implicitAccountId).account;
-                    _b.label = 2;
+                    _b = setupFromStorage(implicitAccountId), account = _b.account, ethAddress = _b.ethAddress;
+                    return [4 /*yield*/, (0, exports.accountExists)(newAccountId, ethAddress)];
                 case 2:
-                    _b.trys.push([2, 4, , 5]);
+                    if (!_c.sent()) return [3 /*break*/, 4];
+                    alert("".concat(newAccountId, " already exists. Please try another."));
+                    return [4 /*yield*/, (0, exports.handleCancelFunding)(implicitAccountId)];
+                case 3: return [2 /*return*/, _c.sent()];
+                case 4:
+                    _c.trys.push([4, 6, , 7]);
                     return [4 /*yield*/, account.functionCall({
                             contractId: NETWORK[networkId].ROOT_ACCOUNT_ID,
                             methodName: 'create_account',
@@ -271,29 +284,29 @@ var createAccount = function (_a) {
                             gas: gas,
                             attachedDeposit: MIN_NEW_ACCOUNT,
                         })];
-                case 3:
-                    res = _b.sent();
-                    return [3 /*break*/, 5];
-                case 4:
-                    e_2 = _b.sent();
+                case 5:
+                    res = _c.sent();
+                    return [3 /*break*/, 7];
+                case 6:
+                    e_2 = _c.sent();
                     if (!/be created by/.test(JSON.stringify(e_2))) {
                         throw e_2;
                     }
                     return [2 /*return*/, (0, exports.handleCancelFunding)(implicitAccountId)];
-                case 5: return [4 /*yield*/, (0, exports.accountExists)(newAccountId)];
-                case 6:
+                case 7: return [4 /*yield*/, (0, exports.accountExists)(newAccountId)];
+                case 8:
                     /// check
-                    if (!(_b.sent())) {
+                    if (!(_c.sent())) {
                         return [2 /*return*/, logger("Account ".concat(newAccountId, " could NOT be created. Please refresh the page and try again."))];
                     }
                     logger("Account ".concat(newAccountId, " created successfully."));
                     /// drain implicit
                     return [4 /*yield*/, account.deleteAccount(newAccountId)];
-                case 7:
+                case 9:
                     /// drain implicit
-                    _b.sent();
+                    _c.sent();
                     return [4 /*yield*/, (0, exports.handleMapping)()];
-                case 8: return [2 /*return*/, _b.sent()];
+                case 10: return [2 /*return*/, _c.sent()];
             }
         });
     });
@@ -473,7 +486,7 @@ var handleKeys = function () { return __awaiter(void 0, void 0, void 0, function
 exports.handleKeys = handleKeys;
 /// waterfall check everything about account and fill in missing pieces
 var handleCheckAccount = function (ethAddress, fundingAccountCB, fundingErrorCB, postFundingCB) { return __awaiter(void 0, void 0, void 0, function () {
-    var _a, newAccountId, newSecretKey, mapAccountId, keyPair, account, state, ethRes, e_9, mapRes, accessKeys;
+    var _a, newAccountId, newSecretKey, mapAccountId, keyPair, account, mapRes, state, ethRes, e_9, accessKeys;
     var _b, _c;
     return __generator(this, function (_d) {
         switch (_d.label) {
@@ -502,41 +515,41 @@ var handleCheckAccount = function (ethAddress, fundingAccountCB, fundingErrorCB,
                             postFundingCB: postFundingCB
                         })];
                 }
-                logger("Checking contract deployed.");
                 account = new Account(connection, newAccountId);
-                return [4 /*yield*/, account.state()];
+                logger("Checking account address mapping.");
+                return [4 /*yield*/, account.viewFunction(NETWORK[networkId].MAP_ACCOUNT_ID, "get_eth", {
+                        account_id: newAccountId,
+                    })];
             case 3:
+                mapRes = _d.sent();
+                if (mapRes === null) {
+                    return [2 /*return*/, (0, exports.handleMapping)(account, ethAddress)];
+                }
+                logger("Checking contract deployed.");
+                return [4 /*yield*/, account.state()];
+            case 4:
                 state = _d.sent();
                 if (state.code_hash === "11111111111111111111111111111111") {
                     return [2 /*return*/, (0, exports.handleDeployContract)()];
                 }
                 logger("Checking contract setup.");
-                _d.label = 4;
-            case 4:
-                _d.trys.push([4, 6, , 7]);
-                return [4 /*yield*/, account.viewFunction(newAccountId, "get_address")];
+                _d.label = 5;
             case 5:
+                _d.trys.push([5, 7, , 8]);
+                return [4 /*yield*/, account.viewFunction(newAccountId, "get_address")];
+            case 6:
                 ethRes = _d.sent();
                 // any reason the address wasn't set properly
                 if (!ethRes || !ethRes.length) {
                     return [2 /*return*/, (0, exports.handleSetupContract)()];
                 }
-                return [3 /*break*/, 7];
-            case 6:
+                return [3 /*break*/, 8];
+            case 7:
                 e_9 = _d.sent();
                 // not set at all (wasm error unreachable storage value)
                 console.warn(e_9);
                 return [2 /*return*/, (0, exports.handleSetupContract)()];
-            case 7:
-                logger("Checking account address mapping.");
-                return [4 /*yield*/, account.viewFunction(NETWORK[networkId].MAP_ACCOUNT_ID, "get_eth", {
-                        account_id: newAccountId,
-                    })];
             case 8:
-                mapRes = _d.sent();
-                if (mapRes === null) {
-                    return [2 /*return*/, (0, exports.handleMapping)(account, ethAddress)];
-                }
                 logger("Checking access keys.");
                 return [4 /*yield*/, account.getAccessKeys()];
             case 9:
