@@ -17,39 +17,32 @@ const {
 
 const NETWORK = {
 	testnet: {
-		FUNDING_ACCOUNT_ID: "neth.testnet",
-		MAP_ACCOUNT_ID: "map.neth.testnet",
+		FUNDING_ACCOUNT_ID: 'neth.testnet',
+		MAP_ACCOUNT_ID: 'map.neth.testnet',
+		ROOT_ACCOUNT_ID: 'testnet',
 	},
 	mainnet: {
-		MAP_ACCOUNT_ID: "nethmap.near",
+		MAP_ACCOUNT_ID: 'nethmap.near',
+		ROOT_ACCOUNT_ID: 'near',
 	}
 }
 
 const REFRESH_MSG = `Please refresh the page and try again.`
-const ATTEMPT_SECRET_KEY = "__ATTEMPT_SECRET_KEY";
-const ATTEMPT_ACCOUNT_ID = "__ATTEMPT_ACCOUNT_ID";
-const ATTEMPT_ETH_ADDRESS = "__ATTEMPT_ETH_ADDRESS";
-const APP_KEY_SECRET = "__APP_KEY_SECRET";
-const APP_KEY_ACCOUNT_ID = "__APP_KEY_ACCOUNT_ID";
-const gas = "200000000000000";
-const half_gas = "50000000000000";
+const ATTEMPT_SECRET_KEY = '__ATTEMPT_SECRET_KEY';
+const ATTEMPT_ACCOUNT_ID = '__ATTEMPT_ACCOUNT_ID';
+const ATTEMPT_ETH_ADDRESS = '__ATTEMPT_ETH_ADDRESS';
+const APP_KEY_SECRET = '__APP_KEY_SECRET';
+const APP_KEY_ACCOUNT_ID = '__APP_KEY_ACCOUNT_ID';
+const gas = '200000000000000';
+const half_gas = '50000000000000';
 /// this is the new account amount 0.21 for account name, keys, contract and 0.01 for mapping contract storage cost
-const MIN_NEW_ACCOUNT = parseNearAmount("0.4");
-const MIN_NEW_ACCOUNT_THRESH = parseNearAmount("0.49");
-export const MIN_NEW_ACCOUNT_ASK = parseNearAmount("0.5");
+const MIN_NEW_ACCOUNT = parseNearAmount('0.4');
+const MIN_NEW_ACCOUNT_THRESH = parseNearAmount('0.49');
+export const MIN_NEW_ACCOUNT_ASK = parseNearAmount('0.5');
 const FUNDING_CHECK_TIMEOUT = 5000;
 /// lkmfawl
 
-const attachedDepositMapping = parseNearAmount("0.02");
-
-const networks = {
-	testnet: {
-		mapAccountId: "map.neth.testnet",
-	},
-	mainnet: {
-		mapAccountId: "nethmap.near",
-	}
-}
+const attachedDepositMapping = parseNearAmount('0.02');
 
 /// Helpers
 const get = (k) => {
@@ -125,19 +118,18 @@ export const handleCreate = async (signer, ethAddress, newAccountId, fundingAcco
 	del(APP_KEY_ACCOUNT_ID);
 	del(APP_KEY_SECRET);
 
-	fundingAccountCB(PublicKey.from(new_public_key).data.toString('hex'))
-
-	return await createAccount(newAccountId, new_public_key, fundingErrorCB, postFundingCB);
+	return await createAccount({newAccountId, new_public_key, fundingAccountCB, fundingErrorCB, postFundingCB});
 };
 
-const createAccount = async (newAccountId, new_public_key, fundingErrorCB, postFundingCB) => {
+const createAccount = async ({newAccountId, new_public_key, fundingAccountCB, fundingErrorCB, postFundingCB}) => {
 	// const { publicKey, secretKey } = parseSeedPhrase(process.env.REACT_APP_FUNDING_SEED_PHRASE);
 	/// assumes implicit is funded, otherwise will warn and cycle here
 
+	const implicitAccountId = PublicKey.from(new_public_key).data.toString('hex')
+	if (fundingAccountCB) fundingAccountCB(PublicKey.from(new_public_key).data.toString('hex'))
+
 	/// wait for implicit funding here and then continue to createAccount
-	let implicitAccountId
 	const checkImplicitFunded = async () => {
-		implicitAccountId = PublicKey.from(new_public_key).data.toString('hex')
 		logger('checking for funding of implicit account', implicitAccountId)
 		const account = new Account(connection, implicitAccountId)
 		try {
@@ -167,8 +159,8 @@ const createAccount = async (newAccountId, new_public_key, fundingErrorCB, postF
 	const { account } = setupFromStorage(implicitAccountId);
 	
 	const res = await account.functionCall({
-		contractId: "testnet",
-		methodName: "create_account",
+		contractId: NETWORK[networkId].ROOT_ACCOUNT_ID,
+		methodName: 'create_account',
 		args: {
 			new_account_id: newAccountId,
 			new_public_key,
@@ -262,7 +254,7 @@ export const handleKeys = async () => {
 
 /// waterfall check everything about account and fill in missing pieces
 
-export const handleCheckAccount = async (ethAddress, fundingErrorCB, postFundingCB) => {
+export const handleCheckAccount = async (ethAddress, fundingAccountCB, fundingErrorCB, postFundingCB) => {
 	let { newAccountId, newSecretKey } = setupFromStorage();
 
 	const mapAccountId = await getNearMap(ethAddress);
@@ -276,7 +268,13 @@ export const handleCheckAccount = async (ethAddress, fundingErrorCB, postFunding
 	logger("Checking account created.");
 	if (!(await accountExists(newAccountId))) {
 		const keyPair = KeyPair.fromString(newSecretKey);
-		return createAccount(newAccountId, keyPair.publicKey.toString(), fundingErrorCB, postFundingCB);
+		return createAccount({
+			newAccountId,
+			new_public_key: keyPair.publicKey.toString(),
+			fundingAccountCB,
+			fundingErrorCB,
+			postFundingCB
+		});
 	}
 
 	logger("Checking contract deployed.");
@@ -718,7 +716,8 @@ export const getNear = async () => {
 	const secretKey = get(APP_KEY_SECRET);
 	const accountId = get(APP_KEY_ACCOUNT_ID);
 	if (!secretKey || !accountId) {
-		await getAppKey(await getEthereum());
+		const res = await getAppKey(await getEthereum());
+		if (!res) return false
 		return await getNear();
 	}
 	const account = new Account(connection, accountId);
@@ -767,13 +766,16 @@ const promptValidAccountId = async (msg) => {
 export const getAppKey = async ({ signer, ethAddress: eth_address }) => {
 	let accountId = await getNearMap(eth_address);
 	if (!accountId) {
-		/// throw new Error("NETH Error: ethereum account not connected to near account")
-		/// prompt for near account name and auto deploy
-		const newAccountId = await promptValidAccountId(
-			`The Ethereum address ${eth_address} is not connected to a NEAR account yet. Select a NEAR account name and we'll create and connect one for you.`,
-		);
-		const { account } = await handleCreate(signer, eth_address, newAccountId + accountSuffix);
-		accountId = account.accountId;
+		const nethURL = `https://neardefi.github.io/neth/${networkId === 'testnet' ? '?network=testnet' : ''}`
+		window.prompt(`Ethereum account is not connected to a NETH account. To set up a NETH account visit`, nethURL)
+		return false
+		// throw new Error(`Ethereum account is not connected to a NETH account. To set up a NETH account visit: ${nethURL}`)
+		// /// prompt for near account name and auto deploy
+		// const newAccountId = await promptValidAccountId(
+		// 	`The Ethereum address ${eth_address} is not connected to a NEAR account yet. Select a NEAR account name and we'll create and connect one for you.`,
+		// );
+		// const { account } = await handleCreate(signer, eth_address, newAccountId + accountSuffix);
+		// accountId = account.accountId;
 	}
 	const appKeyNonce = parseInt(
 		await contractAccount.viewFunction(accountId, "get_app_key_nonce"),

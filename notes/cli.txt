@@ -1,4 +1,5 @@
 
 DELETE ACCOUNT
 
-near repl --accountId=neth-4.testnet --seedPhrase="exist age olive wagon puzzle mom wise plate leisure cliff prison jeans"
+near repl --accountId=neth-4.testnet --seedPhrase="already avocado cargo rural three curve turn actor inject click emerge document"
+NEAR_ENV=mainnet near repl --accountId=neth-2.near --seedPhrase="usual real evoke laugh fish valid hello loop remind retreat fossil weather"

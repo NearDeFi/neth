@@ -23,6 +23,14 @@ import { transfer } from 'near-api-js/lib/transaction';
 import contractPath from 'url:../../out/main.wasm'
 window.contractPath = contractPath
 
+export const fundingAccountCB = (update) => (fundingAccountId) => {
+	update('dialog', <>
+		<h4>Funding Account</h4>
+		<p>Please send {formatNearAmount(MIN_NEW_ACCOUNT_ASK, 4)} NEAR (or more) to the TEMPORARY account below to create your NETH account on NEAR.</p>
+		<input defaultValue={fundingAccountId} />
+	</>)
+}
+
 export const fundingErrorCB = (update) => (fundingAccountId, remaining) => {
 	update('dialog', <>
 		<h4>Funding Account</h4>
@@ -90,15 +98,11 @@ export const Main = ({
 					<button aria-busy={loading} disabled={!!error || loading} onClick={handleAction(async () => {
 
 						/// TODO get implicit account for funding in parallel to waiting
-						const { account } = await handleCreate(signer, ethAddress, accountId + suffix, (fundingAccountId) => {
-							update('dialog', <>
-								<h4>Funding Account</h4>
-								<p>Please send {formatNearAmount(MIN_NEW_ACCOUNT_ASK, 4)} NEAR (or more) to the TEMPORARY account below to create your NETH account on NEAR.</p>
-								<input value={fundingAccountId} />
-							</>)
-						},
+						const { account } = await handleCreate(signer, ethAddress, accountId + suffix,
+							fundingAccountCB(update),
 							fundingErrorCB(update),
-							postFundingCB(update))
+							postFundingCB(update)
+						)
 
 						update('mapAccountId', (await getNearMap(ethAddress)))
 
@@ -136,12 +140,13 @@ export const Main = ({
 						</>)
 					}} /></button>
 
-					<button className="secondary" aria-busy={loading} disabled={loading} onClick={handleAction(async () => {
-
+					<button className={showApps ? 'secondary' : ''} aria-busy={loading} disabled={loading} onClick={handleAction(async () => {
 						const { publicKey } = await handleRefreshAppKey(signer, ethAddress)
-						alert('New app key (publicKey): ' + publicKey)
+						update('dialog', <>
+							<p>New app key (publicKey): {publicKey} was added</p>
+							<button onClick={closeDialog}>Ok</button>
+						</>)
 						updateEthState()
-
 					})}>Get / Update App Key <Info onClick={(e) => {
 						e.stopPropagation();
 						update('dialog', <>
@@ -189,7 +194,7 @@ export const Main = ({
 						<>
 
 							<h4>Guestbook Sample App</h4>
-							<button onClick={() => window.open('https://neardefi.github.io/guest-book-wallet-selector/')}>Visit App <Info onClick={(e) => {
+							<button onClick={() => window.open('https://neardefi.github.io/guest-book-wallet-selector/' + (networkId === 'testnet' ? '?network=testnet' : ''))}>Visit App <Info onClick={(e) => {
 								e.stopPropagation();
 								update('dialog', <>
 									<p>

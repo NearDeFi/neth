@@ -28,7 +28,7 @@ const { Account } = nearAPI
 const ACCOUNT_REGEX = new RegExp('^(([a-z0-9]+[\-_])*[a-z0-9]+\.)*([a-z0-9]+[\-_])*[a-z0-9]+$')
 
 /// Components
-import { Main, fundingErrorCB, postFundingCB } from './components/Main'
+import { Main, fundingAccountCB, fundingErrorCB, postFundingCB } from './components/Main'
 import { Modal } from './components/Modal'
 
 const App = () => {
@@ -77,7 +77,7 @@ const App = () => {
 
 				const attemptAccountId = localStorage.getItem(ATTEMPT_ACCOUNT_ID);
 				if (attemptAccountId) {
-					await handleCheckAccount(ethAddress, fundingErrorCB(update), postFundingCB(update))
+					await handleCheckAccount(ethAddress, fundingAccountCB(update), fundingErrorCB(update), postFundingCB(update))
 				}
 			}
 		} catch (e) {

@@ -81,36 +81,30 @@ var bn_js_1 = __importDefault(require("bn.js"));
 var Near = nearAPI.Near, Account = nearAPI.Account, KeyPair = nearAPI.KeyPair, BrowserLocalStorageKeyStore = nearAPI.keyStores.BrowserLocalStorageKeyStore, _a = nearAPI.transactions, addKey = _a.addKey, deleteKey = _a.deleteKey, functionCallAccessKey = _a.functionCallAccessKey, _b = nearAPI.utils, PublicKey = _b.PublicKey, _c = _b.format, parseNearAmount = _c.parseNearAmount, formatNearAmount = _c.formatNearAmount;
 var NETWORK = {
     testnet: {
-        FUNDING_ACCOUNT_ID: "neth.testnet",
-        MAP_ACCOUNT_ID: "map.neth.testnet",
+        FUNDING_ACCOUNT_ID: 'neth.testnet',
+        MAP_ACCOUNT_ID: 'map.neth.testnet',
+        ROOT_ACCOUNT_ID: 'testnet',
     },
     mainnet: {
-        MAP_ACCOUNT_ID: "nethmap.near",
+        MAP_ACCOUNT_ID: 'nethmap.near',
+        ROOT_ACCOUNT_ID: 'near',
     }
 };
 var REFRESH_MSG = "Please refresh the page and try again.";
-var ATTEMPT_SECRET_KEY = "__ATTEMPT_SECRET_KEY";
-var ATTEMPT_ACCOUNT_ID = "__ATTEMPT_ACCOUNT_ID";
-var ATTEMPT_ETH_ADDRESS = "__ATTEMPT_ETH_ADDRESS";
-var APP_KEY_SECRET = "__APP_KEY_SECRET";
-var APP_KEY_ACCOUNT_ID = "__APP_KEY_ACCOUNT_ID";
-var gas = "200000000000000";
-var half_gas = "50000000000000";
+var ATTEMPT_SECRET_KEY = '__ATTEMPT_SECRET_KEY';
+var ATTEMPT_ACCOUNT_ID = '__ATTEMPT_ACCOUNT_ID';
+var ATTEMPT_ETH_ADDRESS = '__ATTEMPT_ETH_ADDRESS';
+var APP_KEY_SECRET = '__APP_KEY_SECRET';
+var APP_KEY_ACCOUNT_ID = '__APP_KEY_ACCOUNT_ID';
+var gas = '200000000000000';
+var half_gas = '50000000000000';
 /// this is the new account amount 0.21 for account name, keys, contract and 0.01 for mapping contract storage cost
-var MIN_NEW_ACCOUNT = parseNearAmount("0.4");
-var MIN_NEW_ACCOUNT_THRESH = parseNearAmount("0.49");
-exports.MIN_NEW_ACCOUNT_ASK = parseNearAmount("0.5");
+var MIN_NEW_ACCOUNT = parseNearAmount('0.4');
+var MIN_NEW_ACCOUNT_THRESH = parseNearAmount('0.49');
+exports.MIN_NEW_ACCOUNT_ASK = parseNearAmount('0.5');
 var FUNDING_CHECK_TIMEOUT = 5000;
 /// lkmfawl
-var attachedDepositMapping = parseNearAmount("0.02");
-var networks = {
-    testnet: {
-        mapAccountId: "map.neth.testnet",
-    },
-    mainnet: {
-        mapAccountId: "nethmap.near",
-    }
-};
+var attachedDepositMapping = parseNearAmount('0.02');
 /// Helpers
 var get = function (k) {
     var v = localStorage.getItem(k);
@@ -194,96 +188,100 @@ var handleCreate = function (signer, ethAddress, newAccountId, fundingAccountCB,
                 // remove any existing app key
                 del(APP_KEY_ACCOUNT_ID);
                 del(APP_KEY_SECRET);
-                fundingAccountCB(PublicKey.from(new_public_key).data.toString('hex'));
-                return [4 /*yield*/, createAccount(newAccountId, new_public_key, fundingErrorCB, postFundingCB)];
+                return [4 /*yield*/, createAccount({ newAccountId: newAccountId, new_public_key: new_public_key, fundingAccountCB: fundingAccountCB, fundingErrorCB: fundingErrorCB, postFundingCB: postFundingCB })];
             case 2: return [2 /*return*/, _b.sent()];
         }
     });
 }); };
 exports.handleCreate = handleCreate;
-var createAccount = function (newAccountId, new_public_key, fundingErrorCB, postFundingCB) { return __awaiter(void 0, void 0, void 0, function () {
-    var implicitAccountId, checkImplicitFunded, account, res;
-    return __generator(this, function (_a) {
-        switch (_a.label) {
-            case 0:
-                checkImplicitFunded = function () { return __awaiter(void 0, void 0, void 0, function () {
-                    var account, balance, available, diff, e_2;
-                    return __generator(this, function (_a) {
-                        switch (_a.label) {
-                            case 0:
-                                implicitAccountId = PublicKey.from(new_public_key).data.toString('hex');
-                                logger('checking for funding of implicit account', implicitAccountId);
-                                account = new Account(connection, implicitAccountId);
-                                _a.label = 1;
-                            case 1:
-                                _a.trys.push([1, 6, , 9]);
-                                return [4 /*yield*/, account.getAccountBalance()];
-                            case 2:
-                                balance = _a.sent();
-                                available = balance.available;
-                                diff = new bn_js_1.default(available).sub(new bn_js_1.default(MIN_NEW_ACCOUNT_THRESH));
-                                if (!diff.lt(new bn_js_1.default('0'))) return [3 /*break*/, 5];
-                                // alert(`There is not enough NEAR (${formatNearAmount(MIN_NEW_ACCOUNT_ASK, 4)} minimum) to create a new account and deploy NETH contract. Please deposit more and try again.`)
-                                if (fundingErrorCB)
-                                    fundingErrorCB(implicitAccountId, diff.abs().toString());
-                                return [4 /*yield*/, new Promise(function (r) { return setTimeout(r, FUNDING_CHECK_TIMEOUT); })];
-                            case 3:
-                                _a.sent();
-                                return [4 /*yield*/, checkImplicitFunded()];
-                            case 4: return [2 /*return*/, _a.sent()];
-                            case 5: return [3 /*break*/, 9];
-                            case 6:
-                                e_2 = _a.sent();
-                                if (!/does not exist/gi.test(e_2.toString()))
-                                    throw e_2;
-                                logger('not funded, checking again');
-                                return [4 /*yield*/, new Promise(function (r) { return setTimeout(r, FUNDING_CHECK_TIMEOUT); })];
-                            case 7:
-                                _a.sent();
-                                return [4 /*yield*/, checkImplicitFunded()];
-                            case 8: return [2 /*return*/, _a.sent()];
-                            case 9: return [2 /*return*/, true];
-                        }
-                    });
-                }); };
-                return [4 /*yield*/, checkImplicitFunded()];
-            case 1:
-                /// if not funded properly, return and reload
-                if (!(_a.sent()))
-                    return [2 /*return*/, window.location.reload()];
-                logger('implicit account funded', implicitAccountId);
-                if (postFundingCB)
-                    postFundingCB();
-                account = setupFromStorage(implicitAccountId).account;
-                return [4 /*yield*/, account.functionCall({
-                        contractId: "testnet",
-                        methodName: "create_account",
-                        args: {
-                            new_account_id: newAccountId,
-                            new_public_key: new_public_key,
-                        },
-                        gas: gas,
-                        attachedDeposit: MIN_NEW_ACCOUNT,
-                    })];
-            case 2:
-                res = _a.sent();
-                return [4 /*yield*/, (0, exports.accountExists)(newAccountId)];
-            case 3:
-                /// check
-                if (!(_a.sent())) {
-                    return [2 /*return*/, logger("Account ".concat(newAccountId, " could NOT be created. Please refresh the page and try again."))];
-                }
-                logger("Account ".concat(newAccountId, " created successfully."));
-                /// drain implicit
-                return [4 /*yield*/, account.deleteAccount(newAccountId)];
-            case 4:
-                /// drain implicit
-                _a.sent();
-                return [4 /*yield*/, (0, exports.handleMapping)()];
-            case 5: return [2 /*return*/, _a.sent()];
-        }
+var createAccount = function (_a) {
+    var newAccountId = _a.newAccountId, new_public_key = _a.new_public_key, fundingAccountCB = _a.fundingAccountCB, fundingErrorCB = _a.fundingErrorCB, postFundingCB = _a.postFundingCB;
+    return __awaiter(void 0, void 0, void 0, function () {
+        var implicitAccountId, checkImplicitFunded, account, res;
+        return __generator(this, function (_b) {
+            switch (_b.label) {
+                case 0:
+                    implicitAccountId = PublicKey.from(new_public_key).data.toString('hex');
+                    if (fundingAccountCB)
+                        fundingAccountCB(PublicKey.from(new_public_key).data.toString('hex'));
+                    checkImplicitFunded = function () { return __awaiter(void 0, void 0, void 0, function () {
+                        var account, balance, available, diff, e_2;
+                        return __generator(this, function (_a) {
+                            switch (_a.label) {
+                                case 0:
+                                    logger('checking for funding of implicit account', implicitAccountId);
+                                    account = new Account(connection, implicitAccountId);
+                                    _a.label = 1;
+                                case 1:
+                                    _a.trys.push([1, 6, , 9]);
+                                    return [4 /*yield*/, account.getAccountBalance()];
+                                case 2:
+                                    balance = _a.sent();
+                                    available = balance.available;
+                                    diff = new bn_js_1.default(available).sub(new bn_js_1.default(MIN_NEW_ACCOUNT_THRESH));
+                                    if (!diff.lt(new bn_js_1.default('0'))) return [3 /*break*/, 5];
+                                    // alert(`There is not enough NEAR (${formatNearAmount(MIN_NEW_ACCOUNT_ASK, 4)} minimum) to create a new account and deploy NETH contract. Please deposit more and try again.`)
+                                    if (fundingErrorCB)
+                                        fundingErrorCB(implicitAccountId, diff.abs().toString());
+                                    return [4 /*yield*/, new Promise(function (r) { return setTimeout(r, FUNDING_CHECK_TIMEOUT); })];
+                                case 3:
+                                    _a.sent();
+                                    return [4 /*yield*/, checkImplicitFunded()];
+                                case 4: return [2 /*return*/, _a.sent()];
+                                case 5: return [3 /*break*/, 9];
+                                case 6:
+                                    e_2 = _a.sent();
+                                    if (!/does not exist/gi.test(e_2.toString()))
+                                        throw e_2;
+                                    logger('not funded, checking again');
+                                    return [4 /*yield*/, new Promise(function (r) { return setTimeout(r, FUNDING_CHECK_TIMEOUT); })];
+                                case 7:
+                                    _a.sent();
+                                    return [4 /*yield*/, checkImplicitFunded()];
+                                case 8: return [2 /*return*/, _a.sent()];
+                                case 9: return [2 /*return*/, true];
+                            }
+                        });
+                    }); };
+                    return [4 /*yield*/, checkImplicitFunded()];
+                case 1:
+                    /// if not funded properly, return and reload
+                    if (!(_b.sent()))
+                        return [2 /*return*/, window.location.reload()];
+                    logger('implicit account funded', implicitAccountId);
+                    if (postFundingCB)
+                        postFundingCB();
+                    account = setupFromStorage(implicitAccountId).account;
+                    return [4 /*yield*/, account.functionCall({
+                            contractId: NETWORK[networkId].ROOT_ACCOUNT_ID,
+                            methodName: 'create_account',
+                            args: {
+                                new_account_id: newAccountId,
+                                new_public_key: new_public_key,
+                            },
+                            gas: gas,
+                            attachedDeposit: MIN_NEW_ACCOUNT,
+                        })];
+                case 2:
+                    res = _b.sent();
+                    return [4 /*yield*/, (0, exports.accountExists)(newAccountId)];
+                case 3:
+                    /// check
+                    if (!(_b.sent())) {
+                        return [2 /*return*/, logger("Account ".concat(newAccountId, " could NOT be created. Please refresh the page and try again."))];
+                    }
+                    logger("Account ".concat(newAccountId, " created successfully."));
+                    /// drain implicit
+                    return [4 /*yield*/, account.deleteAccount(newAccountId)];
+                case 4:
+                    /// drain implicit
+                    _b.sent();
+                    return [4 /*yield*/, (0, exports.handleMapping)()];
+                case 5: return [2 /*return*/, _b.sent()];
+            }
+        });
     });
-}); };
+};
 var handleMapping = function () { return __awaiter(void 0, void 0, void 0, function () {
     var _a, account, ethAddress, res, e_3;
     var _b;
@@ -405,7 +403,7 @@ var handleKeys = function () { return __awaiter(void 0, void 0, void 0, function
 }); };
 exports.handleKeys = handleKeys;
 /// waterfall check everything about account and fill in missing pieces
-var handleCheckAccount = function (ethAddress, fundingErrorCB, postFundingCB) { return __awaiter(void 0, void 0, void 0, function () {
+var handleCheckAccount = function (ethAddress, fundingAccountCB, fundingErrorCB, postFundingCB) { return __awaiter(void 0, void 0, void 0, function () {
     var _a, newAccountId, newSecretKey, mapAccountId, keyPair, account, state, ethRes, e_4, mapRes, accessKeys;
     var _b, _c;
     return __generator(this, function (_d) {
@@ -427,7 +425,13 @@ var handleCheckAccount = function (ethAddress, fundingErrorCB, postFundingCB) { 
             case 2:
                 if (!(_d.sent())) {
                     keyPair = KeyPair.fromString(newSecretKey);
-                    return [2 /*return*/, createAccount(newAccountId, keyPair.publicKey.toString(), fundingErrorCB, postFundingCB)];
+                    return [2 /*return*/, createAccount({
+                            newAccountId: newAccountId,
+                            new_public_key: keyPair.publicKey.toString(),
+                            fundingAccountCB: fundingAccountCB,
+                            fundingErrorCB: fundingErrorCB,
+                            postFundingCB: postFundingCB
+                        })];
                 }
                 logger("Checking contract deployed.");
                 account = new Account(connection, newAccountId);
@@ -938,7 +942,7 @@ var getNearMap = function (ethAddress) { return __awaiter(void 0, void 0, void 0
 }); };
 exports.getNearMap = getNearMap;
 var getNear = function () { return __awaiter(void 0, void 0, void 0, function () {
-    var secretKey, accountId, _a, account, keyPair;
+    var secretKey, accountId, res, _a, account, keyPair;
     return __generator(this, function (_b) {
         switch (_b.label) {
             case 0:
@@ -949,7 +953,9 @@ var getNear = function () { return __awaiter(void 0, void 0, void 0, function ()
                 return [4 /*yield*/, (0, exports.getEthereum)()];
             case 1: return [4 /*yield*/, _a.apply(void 0, [_b.sent()])];
             case 2:
-                _b.sent();
+                res = _b.sent();
+                if (!res)
+                    return [2 /*return*/, false];
                 return [4 /*yield*/, (0, exports.getNear)()];
             case 3: return [2 /*return*/, _b.sent()];
             case 4:
@@ -1006,39 +1012,49 @@ var promptValidAccountId = function (msg) { return __awaiter(void 0, void 0, voi
 var getAppKey = function (_a) {
     var signer = _a.signer, eth_address = _a.ethAddress;
     return __awaiter(void 0, void 0, void 0, function () {
-        var accountId, newAccountId, account_1, appKeyNonce, _b, _c, publicKey, secretKey, account, accessKeys, keyPair;
+        var accountId, nethURL, appKeyNonce, _b, _c, publicKey, secretKey, account, accessKeys, keyPair;
         return __generator(this, function (_d) {
             switch (_d.label) {
                 case 0: return [4 /*yield*/, (0, exports.getNearMap)(eth_address)];
                 case 1:
                     accountId = _d.sent();
-                    if (!!accountId) return [3 /*break*/, 4];
-                    return [4 /*yield*/, promptValidAccountId("The Ethereum address ".concat(eth_address, " is not connected to a NEAR account yet. Select a NEAR account name and we'll create and connect one for you."))];
-                case 2:
-                    newAccountId = _d.sent();
-                    return [4 /*yield*/, (0, exports.handleCreate)(signer, eth_address, newAccountId + accountSuffix)];
-                case 3:
-                    account_1 = (_d.sent()).account;
-                    accountId = account_1.accountId;
-                    _d.label = 4;
-                case 4:
+                    if (!accountId) {
+                        nethURL = "https://neardefi.github.io/neth/".concat(networkId === 'testnet' ? '?network=testnet' : '');
+                        window.prompt("Ethereum account is not connected to a NETH account. To set up a NETH account visit", nethURL);
+                        return [2 /*return*/, false
+                            // throw new Error(`Ethereum account is not connected to a NETH account. To set up a NETH account visit: ${nethURL}`)
+                            // /// prompt for near account name and auto deploy
+                            // const newAccountId = await promptValidAccountId(
+                            // 	`The Ethereum address ${eth_address} is not connected to a NEAR account yet. Select a NEAR account name and we'll create and connect one for you.`,
+                            // );
+                            // const { account } = await handleCreate(signer, eth_address, newAccountId + accountSuffix);
+                            // accountId = account.accountId;
+                        ];
+                        // throw new Error(`Ethereum account is not connected to a NETH account. To set up a NETH account visit: ${nethURL}`)
+                        // /// prompt for near account name and auto deploy
+                        // const newAccountId = await promptValidAccountId(
+                        // 	`The Ethereum address ${eth_address} is not connected to a NEAR account yet. Select a NEAR account name and we'll create and connect one for you.`,
+                        // );
+                        // const { account } = await handleCreate(signer, eth_address, newAccountId + accountSuffix);
+                        // accountId = account.accountId;
+                    }
                     _b = parseInt;
                     return [4 /*yield*/, contractAccount.viewFunction(accountId, "get_app_key_nonce")];
-                case 5:
+                case 2:
                     appKeyNonce = _b.apply(void 0, [_d.sent(), 16]).toString();
                     return [4 /*yield*/, keyPairFromEthSig(signer, appKeyPayload(accountId, appKeyNonce))];
-                case 6:
+                case 3:
                     _c = _d.sent(), publicKey = _c.publicKey, secretKey = _c.secretKey;
                     account = new Account(connection, accountId);
                     return [4 /*yield*/, account.getAccessKeys()];
-                case 7:
+                case 4:
                     accessKeys = _d.sent();
-                    if (!!(0, exports.hasAppKey)(accessKeys)) return [3 /*break*/, 9];
+                    if (!!(0, exports.hasAppKey)(accessKeys)) return [3 /*break*/, 6];
                     return [4 /*yield*/, (0, exports.handleRefreshAppKey)(signer, eth_address)];
-                case 8:
+                case 5:
                     _d.sent();
-                    _d.label = 9;
-                case 9:
+                    _d.label = 6;
+                case 6:
                     keyPair = KeyPair.fromString(secretKey);
                     keyStore.setKey(networkId, accountId, keyPair);
                     set(APP_KEY_SECRET, secretKey);

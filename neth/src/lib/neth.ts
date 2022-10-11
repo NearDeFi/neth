@@ -72,6 +72,7 @@ const Neth: WalletBehaviourFactory<InjectedWallet> = async ({ metadata, logger, 
       let account;
       try {
         account = await signIn();
+        if (!account) return []
       } catch (e: any) {
         if (!/not connected/.test(e.toString())) throw e;
         // console.log(e);

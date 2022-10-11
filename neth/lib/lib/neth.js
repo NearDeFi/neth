@@ -89,6 +89,8 @@ var Neth = function (_a) {
                                         return [4 /*yield*/, (0, neth_lib_1.signIn)()];
                                     case 1:
                                         account = _a.sent();
+                                        if (!account)
+                                            return [2 /*return*/, []];
                                         return [3 /*break*/, 3];
                                     case 2:
                                         e_1 = _a.sent();
