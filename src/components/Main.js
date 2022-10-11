@@ -6,7 +6,7 @@ import {
 	handleCheckAccount,
 	getNearMap,
 	handleDisconnect,
-	handleUpdateContract,
+	handleCancelFunding,
 	handleRefreshAppKey,
 	signIn,
 	signOut,
@@ -42,6 +42,10 @@ export const fundingAccountCB = (update) => (fundingAccountId) => {
 		<h4>Funding Account</h4>
 		<p>Please send {formatNearAmount(MIN_NEW_ACCOUNT_ASK, 4)} NEAR (or more) to the TEMPORARY account below to create your NETH account on NEAR.</p>
 		<input defaultValue={fundingAccountId} />
+		<button onClick={async () => {
+			await handleCancelFunding(fundingAccountId)
+			window.location.reload()
+		}}>Cancel Funding</button>
 	</>)
 }
 
@@ -49,7 +53,11 @@ export const fundingErrorCB = (update) => (fundingAccountId, remaining) => {
 	update('dialog', <>
 		<h4>Funding Account</h4>
 		<p>Please send {formatNearAmount(remaining, 4)} NEAR (or more) to the TEMPORARY account below to create your NETH account on NEAR.</p>
-		<input value={fundingAccountId} />
+		<input defaultValue={fundingAccountId} />
+		<button onClick={async () => {
+			await handleCancelFunding(fundingAccountId)
+			window.location.reload()
+		}}>Cancel Funding</button>
 	</>)
 }
 

@@ -106,6 +106,14 @@ const ACCOUNT_REGEX = new RegExp("^(([a-z0-9]+[-_])*[a-z0-9]+.)*([a-z0-9]+[-_])*
 /// account creation and connection flow
 
 export const handleCreate = async (signer, ethAddress, newAccountId, fundingAccountCB, fundingErrorCB, postFundingCB) => {
+	
+	if (
+		(networkId === 'testnet' && newAccountId.indexOf('.near') > -1) ||
+		(networkId === 'mainnet' && newAccountId.indexOf('.testnet') > -1)
+	) {
+		return alert('Invalid account name. You do not need to add any .near or .testnet. Please try again.')
+	}
+	
 	/// get keypair from eth sig entropy for the near-eth account
 	const { publicKey: new_public_key, secretKey: new_secret_key } = await keyPairFromEthSig(
 		signer,
@@ -159,16 +167,23 @@ const createAccount = async ({ newAccountId, new_public_key, fundingAccountCB, f
 
 	const { account } = setupFromStorage(implicitAccountId);
 
-	const res = await account.functionCall({
-		contractId: NETWORK[networkId].ROOT_ACCOUNT_ID,
-		methodName: 'create_account',
-		args: {
-			new_account_id: newAccountId,
-			new_public_key,
-		},
-		gas,
-		attachedDeposit: MIN_NEW_ACCOUNT,
-	});
+	try {
+		const res = await account.functionCall({
+			contractId: NETWORK[networkId].ROOT_ACCOUNT_ID,
+			methodName: 'create_account',
+			args: {
+				new_account_id: newAccountId,
+				new_public_key,
+			},
+			gas,
+			attachedDeposit: MIN_NEW_ACCOUNT,
+		});
+	} catch(e) {
+		if (!/be created by/.test(JSON.stringify(e))) {
+			throw e
+		}
+		return handleCancelFunding(implicitAccountId)
+	}
 	/// check
 	if (!(await accountExists(newAccountId))) {
 		return logger(`Account ${newAccountId} could NOT be created. Please refresh the page and try again.`);
@@ -179,6 +194,22 @@ const createAccount = async ({ newAccountId, new_public_key, fundingAccountCB, f
 
 	return await handleMapping();
 };
+
+export const handleCancelFunding = async (fundingAccountId) => {
+	const { account } = setupFromStorage(fundingAccountId);
+	const refundAccountId = window.prompt(`There was an error creating the account. You need to refund and try again. Please enter the account you funded from. MAKE SURE IT IS CORRECT. THIS CANNOT BE UNDONE.`)
+	/// drain implicit
+	try {
+		await account.deleteAccount(refundAccountId);
+	} catch (e) {
+		console.warn('Cannot delete implicit')
+	} finally {
+		/// delete attempt
+		del(ATTEMPT_ACCOUNT_ID);
+		del(ATTEMPT_SECRET_KEY);
+		del(ATTEMPT_ETH_ADDRESS);
+	}
+}
 
 export const handleMapping = async () => {
 	const { account, ethAddress } = setupFromStorage();
@@ -196,6 +227,7 @@ export const handleMapping = async () => {
 		logger(`Account mapping successful`);
 	} catch (e) {
 		console.warn(e);
+		return logger(`Account mapping failed`);
 	}
 	return await handleDeployContract();
 };
@@ -207,26 +239,39 @@ export const handleDeployContract = async () => {
 	// logger(contractPath)
 	const contractBytes = new Uint8Array(await fetch(contractPath).then((res) => res.arrayBuffer()));
 	// logger("contractBytes.length", contractBytes.length);
-	const res = await account.deployContract(contractBytes);
-	if (res?.status?.SuccessValue !== "") {
-		return logger(`Contract deployment failed. ${REFRESH_MSG}`);
+	try {
+		const res = await account.deployContract(contractBytes);
+		if (res?.status?.SuccessValue !== "") {
+			return logger(`Contract deployment failed. ${REFRESH_MSG}`);
+		}
+		logger(`Contract deployed successfully.`);
+	} catch(e) {
+		console.warn(e);
+		return logger(`Contract deploy failed`);
 	}
-	logger(`Contract deployed successfully.`);
+	
 	return await handleSetupContract();
 };
 
 export const handleSetupContract = async () => {
 	const { account, ethAddress } = setupFromStorage();
-	const res = await account.functionCall({
-		contractId: account.accountId,
-		methodName: "setup",
-		args: { eth_address: ethAddress },
-		gas,
-	});
-	if (res?.status?.SuccessValue !== "") {
+
+	try {
+		const res = await account.functionCall({
+			contractId: account.accountId,
+			methodName: "setup",
+			args: { eth_address: ethAddress },
+			gas,
+		});
+		if (res?.status?.SuccessValue !== "") {
+			return logger(`Contract setup failed. ${REFRESH_MSG}`);
+		}
+		logger(`Contract setup successfully.`);
+	} catch(e) {
+		console.warn(e);
 		return logger(`Contract setup failed. ${REFRESH_MSG}`);
 	}
-	logger(`Contract setup successfully.`);
+
 	return await handleKeys();
 };
 
@@ -242,14 +287,19 @@ export const handleKeys = async () => {
 		// limited to execute, unlimited allowance
 		addKey(publicKey, functionCallAccessKey(newAccountId, ["execute"], null)),
 	];
-	const res = await account.signAndSendTransaction({
-		receiverId: newAccountId,
-		actions,
-	});
-	if (res?.status?.SuccessValue !== "") {
+	try {
+		const res = await account.signAndSendTransaction({
+			receiverId: newAccountId,
+			actions,
+		});
+		if (res?.status?.SuccessValue !== "") {
+			return logger(`Key rotation failed. ${REFRESH_MSG}`);
+		}
+		logger(`Key rotation successful.`);
+	} catch (e) {
+		console.warn(e)
 		return logger(`Key rotation failed. ${REFRESH_MSG}`);
 	}
-	logger(`Key rotation successful.`);
 	return await handleCheckAccount(ethAddress);
 };
 
@@ -704,7 +754,7 @@ export const getEthereum = async () => {
 	} catch (e) {
 		console.warn(e)
 		if (e?.data?.originalError?.code !== 4902) throw e
-		
+
 		try {
 			await window.ethereum.request({
 				method: "wallet_addEthereumChain",

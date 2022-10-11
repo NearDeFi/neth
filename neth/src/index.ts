@@ -9,6 +9,7 @@ export {
 	accountExists,
 	switchEthereum,
 	handleCheckAccount,
+	handleCancelFunding,
 	getNearMap,
 	handleDisconnect,
 	handleUpdateContract,

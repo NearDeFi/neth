@@ -10,6 +10,7 @@ export function getConnection(): {
 };
 export function accountExists(accountId: any): Promise<boolean>;
 export function handleCreate(signer: any, ethAddress: any, newAccountId: any, fundingAccountCB: any, fundingErrorCB: any, postFundingCB: any): Promise<any>;
+export function handleCancelFunding(fundingAccountId: any): Promise<void>;
 export function handleMapping(): any;
 export function handleDeployContract(): any;
 export function handleSetupContract(): any;
