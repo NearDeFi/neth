@@ -5,6 +5,7 @@
 	"author": "Matt Lockyer",
 	"license": "ISC",
 	"dependencies": {
+		"@metamask/detect-provider": "^2.0.0",
 		"ethers": "^5.5.4",
 		"near-seed-phrase": "^0.2.0",
 		"parcel": "^2.7.0",

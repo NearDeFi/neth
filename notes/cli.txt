@@ -1,5 +1,6 @@
 
 DELETE ACCOUNT
 
+near repl --accountId=neth-1.testnet --seedPhrase="subject blanket omit height gather follow soda design tunnel feel soon vehicle"
 near repl --accountId=neth-4.testnet --seedPhrase="already avocado cargo rural three curve turn actor inject click emerge document"
-NEAR_ENV=mainnet near repl --accountId=neth-2.near --seedPhrase="potato peace fold hawk math conduct diet dilemma fashion useful provide math"
+NEAR_ENV=mainnet near repl --accountId=neth-2.near --seedPhrase="gate replace west toilet card punch firm seven invest globe outdoor blur"

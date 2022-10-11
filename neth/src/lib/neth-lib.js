@@ -1,4 +1,5 @@
 import { ethers } from "ethers";
+import detectEthereumProvider from '@metamask/detect-provider'
 import * as nearAPI from "near-api-js";
 import { parseSeedPhrase, generateSeedPhrase } from "near-seed-phrase";
 import BN from 'bn.js'
@@ -688,21 +689,51 @@ const keyPairFromEthSig = async (signer, json) => {
 /// ethereum
 
 export const getEthereum = async () => {
-	await window.ethereum.request({
-		method: "wallet_switchEthereumChain",
-		params: [{ chainId: "0x" + domain.chainId.toString(16) }],
-	})
 
-	const provider = new ethers.providers.Web3Provider(window.ethereum);
-	const accounts = await provider.listAccounts();
-	if (accounts.length === 0) {
-		await provider.send("eth_requestAccounts", []);
+	const provider = await detectEthereumProvider()
+
+	if (!provider) {
+		return alert('Please install MetaMask and try again.')
 	}
-	const signer = provider.getSigner();
+
+	try {
+		await window.ethereum.request({
+			method: "wallet_switchEthereumChain",
+			params: [{ chainId: "0x" + domain.chainId.toString(16) }],
+		})
+	} catch(e) {
+		if (e?.data?.originalError?.code !== 4902) throw e
+		await window.ethereum.request({
+			method: "wallet_addEthereumChain",
+			params: [{
+                chainId: "0x" + domain.chainId.toString(16),
+                chainName: 'Aurora Mainnet',
+                nativeCurrency: {
+                  name: 'Ethereum',
+                  symbol: 'ETH',
+                  decimals: 18
+                },
+                blockExplorerUrls: ['https://explorer.mainnet.aurora.dev/'],
+                rpcUrls: ['https://mainnet.aurora.dev'],
+              }],
+		})
+	}
+
+	const ethersProvider = new ethers.providers.Web3Provider(window.ethereum);
+	const accounts = await ethersProvider.listAccounts();
+	if (accounts.length === 0) {
+		await ethersProvider.send("eth_requestAccounts", []);
+	}
+	const signer = ethersProvider.getSigner();
+
+	console.log(signer)
+
 	return { signer, ethAddress: await signer.getAddress() };
 };
+
 export const switchEthereum = async () => {
-	const provider = new ethers.providers.Web3Provider(window.ethereum);
+	const provider = await detectEthereumProvider()
+	const ethersProvider = new ethers.providers.Web3Provider(window.ethereum);
 	await provider.send("wallet_requestPermissions", [{ eth_accounts: {} }]);
 };
 

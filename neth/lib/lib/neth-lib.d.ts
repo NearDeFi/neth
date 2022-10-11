@@ -21,7 +21,7 @@ export function handleUpdateContract(signer: any, ethAddress: any): Promise<any>
 export function handleDisconnect(signer: any, ethAddress: any): Promise<void | {
     account: nearAPI.Account;
 }>;
-export function getEthereum(): Promise<{
+export function getEthereum(): Promise<void | {
     signer: ethers.providers.JsonRpcSigner;
     ethAddress: string;
 }>;

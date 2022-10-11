@@ -59,6 +59,7 @@ const App = () => {
 			update('suffix', accountSuffix)
 
 			const { signer, ethAddress } = await getEthereum();
+
 			setSigner(signer)
 			update('ethAddress', ethAddress)
 

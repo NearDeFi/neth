@@ -75,6 +75,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.convertActions = exports.signAndSendTransactions = exports.getAppKey = exports.isSignedIn = exports.signOut = exports.signIn = exports.getNear = exports.getNearMap = exports.switchEthereum = exports.getEthereum = exports.handleDisconnect = exports.handleUpdateContract = exports.handleRefreshAppKey = exports.hasAppKey = exports.handleCheckAccount = exports.handleKeys = exports.handleSetupContract = exports.handleDeployContract = exports.handleMapping = exports.handleCreate = exports.accountExists = exports.getConnection = exports.initConnection = exports.MIN_NEW_ACCOUNT_ASK = void 0;
 var ethers_1 = require("ethers");
+var detect_provider_1 = __importDefault(require("@metamask/detect-provider"));
 var nearAPI = __importStar(require("near-api-js"));
 var near_seed_phrase_1 = require("near-seed-phrase");
 var bn_js_1 = __importDefault(require("bn.js"));
@@ -892,42 +893,78 @@ var keyPairFromEthSig = function (signer, json) { return __awaiter(void 0, void 
  */
 /// ethereum
 var getEthereum = function () { return __awaiter(void 0, void 0, void 0, function () {
-    var provider, accounts, signer;
+    var provider, e_6, ethersProvider, accounts, signer;
     var _a;
-    return __generator(this, function (_b) {
-        switch (_b.label) {
-            case 0: return [4 /*yield*/, window.ethereum.request({
-                    method: "wallet_switchEthereumChain",
-                    params: [{ chainId: "0x" + domain.chainId.toString(16) }],
-                })];
+    var _b, _c;
+    return __generator(this, function (_d) {
+        switch (_d.label) {
+            case 0: return [4 /*yield*/, (0, detect_provider_1.default)()];
             case 1:
-                _b.sent();
-                provider = new ethers_1.ethers.providers.Web3Provider(window.ethereum);
-                return [4 /*yield*/, provider.listAccounts()];
+                provider = _d.sent();
+                if (!provider) {
+                    return [2 /*return*/, alert('Please install MetaMask and try again.')];
+                }
+                _d.label = 2;
             case 2:
-                accounts = _b.sent();
-                if (!(accounts.length === 0)) return [3 /*break*/, 4];
-                return [4 /*yield*/, provider.send("eth_requestAccounts", [])];
+                _d.trys.push([2, 4, , 6]);
+                return [4 /*yield*/, window.ethereum.request({
+                        method: "wallet_switchEthereumChain",
+                        params: [{ chainId: "0x" + domain.chainId.toString(16) }],
+                    })];
             case 3:
-                _b.sent();
-                _b.label = 4;
+                _d.sent();
+                return [3 /*break*/, 6];
             case 4:
-                signer = provider.getSigner();
+                e_6 = _d.sent();
+                if (((_c = (_b = e_6 === null || e_6 === void 0 ? void 0 : e_6.data) === null || _b === void 0 ? void 0 : _b.originalError) === null || _c === void 0 ? void 0 : _c.code) !== 4902)
+                    throw e_6;
+                return [4 /*yield*/, window.ethereum.request({
+                        method: "wallet_addEthereumChain",
+                        params: [{
+                                chainId: "0x" + domain.chainId.toString(16),
+                                chainName: 'Aurora Mainnet',
+                                nativeCurrency: {
+                                    name: 'Ethereum',
+                                    symbol: 'ETH',
+                                    decimals: 18
+                                },
+                                blockExplorerUrls: ['https://explorer.mainnet.aurora.dev/'],
+                                rpcUrls: ['https://mainnet.aurora.dev'],
+                            }],
+                    })];
+            case 5:
+                _d.sent();
+                return [3 /*break*/, 6];
+            case 6:
+                ethersProvider = new ethers_1.ethers.providers.Web3Provider(window.ethereum);
+                return [4 /*yield*/, ethersProvider.listAccounts()];
+            case 7:
+                accounts = _d.sent();
+                if (!(accounts.length === 0)) return [3 /*break*/, 9];
+                return [4 /*yield*/, ethersProvider.send("eth_requestAccounts", [])];
+            case 8:
+                _d.sent();
+                _d.label = 9;
+            case 9:
+                signer = ethersProvider.getSigner();
+                console.log(signer);
                 _a = { signer: signer };
                 return [4 /*yield*/, signer.getAddress()];
-            case 5: return [2 /*return*/, (_a.ethAddress = _b.sent(), _a)];
+            case 10: return [2 /*return*/, (_a.ethAddress = _d.sent(), _a)];
         }
     });
 }); };
 exports.getEthereum = getEthereum;
 var switchEthereum = function () { return __awaiter(void 0, void 0, void 0, function () {
-    var provider;
+    var provider, ethersProvider;
     return __generator(this, function (_a) {
         switch (_a.label) {
-            case 0:
-                provider = new ethers_1.ethers.providers.Web3Provider(window.ethereum);
-                return [4 /*yield*/, provider.send("wallet_requestPermissions", [{ eth_accounts: {} }])];
+            case 0: return [4 /*yield*/, (0, detect_provider_1.default)()];
             case 1:
+                provider = _a.sent();
+                ethersProvider = new ethers_1.ethers.providers.Web3Provider(window.ethereum);
+                return [4 /*yield*/, provider.send("wallet_requestPermissions", [{ eth_accounts: {} }])];
+            case 2:
                 _a.sent();
                 return [2 /*return*/];
         }
