@@ -137,6 +137,17 @@ const App = () => {
 		</header>
 
 		<main className="container">
+
+			<button onClick={() => {
+				update('dialog', <>
+					<h4>WARNING</h4>
+					<p>This is beta software. The developers are NOT responsible for any lost or unrecoverable funds.</p>
+					<p>Do NOT fund any account on mainnet with funds you CANNOT afford to lose.</p>
+					{ networkId === 'mainnet' && <p>It's <strong>HIGHLY</strong> recommened you switch to <strong>TESTNET</strong> by clicking the button below the disclaimer button.</p>}
+					<button onClick={() => update('dialog', null)}>Ok</button>
+				</>)
+			}}>Beta Disclaimer<span>Click to Read</span></button>
+
 			<a href={networkId === 'mainnet' ? window.location.href + '?network=testnet' : window.location.href.split('?')[0]}>
 				<button className='secondary'><span style={{color: '#008800'}}>{networkId}</span>Click to Change</button>
 			</a>
