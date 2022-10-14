@@ -2,7 +2,7 @@
 DELETE ACCOUNT
 
 near repl --accountId=neth-1.testnet --seedPhrase="subject blanket omit height gather follow soda design tunnel feel soon vehicle"
-near repl --accountId=neth-6.testnet --seedPhrase="already avocado cargo rural three curve turn actor inject click emerge document"
+near repl --accountId=neth-6.testnet --seedPhrase="order bracket beef elite awake alter sustain quit talent foam make grape"
 NEAR_ENV=mainnet near repl --accountId=neth-1.near --seedPhrase="elevator violin ability grow angry end hand frame thing control before wall"
 NEAR_ENV=mainnet near repl --accountId=neth-2.near --seedPhrase="gate replace west toilet card punch firm seven invest globe outdoor blur"
 NEAR_ENV=mainnet near repl --accountId=neth-3.near --seedPhrase="hollow wait panic giraffe movie fog survey million fetch erupt horn join"

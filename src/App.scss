@@ -57,6 +57,13 @@ header {
 	}
 }
 
+.tos {
+	height: 200px;
+	overflow: hidden;
+	overflow-y: scroll;
+	margin-bottom: 16px;
+}
+
 .github-corner:hover .octo-arm {
     animation: octocat-wave 560ms ease-in-out;
 }

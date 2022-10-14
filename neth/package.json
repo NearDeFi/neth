@@ -4,13 +4,19 @@
   "description": "control NEAR accounts with ETH accounts",
   "main": "./lib/index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
+    "test": "REACT_APP_NETWORK_ID=testnet yarn ava",
+    "ava": "ava test/neth.test.js -vs --timeout=5m",
     "build": "npx tsc",
     "publish": "npx tsc && npm publish"
   },
   "author": "mattlockyer",
   "license": "MIT",
   "dependencies": {
-    "@near-wallet-selector/core": "^6.0.1"
+    "@near-wallet-selector/core": "^6.0.1",
+    "ava": "^4.3.3"
+  },
+  "devDependencies": {
+    "bs58": "^5.0.0",
+    "tweetnacl": "^1.0.3"
   }
 }

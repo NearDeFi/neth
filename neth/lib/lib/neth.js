@@ -56,17 +56,9 @@ var isInstalled = function () { return __awaiter(void 0, void 0, void 0, functio
         }
     });
 }); };
-var isMobile = function () {
-    var check = false;
-    (function (a) {
-        if (/(android|bb\d+|meego).+mobile|avantgo|bada\/|blackberry|blazer|compal|elaine|fennec|hiptop|iemobile|ip(hone|od)|iris|kindle|lge |maemo|midp|mmp|mobile.+firefox|netfront|opera m(ob|in)i|palm( os)?|phone|p(ixi|re)\/|plucker|pocket|psp|series(4|6)0|symbian|treo|up\.(browser|link)|vodafone|wap|windows ce|xda|xiino|android|ipad|playbook|silk/i.test(a))
-            check = true;
-    })(navigator.userAgent || navigator.vendor);
-    return check;
-};
 var useCover = false;
 var Neth = function (_a) {
-    var metadata = _a.metadata, logger = _a.logger, options = _a.options;
+    var metadata = _a.metadata, logger = _a.logger, options = _a.options, provider = _a.provider;
     return __awaiter(void 0, void 0, void 0, function () {
         var cover, coverImg, isValidActions, transformActions;
         return __generator(this, function (_b) {
@@ -129,45 +121,9 @@ var Neth = function (_a) {
                         var message = _a.message;
                         return __awaiter(this, void 0, void 0, function () {
                             return __generator(this, function (_b) {
-                                // logger.log("Sender:verifyOwner", { message });
-                                // const account = _state.wallet.account();
-                                // if (!account) {
-                                //   throw new Error("Wallet not signed in");
-                                // }
-                                // // Note: When the wallet is locked, Sender returns an empty Signer interface.
-                                // // Even after unlocking the wallet, the user will need to refresh to gain
-                                // // access to these methods.
-                                // if (!account.connection.signer.signMessage) {
-                                //   throw new Error("Wallet is locked");
-                                // }
-                                // const networkId = options.network.networkId;
-                                // const accountId = account.accountId;
-                                // const pubKey = await account.connection.signer.getPublicKey(
-                                //   accountId,
-                                //   networkId
-                                // );
-                                // const block = await provider.block({ finality: "final" });
-                                // const data = {
-                                //   accountId,
-                                //   message,
-                                //   blockId: block.header.hash,
-                                //   publicKey: Buffer.from(pubKey.data).toString("base64"),
-                                //   keyType: pubKey.keyType,
-                                // };
-                                // const encoded = JSON.stringify(data);
-                                // const signed = await account.connection.signer.signMessage(
-                                //   new Uint8Array(Buffer.from(encoded)),
-                                //   accountId,
-                                //   networkId
-                                // );
-                                return [2 /*return*/, {
-                                        accountId: '',
-                                        message: '',
-                                        blockId: '',
-                                        publicKey: '',
-                                        keyType: 0,
-                                        signature: '',
-                                    }];
+                                logger.log("NETH:verifyOwner", { message: message });
+                                (0, neth_lib_1.verifyOwner)({ message: message, provider: provider, account: null });
+                                return [2 /*return*/];
                             });
                         });
                     },
@@ -188,7 +144,7 @@ var Neth = function (_a) {
                         var receiverId = _a.receiverId, actions = _a.actions;
                         return __awaiter(this, void 0, void 0, function () {
                             return __generator(this, function (_b) {
-                                logger.log("Neth:signAndSendTransaction", {
+                                logger.log("NETH:signAndSendTransaction", {
                                     receiverId: receiverId,
                                     actions: actions,
                                 });
@@ -210,7 +166,7 @@ var Neth = function (_a) {
                             return __generator(this, function (_b) {
                                 switch (_b.label) {
                                     case 0:
-                                        logger.log("Neth:signAndSendTransactions", { transactions: transactions });
+                                        logger.log("NETH:signAndSendTransactions", { transactions: transactions });
                                         if (useCover) {
                                             cover.style.display = "block";
                                         }

@@ -5,6 +5,8 @@ const initialState = {
 	app: {
 		mounted: false
 	},
+	dialogOk: false,
+	dialogOkDisabledKey: null,
 	log: [],
 	suffix: '.testnet',
 	loading: true,

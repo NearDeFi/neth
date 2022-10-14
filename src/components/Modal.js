@@ -6,7 +6,7 @@ export const Modal = ({
 }) => {
 
 	const {
-		loading, log, dialog,
+		loading, log, dialog, dialogOk, dialogOkDisabledKey,
 	} = state
 
 	if (!loading && !dialog) return null
@@ -16,6 +16,7 @@ export const Modal = ({
 			{
 				dialog && <div className='dialog'>
 					{dialog}
+					{dialogOk && <button disabled={state[dialogOkDisabledKey]} onClick={() => update('dialog', null)}>Ok</button>}
 				</div>
 			}
 			{ (log.length > 0 || loading) && <>

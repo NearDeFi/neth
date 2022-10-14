@@ -345,7 +345,7 @@ export const handleCheckAccount = async (ethAddress, fundingAccountCB, fundingEr
 	}
 
 	const account = new Account(connection, newAccountId);
-	
+
 	logger("Checking account address mapping.");
 	const mapRes = await account.viewFunction(NETWORK[networkId].MAP_ACCOUNT_ID, "get_eth", {
 		account_id: newAccountId,
@@ -800,8 +800,6 @@ export const getEthereum = async () => {
 	}
 	const signer = ethersProvider.getSigner();
 
-	console.log(signer)
-
 	return { signer, ethAddress: await signer.getAddress() };
 };
 
@@ -813,8 +811,8 @@ export const switchEthereum = async () => {
 
 /// near
 
-export const getNearMap = async (ethAddress) => {
-	return contractAccount.viewFunction(NETWORK[networkId].MAP_ACCOUNT_ID, "get_near", { eth_address: ethAddress });
+export const getNearMap = async (eth_address) => {
+	return contractAccount.viewFunction(NETWORK[networkId].MAP_ACCOUNT_ID, "get_near", { eth_address });
 };
 
 export const getNear = async () => {
@@ -842,6 +840,47 @@ export const signOut = async () => {
 	del(APP_KEY_ACCOUNT_ID);
 	return { accountId };
 };
+
+export const verifyOwner = async ({ message, provider, account }) => {
+	let accountId;
+	if (!account) {
+		({ account, accountId } = await getNear());
+	} else {
+		({ accountId } = account);
+	}
+
+	if (!account) {
+		throw new Error("Wallet not signed in");
+	}
+
+	const pubKey = await account.connection.signer.getPublicKey(
+		accountId,
+		networkId
+	);
+	const publicKey = Buffer.from(pubKey.data).toString("base64")
+	const block = await provider.block({ finality: "final" });
+	const blockId = block.header.hash
+
+	const data = {
+		accountId,
+		message,
+		blockId,
+		publicKey,
+		keyType: pubKey.keyType,
+	};
+	const encoded = JSON.stringify(data);
+
+	const signed = await account.connection.signer.signMessage(
+		new Uint8Array(Buffer.from(encoded)),
+		accountId,
+		networkId
+	);
+
+	return {
+		...data,
+		signature: Buffer.from(signed.signature).toString("base64"),
+	};
+}
 
 export const isSignedIn = () => {
 	return !!get(APP_KEY_SECRET) || !!get(APP_KEY_ACCOUNT_ID);

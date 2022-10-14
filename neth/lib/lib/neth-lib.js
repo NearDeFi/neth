@@ -73,7 +73,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.convertActions = exports.signAndSendTransactions = exports.getAppKey = exports.isSignedIn = exports.signOut = exports.signIn = exports.getNear = exports.getNearMap = exports.switchEthereum = exports.getEthereum = exports.handleDisconnect = exports.handleUpdateContract = exports.handleRefreshAppKey = exports.hasAppKey = exports.handleCheckAccount = exports.handleKeys = exports.handleSetupContract = exports.handleDeployContract = exports.handleMapping = exports.handleCancelFunding = exports.handleCreate = exports.accountExists = exports.getConnection = exports.initConnection = exports.MIN_NEW_ACCOUNT_ASK = void 0;
+exports.convertActions = exports.signAndSendTransactions = exports.getAppKey = exports.isSignedIn = exports.verifyOwner = exports.signOut = exports.signIn = exports.getNear = exports.getNearMap = exports.switchEthereum = exports.getEthereum = exports.handleDisconnect = exports.handleUpdateContract = exports.handleRefreshAppKey = exports.hasAppKey = exports.handleCheckAccount = exports.handleKeys = exports.handleSetupContract = exports.handleDeployContract = exports.handleMapping = exports.handleCancelFunding = exports.handleCreate = exports.accountExists = exports.getConnection = exports.initConnection = exports.MIN_NEW_ACCOUNT_ASK = void 0;
 var ethers_1 = require("ethers");
 var detect_provider_1 = __importDefault(require("@metamask/detect-provider"));
 var nearAPI = __importStar(require("near-api-js"));
@@ -1038,7 +1038,6 @@ var getEthereum = function () { return __awaiter(void 0, void 0, void 0, functio
                 _d.label = 12;
             case 12:
                 signer = ethersProvider.getSigner();
-                console.log(signer);
                 _a = { signer: signer };
                 return [4 /*yield*/, signer.getAddress()];
             case 13: return [2 /*return*/, (_a.ethAddress = _d.sent(), _a)];
@@ -1063,9 +1062,9 @@ var switchEthereum = function () { return __awaiter(void 0, void 0, void 0, func
 }); };
 exports.switchEthereum = switchEthereum;
 /// near
-var getNearMap = function (ethAddress) { return __awaiter(void 0, void 0, void 0, function () {
+var getNearMap = function (eth_address) { return __awaiter(void 0, void 0, void 0, function () {
     return __generator(this, function (_a) {
-        return [2 /*return*/, contractAccount.viewFunction(NETWORK[networkId].MAP_ACCOUNT_ID, "get_near", { eth_address: ethAddress })];
+        return [2 /*return*/, contractAccount.viewFunction(NETWORK[networkId].MAP_ACCOUNT_ID, "get_near", { eth_address: eth_address })];
     });
 }); };
 exports.getNearMap = getNearMap;
@@ -1109,6 +1108,51 @@ var signOut = function () { return __awaiter(void 0, void 0, void 0, function ()
     });
 }); };
 exports.signOut = signOut;
+var verifyOwner = function (_a) {
+    var message = _a.message, provider = _a.provider, account = _a.account;
+    return __awaiter(void 0, void 0, void 0, function () {
+        var accountId, pubKey, publicKey, block, blockId, data, encoded, signed;
+        var _b;
+        return __generator(this, function (_c) {
+            switch (_c.label) {
+                case 0:
+                    if (!!account) return [3 /*break*/, 2];
+                    return [4 /*yield*/, (0, exports.getNear)()];
+                case 1:
+                    (_b = _c.sent(), account = _b.account, accountId = _b.accountId);
+                    return [3 /*break*/, 3];
+                case 2:
+                    (accountId = account.accountId);
+                    _c.label = 3;
+                case 3:
+                    if (!account) {
+                        throw new Error("Wallet not signed in");
+                    }
+                    return [4 /*yield*/, account.connection.signer.getPublicKey(accountId, networkId)];
+                case 4:
+                    pubKey = _c.sent();
+                    publicKey = Buffer.from(pubKey.data).toString("base64");
+                    return [4 /*yield*/, provider.block({ finality: "final" })];
+                case 5:
+                    block = _c.sent();
+                    blockId = block.header.hash;
+                    data = {
+                        accountId: accountId,
+                        message: message,
+                        blockId: blockId,
+                        publicKey: publicKey,
+                        keyType: pubKey.keyType,
+                    };
+                    encoded = JSON.stringify(data);
+                    return [4 /*yield*/, account.connection.signer.signMessage(new Uint8Array(Buffer.from(encoded)), accountId, networkId)];
+                case 6:
+                    signed = _c.sent();
+                    return [2 /*return*/, __assign(__assign({}, data), { signature: Buffer.from(signed.signature).toString("base64") })];
+            }
+        });
+    });
+};
+exports.verifyOwner = verifyOwner;
 var isSignedIn = function () {
     return !!get(APP_KEY_SECRET) || !!get(APP_KEY_ACCOUNT_ID);
 };

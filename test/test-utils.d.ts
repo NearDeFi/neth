@@ -1,0 +1,13 @@
+export function init(owner_id?: any): Promise<nearAPI.Account>;
+import { contractAccount } from "../utils/near-utils";
+export function accountExists(accountId: any): Promise<boolean>;
+export function getAccount(accountId: any, fundingAmount: any, secret: any): Promise<nearAPI.Account>;
+export function createAccount(accountId: any, fundingAmount: any, secret: any): Promise<nearAPI.Account>;
+export function getAccountBalance(accountId: any): Promise<import("near-api-js/lib/account").AccountBalance>;
+export function getAccountState(accountId: any): Promise<import("near-api-js/lib/providers/provider").AccountView>;
+export function stateCost(balanceBefore: any, balanceAfter: any): string;
+export function bytesUsed(stateBefore: any, stateAfter: any): number;
+export function recordStart(accountId: any): Promise<void>;
+export function recordStop(accountId: any): Promise<void>;
+import nearAPI = require("near-api-js");
+export { contractAccount };

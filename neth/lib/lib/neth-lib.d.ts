@@ -27,11 +27,23 @@ export function getEthereum(): Promise<void | {
     ethAddress: string;
 }>;
 export function switchEthereum(): Promise<void>;
-export function getNearMap(ethAddress: any): Promise<any>;
+export function getNearMap(eth_address: any): Promise<any>;
 export function getNear(): any;
 export function signIn(): any;
 export function signOut(): Promise<void | {
     accountId: any;
+}>;
+export function verifyOwner({ message, provider, account }: {
+    message: any;
+    provider: any;
+    account: any;
+}): Promise<{
+    signature: string;
+    accountId: any;
+    message: any;
+    blockId: any;
+    publicKey: string;
+    keyType: any;
 }>;
 export function isSignedIn(): boolean;
 export function getAppKey({ signer, ethAddress: eth_address }: {
