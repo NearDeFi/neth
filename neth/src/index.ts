@@ -10,6 +10,7 @@ export {
 	switchEthereum,
 	handleCheckAccount,
 	handleCancelFunding,
+	verifyOwner,
 	getNearMap,
 	handleDisconnect,
 	handleUpdateContract,

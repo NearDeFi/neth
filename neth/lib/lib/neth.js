@@ -228,7 +228,7 @@ function setupNeth(_a) {
                                 name: "NETH Account",
                                 description: null,
                                 iconUrl: iconUrl,
-                                downloadUrl: "https://example.com",
+                                downloadUrl: "https://neardefi.github.io/neth",
                                 deprecated: false,
                                 available: true,
                             },

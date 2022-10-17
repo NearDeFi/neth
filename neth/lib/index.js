@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.MIN_NEW_ACCOUNT_ASK = exports.initConnection = exports.signAndSendTransactions = exports.isSignedIn = exports.signOut = exports.signIn = exports.hasAppKey = exports.handleRefreshAppKey = exports.handleUpdateContract = exports.handleDisconnect = exports.getNearMap = exports.handleCancelFunding = exports.handleCheckAccount = exports.switchEthereum = exports.accountExists = exports.handleCreate = exports.getEthereum = exports.getConnection = exports.getNear = exports.setupNeth = void 0;
+exports.MIN_NEW_ACCOUNT_ASK = exports.initConnection = exports.signAndSendTransactions = exports.isSignedIn = exports.signOut = exports.signIn = exports.hasAppKey = exports.handleRefreshAppKey = exports.handleUpdateContract = exports.handleDisconnect = exports.getNearMap = exports.verifyOwner = exports.handleCancelFunding = exports.handleCheckAccount = exports.switchEthereum = exports.accountExists = exports.handleCreate = exports.getEthereum = exports.getConnection = exports.getNear = exports.setupNeth = void 0;
 var neth_1 = require("./lib/neth");
 Object.defineProperty(exports, "setupNeth", { enumerable: true, get: function () { return neth_1.setupNeth; } });
 var neth_lib_1 = require("./lib/neth-lib");
@@ -12,6 +12,7 @@ Object.defineProperty(exports, "accountExists", { enumerable: true, get: functio
 Object.defineProperty(exports, "switchEthereum", { enumerable: true, get: function () { return neth_lib_1.switchEthereum; } });
 Object.defineProperty(exports, "handleCheckAccount", { enumerable: true, get: function () { return neth_lib_1.handleCheckAccount; } });
 Object.defineProperty(exports, "handleCancelFunding", { enumerable: true, get: function () { return neth_lib_1.handleCancelFunding; } });
+Object.defineProperty(exports, "verifyOwner", { enumerable: true, get: function () { return neth_lib_1.verifyOwner; } });
 Object.defineProperty(exports, "getNearMap", { enumerable: true, get: function () { return neth_lib_1.getNearMap; } });
 Object.defineProperty(exports, "handleDisconnect", { enumerable: true, get: function () { return neth_lib_1.handleDisconnect; } });
 Object.defineProperty(exports, "handleUpdateContract", { enumerable: true, get: function () { return neth_lib_1.handleUpdateContract; } });

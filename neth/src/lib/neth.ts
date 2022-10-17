@@ -161,7 +161,7 @@ export function setupNeth({
 				description: null,
 				iconUrl,
 				downloadUrl:
-					"https://example.com",
+					"https://neardefi.github.io/neth",
 				deprecated: false,
 				available: true,
 			},
