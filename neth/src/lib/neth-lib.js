@@ -16,6 +16,8 @@ const {
 	},
 } = nearAPI;
 
+const NETH_SITE_URL = 'neardefi.github.io/neth'
+
 const NETWORK = {
 	testnet: {
 		FUNDING_ACCOUNT_ID: 'neth.testnet',
@@ -123,27 +125,24 @@ export const handleCreate = async (signer, ethAddress, newAccountId, fundingAcco
 	}
 	
 	/// get keypair from eth sig entropy for the near-eth account
-	const { publicKey: new_public_key, secretKey: new_secret_key } = await keyPairFromEthSig(
+	const { publicKey: fundingAccountPubKey, secretKey: new_secret_key } = await keyPairFromEthSig(
 		signer,
-		unlimitedKeyPayload(newAccountId, ethAddress),
+		fundingKeyPayload(),
 	);
 	/// store attempt in localStorage so we can recover and retry / resume contract deployment
 	set(ATTEMPT_ACCOUNT_ID, newAccountId);
 	set(ATTEMPT_SECRET_KEY, new_secret_key);
 	set(ATTEMPT_ETH_ADDRESS, ethAddress);
-	// remove any existing app key
-	del(APP_KEY_ACCOUNT_ID);
-	del(APP_KEY_SECRET);
 
-	return await createAccount({ newAccountId, new_public_key, fundingAccountCB, fundingErrorCB, postFundingCB });
+	return await createAccount({ signer, newAccountId, fundingAccountPubKey, fundingAccountCB, fundingErrorCB, postFundingCB });
 };
 
-const createAccount = async ({ newAccountId, new_public_key, fundingAccountCB, fundingErrorCB, postFundingCB }) => {
+const createAccount = async ({ signer, newAccountId, fundingAccountPubKey, fundingAccountCB, fundingErrorCB, postFundingCB }) => {
 	// const { publicKey, secretKey } = parseSeedPhrase(process.env.REACT_APP_FUNDING_SEED_PHRASE);
 	/// assumes implicit is funded, otherwise will warn and cycle here
 
-	const implicitAccountId = PublicKey.from(new_public_key).data.toString('hex')
-	if (fundingAccountCB) fundingAccountCB(PublicKey.from(new_public_key).data.toString('hex'))
+	const implicitAccountId = PublicKey.from(fundingAccountPubKey).data.toString('hex')
+	if (fundingAccountCB) fundingAccountCB(PublicKey.from(fundingAccountPubKey).data.toString('hex'))
 
 	/// wait for implicit funding here and then continue to createAccount
 	const checkImplicitFunded = async () => {
@@ -182,6 +181,16 @@ const createAccount = async ({ newAccountId, new_public_key, fundingAccountCB, f
 	}
 
 	/// create account now
+
+	/// get keypair from eth sig entropy for the near-eth account
+	const { publicKey: new_public_key, secretKey: new_secret_key } = await keyPairFromEthSig(
+		signer,
+		unlimitedKeyPayload(newAccountId, ethAddress),
+	);
+	set(ATTEMPT_SECRET_KEY, new_secret_key);
+	// remove any existing app key
+	del(APP_KEY_ACCOUNT_ID);
+	del(APP_KEY_SECRET);
 
 	try {
 		const res = await account.functionCall({
@@ -316,12 +325,12 @@ export const handleKeys = async () => {
 		console.warn(e)
 		return logger(`Key rotation failed. ${REFRESH_MSG}`);
 	}
-	return await handleCheckAccount(ethAddress);
+	return await handleCheckAccount(null, ethAddress);
 };
 
 /// waterfall check everything about account and fill in missing pieces
 
-export const handleCheckAccount = async (ethAddress, fundingAccountCB, fundingErrorCB, postFundingCB) => {
+export const handleCheckAccount = async (signer, ethAddress, fundingAccountCB, fundingErrorCB, postFundingCB) => {
 	let { newAccountId, newSecretKey } = setupFromStorage();
 
 	const mapAccountId = await getNearMap(ethAddress);
@@ -336,8 +345,9 @@ export const handleCheckAccount = async (ethAddress, fundingAccountCB, fundingEr
 	if (!(await accountExists(newAccountId))) {
 		const keyPair = KeyPair.fromString(newSecretKey);
 		return createAccount({
+			signer,
 			newAccountId,
-			new_public_key: keyPair.publicKey.toString(),
+			fundingAccountPubKey: keyPair.publicKey.toString(),
 			fundingAccountCB,
 			fundingErrorCB,
 			postFundingCB
@@ -649,8 +659,13 @@ const appKeyPayload = (accountId, appKeyNonce) => ({
 });
 
 const unlimitedKeyPayload = (accountId) => ({
-	WARNING: `ACCESS TO NEAR ACCOUNT: ${accountId}`,
-	description: `ONLY sign on this website: ${"https://example.com"}`,
+	WARNING: `Creates a key with access to your (new) paired NEAR Account: ${accountId}`,
+	description: `ONLY sign this message on this website: ${NETH_SITE_URL}`,
+});
+
+const fundingKeyPayload = () => ({
+	WARNING: `This creates a full access key in your localStorage to a funding account you will be sending NEAR to.`,
+	description: `ONLY sign this message on this website: ${NETH_SITE_URL}`,
 });
 
 /** 

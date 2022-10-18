@@ -15,7 +15,7 @@ export function handleMapping(): any;
 export function handleDeployContract(): any;
 export function handleSetupContract(): any;
 export function handleKeys(): any;
-export function handleCheckAccount(ethAddress: any, fundingAccountCB: any, fundingErrorCB: any, postFundingCB: any): any;
+export function handleCheckAccount(signer: any, ethAddress: any, fundingAccountCB: any, fundingErrorCB: any, postFundingCB: any): any;
 export function hasAppKey(accessKeys: any): any;
 export function handleRefreshAppKey(signer: any, ethAddress: any): Promise<any>;
 export function handleUpdateContract(signer: any, ethAddress: any): Promise<any>;

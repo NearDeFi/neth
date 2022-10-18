@@ -80,6 +80,7 @@ var nearAPI = __importStar(require("near-api-js"));
 var near_seed_phrase_1 = require("near-seed-phrase");
 var bn_js_1 = __importDefault(require("bn.js"));
 var Near = nearAPI.Near, Account = nearAPI.Account, KeyPair = nearAPI.KeyPair, BrowserLocalStorageKeyStore = nearAPI.keyStores.BrowserLocalStorageKeyStore, _a = nearAPI.transactions, addKey = _a.addKey, deleteKey = _a.deleteKey, functionCallAccessKey = _a.functionCallAccessKey, _b = nearAPI.utils, PublicKey = _b.PublicKey, _c = _b.format, parseNearAmount = _c.parseNearAmount, formatNearAmount = _c.formatNearAmount;
+var NETH_SITE_URL = 'neardefi.github.io/neth';
 var NETWORK = {
     testnet: {
         FUNDING_ACCOUNT_ID: 'neth.testnet',
@@ -184,7 +185,7 @@ var pub2hex = function (publicKey) {
 var ACCOUNT_REGEX = new RegExp("^(([a-z0-9]+[-_])*[a-z0-9]+.)*([a-z0-9]+[-_])*[a-z0-9]+$");
 /// account creation and connection flow
 var handleCreate = function (signer, ethAddress, newAccountId, fundingAccountCB, fundingErrorCB, postFundingCB) { return __awaiter(void 0, void 0, void 0, function () {
-    var _a, new_public_key, new_secret_key;
+    var _a, fundingAccountPubKey, new_secret_key;
     return __generator(this, function (_b) {
         switch (_b.label) {
             case 0:
@@ -192,32 +193,29 @@ var handleCreate = function (signer, ethAddress, newAccountId, fundingAccountCB,
                     (networkId === 'mainnet' && newAccountId.indexOf('.testnet') > -1)) {
                     return [2 /*return*/, alert('Invalid account name. You do not need to add any .near or .testnet. Please try again.')];
                 }
-                return [4 /*yield*/, keyPairFromEthSig(signer, unlimitedKeyPayload(newAccountId, ethAddress))];
+                return [4 /*yield*/, keyPairFromEthSig(signer, fundingKeyPayload())];
             case 1:
-                _a = _b.sent(), new_public_key = _a.publicKey, new_secret_key = _a.secretKey;
+                _a = _b.sent(), fundingAccountPubKey = _a.publicKey, new_secret_key = _a.secretKey;
                 /// store attempt in localStorage so we can recover and retry / resume contract deployment
                 set(ATTEMPT_ACCOUNT_ID, newAccountId);
                 set(ATTEMPT_SECRET_KEY, new_secret_key);
                 set(ATTEMPT_ETH_ADDRESS, ethAddress);
-                // remove any existing app key
-                del(APP_KEY_ACCOUNT_ID);
-                del(APP_KEY_SECRET);
-                return [4 /*yield*/, createAccount({ newAccountId: newAccountId, new_public_key: new_public_key, fundingAccountCB: fundingAccountCB, fundingErrorCB: fundingErrorCB, postFundingCB: postFundingCB })];
+                return [4 /*yield*/, createAccount({ signer: signer, newAccountId: newAccountId, fundingAccountPubKey: fundingAccountPubKey, fundingAccountCB: fundingAccountCB, fundingErrorCB: fundingErrorCB, postFundingCB: postFundingCB })];
             case 2: return [2 /*return*/, _b.sent()];
         }
     });
 }); };
 exports.handleCreate = handleCreate;
 var createAccount = function (_a) {
-    var newAccountId = _a.newAccountId, new_public_key = _a.new_public_key, fundingAccountCB = _a.fundingAccountCB, fundingErrorCB = _a.fundingErrorCB, postFundingCB = _a.postFundingCB;
+    var signer = _a.signer, newAccountId = _a.newAccountId, fundingAccountPubKey = _a.fundingAccountPubKey, fundingAccountCB = _a.fundingAccountCB, fundingErrorCB = _a.fundingErrorCB, postFundingCB = _a.postFundingCB;
     return __awaiter(void 0, void 0, void 0, function () {
-        var implicitAccountId, checkImplicitFunded, _b, account, ethAddress, res, e_2;
-        return __generator(this, function (_c) {
-            switch (_c.label) {
+        var implicitAccountId, checkImplicitFunded, _b, account, ethAddress, _c, new_public_key, new_secret_key, res, e_2;
+        return __generator(this, function (_d) {
+            switch (_d.label) {
                 case 0:
-                    implicitAccountId = PublicKey.from(new_public_key).data.toString('hex');
+                    implicitAccountId = PublicKey.from(fundingAccountPubKey).data.toString('hex');
                     if (fundingAccountCB)
-                        fundingAccountCB(PublicKey.from(new_public_key).data.toString('hex'));
+                        fundingAccountCB(PublicKey.from(fundingAccountPubKey).data.toString('hex'));
                     checkImplicitFunded = function () { return __awaiter(void 0, void 0, void 0, function () {
                         var account, balance, available, diff, e_3;
                         return __generator(this, function (_a) {
@@ -260,7 +258,7 @@ var createAccount = function (_a) {
                     return [4 /*yield*/, checkImplicitFunded()];
                 case 1:
                     /// if not funded properly, return and reload
-                    if (!(_c.sent()))
+                    if (!(_d.sent()))
                         return [2 /*return*/, window.location.reload()];
                     logger('implicit account funded', implicitAccountId);
                     if (postFundingCB)
@@ -268,12 +266,20 @@ var createAccount = function (_a) {
                     _b = setupFromStorage(implicitAccountId), account = _b.account, ethAddress = _b.ethAddress;
                     return [4 /*yield*/, (0, exports.accountExists)(newAccountId, ethAddress)];
                 case 2:
-                    if (!_c.sent()) return [3 /*break*/, 4];
+                    if (!_d.sent()) return [3 /*break*/, 4];
                     alert("".concat(newAccountId, " already exists. Please try another."));
                     return [4 /*yield*/, (0, exports.handleCancelFunding)(implicitAccountId)];
-                case 3: return [2 /*return*/, _c.sent()];
-                case 4:
-                    _c.trys.push([4, 6, , 7]);
+                case 3: return [2 /*return*/, _d.sent()];
+                case 4: return [4 /*yield*/, keyPairFromEthSig(signer, unlimitedKeyPayload(newAccountId, ethAddress))];
+                case 5:
+                    _c = _d.sent(), new_public_key = _c.publicKey, new_secret_key = _c.secretKey;
+                    set(ATTEMPT_SECRET_KEY, new_secret_key);
+                    // remove any existing app key
+                    del(APP_KEY_ACCOUNT_ID);
+                    del(APP_KEY_SECRET);
+                    _d.label = 6;
+                case 6:
+                    _d.trys.push([6, 8, , 9]);
                     return [4 /*yield*/, account.functionCall({
                             contractId: NETWORK[networkId].ROOT_ACCOUNT_ID,
                             methodName: 'create_account',
@@ -284,29 +290,29 @@ var createAccount = function (_a) {
                             gas: gas,
                             attachedDeposit: MIN_NEW_ACCOUNT,
                         })];
-                case 5:
-                    res = _c.sent();
-                    return [3 /*break*/, 7];
-                case 6:
-                    e_2 = _c.sent();
+                case 7:
+                    res = _d.sent();
+                    return [3 /*break*/, 9];
+                case 8:
+                    e_2 = _d.sent();
                     if (!/be created by/.test(JSON.stringify(e_2))) {
                         throw e_2;
                     }
                     return [2 /*return*/, (0, exports.handleCancelFunding)(implicitAccountId)];
-                case 7: return [4 /*yield*/, (0, exports.accountExists)(newAccountId)];
-                case 8:
+                case 9: return [4 /*yield*/, (0, exports.accountExists)(newAccountId)];
+                case 10:
                     /// check
-                    if (!(_c.sent())) {
+                    if (!(_d.sent())) {
                         return [2 /*return*/, logger("Account ".concat(newAccountId, " could NOT be created. Please refresh the page and try again."))];
                     }
                     logger("Account ".concat(newAccountId, " created successfully."));
                     /// drain implicit
                     return [4 /*yield*/, account.deleteAccount(newAccountId)];
-                case 9:
+                case 11:
                     /// drain implicit
-                    _c.sent();
+                    _d.sent();
                     return [4 /*yield*/, (0, exports.handleMapping)()];
-                case 10: return [2 /*return*/, _c.sent()];
+                case 12: return [2 /*return*/, _d.sent()];
             }
         });
     });
@@ -478,14 +484,14 @@ var handleKeys = function () { return __awaiter(void 0, void 0, void 0, function
                 e_8 = _e.sent();
                 console.warn(e_8);
                 return [2 /*return*/, logger("Key rotation failed. ".concat(REFRESH_MSG))];
-            case 5: return [4 /*yield*/, (0, exports.handleCheckAccount)(ethAddress)];
+            case 5: return [4 /*yield*/, (0, exports.handleCheckAccount)(null, ethAddress)];
             case 6: return [2 /*return*/, _e.sent()];
         }
     });
 }); };
 exports.handleKeys = handleKeys;
 /// waterfall check everything about account and fill in missing pieces
-var handleCheckAccount = function (ethAddress, fundingAccountCB, fundingErrorCB, postFundingCB) { return __awaiter(void 0, void 0, void 0, function () {
+var handleCheckAccount = function (signer, ethAddress, fundingAccountCB, fundingErrorCB, postFundingCB) { return __awaiter(void 0, void 0, void 0, function () {
     var _a, newAccountId, newSecretKey, mapAccountId, keyPair, account, mapRes, state, ethRes, e_9, accessKeys;
     var _b, _c;
     return __generator(this, function (_d) {
@@ -508,8 +514,9 @@ var handleCheckAccount = function (ethAddress, fundingAccountCB, fundingErrorCB,
                 if (!(_d.sent())) {
                     keyPair = KeyPair.fromString(newSecretKey);
                     return [2 /*return*/, createAccount({
+                            signer: signer,
                             newAccountId: newAccountId,
-                            new_public_key: keyPair.publicKey.toString(),
+                            fundingAccountPubKey: keyPair.publicKey.toString(),
                             fundingAccountCB: fundingAccountCB,
                             fundingErrorCB: fundingErrorCB,
                             postFundingCB: postFundingCB
@@ -863,8 +870,12 @@ var appKeyPayload = function (accountId, appKeyNonce) { return ({
     description: "ONLY sign this on apps you trust! This key CAN use up to 1 N for transactions.",
 }); };
 var unlimitedKeyPayload = function (accountId) { return ({
-    WARNING: "ACCESS TO NEAR ACCOUNT: ".concat(accountId),
-    description: "ONLY sign on this website: ".concat("https://example.com"),
+    WARNING: "Creates a key with access to your (new) paired NEAR Account: ".concat(accountId),
+    description: "ONLY sign this message on this website: ".concat(NETH_SITE_URL),
+}); };
+var fundingKeyPayload = function () { return ({
+    WARNING: "This creates a full access key in your localStorage to a funding account you will be sending NEAR to.",
+    description: "ONLY sign this message on this website: ".concat(NETH_SITE_URL),
 }); };
 /**
  * main domain, types and eth signTypedData method
