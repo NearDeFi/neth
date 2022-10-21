@@ -10,7 +10,7 @@ import {
 	getNearMap,
 	hasAppKey,
 	initConnection,
-} from '../neth/lib';
+} from '../neth';
 import getConfig from "../utils/config";
 import contractPath from 'url:../out/main.wasm'
 window.contractPath = contractPath
@@ -104,7 +104,13 @@ const App = () => {
 
 				const attemptAccountId = localStorage.getItem(ATTEMPT_ACCOUNT_ID);
 				if (attemptAccountId) {
-					await handleCheckAccount(signer, ethAddress, fundingAccountCB(update), fundingErrorCB(update), postFundingCB(update))
+					await handleCheckAccount({
+						signer,
+						ethAddress,
+						fundingAccountCB: fundingAccountCB(update),
+						fundingErrorCB: fundingErrorCB(update),
+						postFundingCB: postFundingCB(update)
+					})
 					updateEthState()
 				}
 			}

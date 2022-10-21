@@ -151,7 +151,7 @@ export const Main = ({
 					</p>
 
 					<button className="secondary" aria-busy={loading} disabled={loading} onClick={handleAction(async () => {
-						const { account } = await handleCheckAccount(ethAddress)
+						const { account } = await handleCheckAccount({ ethAddress })
 						update('dialog', <AccountStatus {...{ account }} />)
 						update('mapAccountId', (await getNearMap(ethAddress)))
 					})}>Check NETH Account <Info onClick={(e) => {

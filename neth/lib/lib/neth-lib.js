@@ -484,97 +484,100 @@ var handleKeys = function () { return __awaiter(void 0, void 0, void 0, function
                 e_8 = _e.sent();
                 console.warn(e_8);
                 return [2 /*return*/, logger("Key rotation failed. ".concat(REFRESH_MSG))];
-            case 5: return [4 /*yield*/, (0, exports.handleCheckAccount)(null, ethAddress)];
+            case 5: return [4 /*yield*/, (0, exports.handleCheckAccount)({ ethAddress: ethAddress })];
             case 6: return [2 /*return*/, _e.sent()];
         }
     });
 }); };
 exports.handleKeys = handleKeys;
 /// waterfall check everything about account and fill in missing pieces
-var handleCheckAccount = function (signer, ethAddress, fundingAccountCB, fundingErrorCB, postFundingCB) { return __awaiter(void 0, void 0, void 0, function () {
-    var _a, newAccountId, newSecretKey, mapAccountId, keyPair, account, mapRes, state, ethRes, e_9, accessKeys;
-    var _b, _c;
-    return __generator(this, function (_d) {
-        switch (_d.label) {
-            case 0:
-                _a = setupFromStorage(), newAccountId = _a.newAccountId, newSecretKey = _a.newSecretKey;
-                return [4 /*yield*/, (0, exports.getNearMap)(ethAddress)];
-            case 1:
-                mapAccountId = _d.sent();
-                if (!mapAccountId) {
-                    // alert("create account first");
-                    logger("No account mapping exists.");
-                }
-                else {
-                    newAccountId = mapAccountId;
-                }
-                logger("Checking account created.");
-                return [4 /*yield*/, (0, exports.accountExists)(newAccountId)];
-            case 2:
-                if (!(_d.sent())) {
-                    keyPair = KeyPair.fromString(newSecretKey);
-                    return [2 /*return*/, createAccount({
-                            signer: signer,
-                            newAccountId: newAccountId,
-                            fundingAccountPubKey: keyPair.publicKey.toString(),
-                            fundingAccountCB: fundingAccountCB,
-                            fundingErrorCB: fundingErrorCB,
-                            postFundingCB: postFundingCB
+var handleCheckAccount = function (_a) {
+    var signer = _a.signer, ethAddress = _a.ethAddress, fundingAccountCB = _a.fundingAccountCB, fundingErrorCB = _a.fundingErrorCB, postFundingCB = _a.postFundingCB;
+    return __awaiter(void 0, void 0, void 0, function () {
+        var _b, newAccountId, newSecretKey, mapAccountId, keyPair, account, mapRes, state, ethRes, e_9, accessKeys;
+        var _c, _d;
+        return __generator(this, function (_e) {
+            switch (_e.label) {
+                case 0:
+                    _b = setupFromStorage(), newAccountId = _b.newAccountId, newSecretKey = _b.newSecretKey;
+                    return [4 /*yield*/, (0, exports.getNearMap)(ethAddress)];
+                case 1:
+                    mapAccountId = _e.sent();
+                    if (!mapAccountId) {
+                        // alert("create account first");
+                        logger("No account mapping exists.");
+                    }
+                    else {
+                        newAccountId = mapAccountId;
+                    }
+                    logger("Checking account created.");
+                    return [4 /*yield*/, (0, exports.accountExists)(newAccountId)];
+                case 2:
+                    if (!(_e.sent())) {
+                        keyPair = KeyPair.fromString(newSecretKey);
+                        return [2 /*return*/, createAccount({
+                                signer: signer,
+                                newAccountId: newAccountId,
+                                fundingAccountPubKey: keyPair.publicKey.toString(),
+                                fundingAccountCB: fundingAccountCB,
+                                fundingErrorCB: fundingErrorCB,
+                                postFundingCB: postFundingCB
+                            })];
+                    }
+                    account = new Account(connection, newAccountId);
+                    logger("Checking account address mapping.");
+                    return [4 /*yield*/, account.viewFunction(NETWORK[networkId].MAP_ACCOUNT_ID, "get_eth", {
+                            account_id: newAccountId,
                         })];
-                }
-                account = new Account(connection, newAccountId);
-                logger("Checking account address mapping.");
-                return [4 /*yield*/, account.viewFunction(NETWORK[networkId].MAP_ACCOUNT_ID, "get_eth", {
-                        account_id: newAccountId,
-                    })];
-            case 3:
-                mapRes = _d.sent();
-                if (mapRes === null) {
-                    return [2 /*return*/, (0, exports.handleMapping)(account, ethAddress)];
-                }
-                logger("Checking contract deployed.");
-                return [4 /*yield*/, account.state()];
-            case 4:
-                state = _d.sent();
-                if (state.code_hash === "11111111111111111111111111111111") {
-                    return [2 /*return*/, (0, exports.handleDeployContract)()];
-                }
-                logger("Checking contract setup.");
-                _d.label = 5;
-            case 5:
-                _d.trys.push([5, 7, , 8]);
-                return [4 /*yield*/, account.viewFunction(newAccountId, "get_address")];
-            case 6:
-                ethRes = _d.sent();
-                // any reason the address wasn't set properly
-                if (!ethRes || !ethRes.length) {
+                case 3:
+                    mapRes = _e.sent();
+                    if (mapRes === null) {
+                        return [2 /*return*/, (0, exports.handleMapping)(account, ethAddress)];
+                    }
+                    logger("Checking contract deployed.");
+                    return [4 /*yield*/, account.state()];
+                case 4:
+                    state = _e.sent();
+                    if (state.code_hash === "11111111111111111111111111111111") {
+                        return [2 /*return*/, (0, exports.handleDeployContract)()];
+                    }
+                    logger("Checking contract setup.");
+                    _e.label = 5;
+                case 5:
+                    _e.trys.push([5, 7, , 8]);
+                    return [4 /*yield*/, account.viewFunction(newAccountId, "get_address")];
+                case 6:
+                    ethRes = _e.sent();
+                    // any reason the address wasn't set properly
+                    if (!ethRes || !ethRes.length) {
+                        return [2 /*return*/, (0, exports.handleSetupContract)()];
+                    }
+                    return [3 /*break*/, 8];
+                case 7:
+                    e_9 = _e.sent();
+                    // not set at all (wasm error unreachable storage value)
+                    console.warn(e_9);
                     return [2 /*return*/, (0, exports.handleSetupContract)()];
-                }
-                return [3 /*break*/, 8];
-            case 7:
-                e_9 = _d.sent();
-                // not set at all (wasm error unreachable storage value)
-                console.warn(e_9);
-                return [2 /*return*/, (0, exports.handleSetupContract)()];
-            case 8:
-                logger("Checking access keys.");
-                return [4 /*yield*/, account.getAccessKeys()];
-            case 9:
-                accessKeys = _d.sent();
-                if (accessKeys.length === 1 && ((_c = (_b = accessKeys[0]) === null || _b === void 0 ? void 0 : _b.access_key) === null || _c === void 0 ? void 0 : _c.permission) === "FullAccess") {
-                    return [2 /*return*/, (0, exports.handleKeys)(account)];
-                }
-                logger("Account created.");
-                logger("Contract deployed and setup.");
-                logger("Mapping added.");
-                logger("Keys rotated.");
-                del(ATTEMPT_ACCOUNT_ID);
-                del(ATTEMPT_SECRET_KEY);
-                del(ATTEMPT_ETH_ADDRESS);
-                return [2 /*return*/, { account: account }];
-        }
+                case 8:
+                    logger("Checking access keys.");
+                    return [4 /*yield*/, account.getAccessKeys()];
+                case 9:
+                    accessKeys = _e.sent();
+                    if (accessKeys.length === 1 && ((_d = (_c = accessKeys[0]) === null || _c === void 0 ? void 0 : _c.access_key) === null || _d === void 0 ? void 0 : _d.permission) === "FullAccess") {
+                        return [2 /*return*/, (0, exports.handleKeys)(account)];
+                    }
+                    logger("Account created.");
+                    logger("Contract deployed and setup.");
+                    logger("Mapping added.");
+                    logger("Keys rotated.");
+                    del(ATTEMPT_ACCOUNT_ID);
+                    del(ATTEMPT_SECRET_KEY);
+                    del(ATTEMPT_ETH_ADDRESS);
+                    return [2 /*return*/, { account: account }];
+            }
+        });
     });
-}); };
+};
 exports.handleCheckAccount = handleCheckAccount;
 /// on same domain as setup
 var hasAppKey = function (accessKeys) {
