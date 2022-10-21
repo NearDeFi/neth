@@ -10,7 +10,7 @@ import {
 	getNearMap,
 	hasAppKey,
 	initConnection,
-} from '../neth';
+} from '../neth/src';
 import getConfig from "../utils/config";
 import contractPath from 'url:../out/main.wasm'
 window.contractPath = contractPath
