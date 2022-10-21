@@ -13,7 +13,7 @@ import {
 	isSignedIn,
 	signAndSendTransactions,
 	MIN_NEW_ACCOUNT_ASK,
-} from '../../neth/src';
+} from '../../neth';
 
 import { networkId } from '../App';
 import { Info } from 'react-feather';
