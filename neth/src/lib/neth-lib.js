@@ -79,6 +79,17 @@ export const initConnection = (network, logFn) => {
 	networkId = network.networkId;
 	contractAccount = new Account(connection, networkId === "mainnet" ? "near" : networkId);
 	accountSuffix = networkId === "mainnet" ? ".near" : "." + networkId;
+
+	const cover = document.createElement("div");
+	cover.style.display = "none";
+	cover.style.width = "100%";
+	cover.style.height = "100vh";
+	cover.style.zIndex = '999999';
+	cover.style.position = 'fixed';
+	cover.style.top = '0';
+	cover.style.background = 'rgba(0, 0, 0, 0.5)';
+	document.body.appendChild(cover);
+	return cover;
 };
 export const getConnection = () => {
 	return { near, connection, keyStore, networkId, contractAccount, accountSuffix };

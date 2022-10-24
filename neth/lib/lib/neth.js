@@ -62,15 +62,7 @@ var Neth = function (_a) {
     return __awaiter(void 0, void 0, void 0, function () {
         var cover, isValidActions, transformActions;
         return __generator(this, function (_b) {
-            (0, neth_lib_1.initConnection)(options.network);
-            cover = document.createElement("div");
-            cover.style.width = "100%";
-            cover.style.height = "100vh";
-            cover.style.zIndex = '999999';
-            cover.style.position = 'fixed';
-            cover.style.background = 'rgba(0, 0, 0, 0.5)';
-            cover.style.display = "none";
-            document.body.appendChild(cover);
+            cover = (0, neth_lib_1.initConnection)(options.network);
             isValidActions = function (actions) {
                 return actions.every(function (x) { return x.type === "FunctionCall"; });
             };
