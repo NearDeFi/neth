@@ -207,7 +207,7 @@ var Neth = function (_a) {
 };
 function setupNeth(_a) {
     var _this = this;
-    var _b = _a === void 0 ? {} : _a, _c = _b.useModalCover, useModalCover = _c === void 0 ? false : _c, _d = _b.iconUrl, iconUrl = _d === void 0 ? icons_1.nearWalletIcon : _d;
+    var _b = _a === void 0 ? {} : _a, _c = _b.useModalCover, useModalCover = _c === void 0 ? false : _c, _d = _b.iconUrl, iconUrl = _d === void 0 ? icons_1.nethIcon : _d;
     return function () { return __awaiter(_this, void 0, void 0, function () {
         var installed;
         return __generator(this, function (_a) {
