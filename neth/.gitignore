@@ -9,7 +9,6 @@ package-lock.json
 
 #keys
 /neardev
-/lib
 
 #cache
 .cache
