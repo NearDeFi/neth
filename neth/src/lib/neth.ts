@@ -48,11 +48,12 @@ import {
 	initConnection(options.network);
   
 	const cover = document.createElement("div");
-	const coverImg = document.createElement("img");
-	coverImg.src = nearWalletIcon;
-	cover.className = "modal-overlay-standalone";
+	cover.style.width = "100%";
+	cover.style.height = "100vh";
+	cover.style.zIndex = '999999';
+	cover.style.position = 'fixed';
+	cover.style.background = 'rgba(0, 0, 0, 0.5)';
 	cover.style.display = "none";
-	cover.appendChild(coverImg);
 	document.body.appendChild(cover);
   
 	const isValidActions = (

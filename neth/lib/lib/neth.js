@@ -60,15 +60,16 @@ var useCover = false;
 var Neth = function (_a) {
     var metadata = _a.metadata, logger = _a.logger, options = _a.options, provider = _a.provider;
     return __awaiter(void 0, void 0, void 0, function () {
-        var cover, coverImg, isValidActions, transformActions;
+        var cover, isValidActions, transformActions;
         return __generator(this, function (_b) {
             (0, neth_lib_1.initConnection)(options.network);
             cover = document.createElement("div");
-            coverImg = document.createElement("img");
-            coverImg.src = icons_1.nearWalletIcon;
-            cover.className = "modal-overlay-standalone";
+            cover.style.width = "100%";
+            cover.style.height = "100vh";
+            cover.style.zIndex = '999999';
+            cover.style.position = 'fixed';
+            cover.style.background = 'rgba(0, 0, 0, 0.5)';
             cover.style.display = "none";
-            cover.appendChild(coverImg);
             document.body.appendChild(cover);
             isValidActions = function (actions) {
                 return actions.every(function (x) { return x.type === "FunctionCall"; });
