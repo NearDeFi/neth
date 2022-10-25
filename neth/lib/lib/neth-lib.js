@@ -998,7 +998,7 @@ var keyPairFromEthSig = function (signer, json) { return __awaiter(void 0, void 
  */
 /// ethereum
 var getEthereum = function () { return __awaiter(void 0, void 0, void 0, function () {
-    var provider, e_11, e_12, ethersProvider, accounts, signer;
+    var provider, e_11, code, e_12, ethersProvider, accounts, signer;
     var _a;
     var _b, _c;
     return __generator(this, function (_d) {
@@ -1022,7 +1022,8 @@ var getEthereum = function () { return __awaiter(void 0, void 0, void 0, functio
             case 4:
                 e_11 = _d.sent();
                 console.warn(e_11);
-                if (((_c = (_b = e_11 === null || e_11 === void 0 ? void 0 : e_11.data) === null || _b === void 0 ? void 0 : _b.originalError) === null || _c === void 0 ? void 0 : _c.code) !== 4902)
+                code = (e_11 === null || e_11 === void 0 ? void 0 : e_11.code) || ((_c = (_b = e_11 === null || e_11 === void 0 ? void 0 : e_11.data) === null || _b === void 0 ? void 0 : _b.originalError) === null || _c === void 0 ? void 0 : _c.code);
+                if (code !== 4902)
                     throw e_11;
                 _d.label = 5;
             case 5:
@@ -1046,9 +1047,8 @@ var getEthereum = function () { return __awaiter(void 0, void 0, void 0, functio
                 return [3 /*break*/, 8];
             case 7:
                 e_12 = _d.sent();
-                console.warn(e_12);
-                alert('Error adding chain. Clear your browser and privacy data and try again please.');
-                return [3 /*break*/, 8];
+                alert('Error adding chain. Please click "Choose Ethereum Account" and add the Aurora Network to continue.');
+                throw e_12;
             case 8: return [3 /*break*/, 9];
             case 9:
                 ethersProvider = new ethers_1.ethers.providers.Web3Provider(window.ethereum);

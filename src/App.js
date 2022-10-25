@@ -70,10 +70,10 @@ const App = () => {
 	const updateEthState = async () => {
 
 		try {
-			// if (!get(TOS_POP)) {
+			if (!get(TOS_POP)) {
 				set(TOS_POP, true)
 				tosDialog(update)
-			// }
+			}
 
 			await initConnection({
 				networkId,
