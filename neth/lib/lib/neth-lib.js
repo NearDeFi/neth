@@ -1220,9 +1220,9 @@ var getAppKey = function (_a) {
                     return [4 /*yield*/, (0, exports.getNearMap)(eth_address)];
                 case 1:
                     accountId = _e.sent();
-                    if (!!accountId) return [3 /*break*/, 7];
+                    if (!!accountId) return [3 /*break*/, 8];
                     tryAgain = window.confirm("Ethereum account ".concat(eth_address, " is not connected to a NETH account. Would you like to try another Ethereum account?"));
-                    if (!tryAgain) return [3 /*break*/, 6];
+                    if (!tryAgain) return [3 /*break*/, 7];
                     _e.label = 2;
                 case 2:
                     _e.trys.push([2, 5, , 6]);
@@ -1236,29 +1236,30 @@ var getAppKey = function (_a) {
                 case 5:
                     e_13 = _e.sent();
                     console.warn(e_13);
-                    return [2 /*return*/, false];
-                case 6:
+                    return [3 /*break*/, 6];
+                case 6: return [2 /*return*/, false];
+                case 7:
                     nethURL = "https://neardefi.github.io/neth/".concat(networkId === 'testnet' ? '?network=testnet' : '');
                     window.prompt("We couldn't find a NETH account. To set up a NETH account visit", nethURL);
-                    _e.label = 7;
-                case 7:
+                    _e.label = 8;
+                case 8:
                     _c = parseInt;
                     return [4 /*yield*/, contractAccount.viewFunction(accountId, "get_app_key_nonce")];
-                case 8:
+                case 9:
                     appKeyNonce = _c.apply(void 0, [_e.sent(), 16]).toString();
                     return [4 /*yield*/, keyPairFromEthSig(signer, appKeyPayload(accountId, appKeyNonce))];
-                case 9:
+                case 10:
                     _d = _e.sent(), publicKey = _d.publicKey, secretKey = _d.secretKey;
                     account = new Account(connection, accountId);
                     return [4 /*yield*/, account.getAccessKeys()];
-                case 10:
-                    accessKeys = _e.sent();
-                    if (!!(0, exports.hasAppKey)(accessKeys)) return [3 /*break*/, 12];
-                    return [4 /*yield*/, (0, exports.handleRefreshAppKey)(signer, eth_address)];
                 case 11:
-                    _e.sent();
-                    _e.label = 12;
+                    accessKeys = _e.sent();
+                    if (!!(0, exports.hasAppKey)(accessKeys)) return [3 /*break*/, 13];
+                    return [4 /*yield*/, (0, exports.handleRefreshAppKey)(signer, eth_address)];
                 case 12:
+                    _e.sent();
+                    _e.label = 13;
+                case 13:
                     keyPair = KeyPair.fromString(secretKey);
                     keyStore.setKey(networkId, accountId, keyPair);
                     set(APP_KEY_SECRET, secretKey);

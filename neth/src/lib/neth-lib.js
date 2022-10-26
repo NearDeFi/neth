@@ -953,8 +953,8 @@ export const getAppKey = async ({ signer, ethAddress: eth_address }) => {
 				await getAppKey({ signer, ethAddress })
 			} catch (e) {
 				console.warn(e)
-				return false
 			}
+			return false
 		}
 
 		const nethURL = `https://neardefi.github.io/neth/${networkId === 'testnet' ? '?network=testnet' : ''}`
