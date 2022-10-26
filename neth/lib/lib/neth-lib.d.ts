@@ -32,7 +32,10 @@ export function getEthereum(): Promise<void | {
     signer: ethers.providers.JsonRpcSigner;
     ethAddress: string;
 }>;
-export function switchEthereum(): Promise<void>;
+export function switchEthereum(): Promise<{
+    signer: ethers.providers.JsonRpcSigner;
+    ethAddress: string;
+}>;
 export function getNearMap(eth_address: any): Promise<any>;
 export function getNear(): any;
 export function signIn(): any;

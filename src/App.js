@@ -51,6 +51,7 @@ const tosDialog = (update) => update('', {
 /// Components
 import { Main, fundingAccountCB, fundingErrorCB, postFundingCB } from './components/Main'
 import { Modal } from './components/Modal'
+import { getAppKey } from '../neth/lib/lib/neth-lib';
 
 const App = () => {
 	const { state, dispatch, update } = useContext(appStore);

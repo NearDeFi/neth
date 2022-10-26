@@ -1,9 +1,11 @@
-import {
+import type {
 	WalletModuleFactory,
 	InjectedWallet,
 	Action,
 	FunctionCallAction,
 	WalletBehaviourFactory,
+} from "@near-wallet-selector/core";
+import {
 	waitFor,
 } from "@near-wallet-selector/core";
 import detectEthereumProvider from "@metamask/detect-provider";

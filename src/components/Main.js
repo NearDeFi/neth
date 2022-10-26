@@ -21,6 +21,7 @@ import { Info } from 'react-feather';
 import { formatNearAmount } from 'near-api-js/lib/utils/format'
 import { transfer } from 'near-api-js/lib/transaction';
 import contractPath from 'url:../../out/main.wasm'
+import { getAppKey } from '../../neth/lib/lib/neth-lib';
 window.contractPath = contractPath
 
 const isMobile = (() => {

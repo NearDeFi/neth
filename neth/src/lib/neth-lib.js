@@ -834,8 +834,10 @@ export const getEthereum = async () => {
 
 export const switchEthereum = async () => {
 	const provider = await detectEthereumProvider()
-	const ethersProvider = new ethers.providers.Web3Provider(window.ethereum);
 	await provider.send("wallet_requestPermissions", [{ eth_accounts: {} }]);
+	const ethersProvider = new ethers.providers.Web3Provider(window.ethereum);
+	const signer = ethersProvider.getSigner();
+	return { signer, ethAddress: await signer.getAddress() };
 };
 
 /// near
@@ -937,11 +939,27 @@ const promptValidAccountId = async (msg) => {
 };
 
 export const getAppKey = async ({ signer, ethAddress: eth_address }) => {
+
+	console.log('here')
+
 	let accountId = await getNearMap(eth_address);
 	if (!accountId) {
+
+		const tryAgain = window.confirm(`Ethereum account ${eth_address} is not connected to a NETH account. Would you like to try another Ethereum account?`)
+
+		if (tryAgain) {
+			try {
+				const { signer, ethAddress } = await switchEthereum()
+				await getAppKey({ signer, ethAddress })
+			} catch (e) {
+				console.warn(e)
+				return false
+			}
+		}
+
 		const nethURL = `https://neardefi.github.io/neth/${networkId === 'testnet' ? '?network=testnet' : ''}`
-		window.prompt(`Ethereum account is not connected to a NETH account. To set up a NETH account visit`, nethURL)
-		return false
+		window.prompt(`We couldn't find a NETH account. To set up a NETH account visit`, nethURL)
+		
 		// throw new Error(`Ethereum account is not connected to a NETH account. To set up a NETH account visit: ${nethURL}`)
 		// /// prompt for near account name and auto deploy
 		// const newAccountId = await promptValidAccountId(

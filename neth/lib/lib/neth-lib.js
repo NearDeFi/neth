@@ -1070,17 +1070,21 @@ var getEthereum = function () { return __awaiter(void 0, void 0, void 0, functio
 }); };
 exports.getEthereum = getEthereum;
 var switchEthereum = function () { return __awaiter(void 0, void 0, void 0, function () {
-    var provider, ethersProvider;
-    return __generator(this, function (_a) {
-        switch (_a.label) {
+    var provider, ethersProvider, signer;
+    var _a;
+    return __generator(this, function (_b) {
+        switch (_b.label) {
             case 0: return [4 /*yield*/, (0, detect_provider_1.default)()];
             case 1:
-                provider = _a.sent();
-                ethersProvider = new ethers_1.ethers.providers.Web3Provider(window.ethereum);
+                provider = _b.sent();
                 return [4 /*yield*/, provider.send("wallet_requestPermissions", [{ eth_accounts: {} }])];
             case 2:
-                _a.sent();
-                return [2 /*return*/];
+                _b.sent();
+                ethersProvider = new ethers_1.ethers.providers.Web3Provider(window.ethereum);
+                signer = ethersProvider.getSigner();
+                _a = { signer: signer };
+                return [4 /*yield*/, signer.getAddress()];
+            case 3: return [2 /*return*/, (_a.ethAddress = _b.sent(), _a)];
         }
     });
 }); };
@@ -1208,49 +1212,53 @@ var promptValidAccountId = function (msg) { return __awaiter(void 0, void 0, voi
 var getAppKey = function (_a) {
     var signer = _a.signer, eth_address = _a.ethAddress;
     return __awaiter(void 0, void 0, void 0, function () {
-        var accountId, nethURL, appKeyNonce, _b, _c, publicKey, secretKey, account, accessKeys, keyPair;
-        return __generator(this, function (_d) {
-            switch (_d.label) {
-                case 0: return [4 /*yield*/, (0, exports.getNearMap)(eth_address)];
+        var accountId, tryAgain, _b, signer_1, ethAddress, e_13, nethURL, appKeyNonce, _c, _d, publicKey, secretKey, account, accessKeys, keyPair;
+        return __generator(this, function (_e) {
+            switch (_e.label) {
+                case 0:
+                    console.log('here');
+                    return [4 /*yield*/, (0, exports.getNearMap)(eth_address)];
                 case 1:
-                    accountId = _d.sent();
-                    if (!accountId) {
-                        nethURL = "https://neardefi.github.io/neth/".concat(networkId === 'testnet' ? '?network=testnet' : '');
-                        window.prompt("Ethereum account is not connected to a NETH account. To set up a NETH account visit", nethURL);
-                        return [2 /*return*/, false
-                            // throw new Error(`Ethereum account is not connected to a NETH account. To set up a NETH account visit: ${nethURL}`)
-                            // /// prompt for near account name and auto deploy
-                            // const newAccountId = await promptValidAccountId(
-                            // 	`The Ethereum address ${eth_address} is not connected to a NEAR account yet. Select a NEAR account name and we'll create and connect one for you.`,
-                            // );
-                            // const { account } = await handleCreate(signer, eth_address, newAccountId + accountSuffix);
-                            // accountId = account.accountId;
-                        ];
-                        // throw new Error(`Ethereum account is not connected to a NETH account. To set up a NETH account visit: ${nethURL}`)
-                        // /// prompt for near account name and auto deploy
-                        // const newAccountId = await promptValidAccountId(
-                        // 	`The Ethereum address ${eth_address} is not connected to a NEAR account yet. Select a NEAR account name and we'll create and connect one for you.`,
-                        // );
-                        // const { account } = await handleCreate(signer, eth_address, newAccountId + accountSuffix);
-                        // accountId = account.accountId;
-                    }
-                    _b = parseInt;
-                    return [4 /*yield*/, contractAccount.viewFunction(accountId, "get_app_key_nonce")];
+                    accountId = _e.sent();
+                    if (!!accountId) return [3 /*break*/, 7];
+                    tryAgain = window.confirm("Ethereum account ".concat(eth_address, " is not connected to a NETH account. Would you like to try another Ethereum account?"));
+                    if (!tryAgain) return [3 /*break*/, 6];
+                    _e.label = 2;
                 case 2:
-                    appKeyNonce = _b.apply(void 0, [_d.sent(), 16]).toString();
-                    return [4 /*yield*/, keyPairFromEthSig(signer, appKeyPayload(accountId, appKeyNonce))];
+                    _e.trys.push([2, 5, , 6]);
+                    return [4 /*yield*/, (0, exports.switchEthereum)()];
                 case 3:
-                    _c = _d.sent(), publicKey = _c.publicKey, secretKey = _c.secretKey;
+                    _b = _e.sent(), signer_1 = _b.signer, ethAddress = _b.ethAddress;
+                    return [4 /*yield*/, (0, exports.getAppKey)({ signer: signer_1, ethAddress: ethAddress })];
+                case 4:
+                    _e.sent();
+                    return [3 /*break*/, 6];
+                case 5:
+                    e_13 = _e.sent();
+                    console.warn(e_13);
+                    return [2 /*return*/, false];
+                case 6:
+                    nethURL = "https://neardefi.github.io/neth/".concat(networkId === 'testnet' ? '?network=testnet' : '');
+                    window.prompt("We couldn't find a NETH account. To set up a NETH account visit", nethURL);
+                    _e.label = 7;
+                case 7:
+                    _c = parseInt;
+                    return [4 /*yield*/, contractAccount.viewFunction(accountId, "get_app_key_nonce")];
+                case 8:
+                    appKeyNonce = _c.apply(void 0, [_e.sent(), 16]).toString();
+                    return [4 /*yield*/, keyPairFromEthSig(signer, appKeyPayload(accountId, appKeyNonce))];
+                case 9:
+                    _d = _e.sent(), publicKey = _d.publicKey, secretKey = _d.secretKey;
                     account = new Account(connection, accountId);
                     return [4 /*yield*/, account.getAccessKeys()];
-                case 4:
-                    accessKeys = _d.sent();
-                    if (!!(0, exports.hasAppKey)(accessKeys)) return [3 /*break*/, 6];
+                case 10:
+                    accessKeys = _e.sent();
+                    if (!!(0, exports.hasAppKey)(accessKeys)) return [3 /*break*/, 12];
                     return [4 /*yield*/, (0, exports.handleRefreshAppKey)(signer, eth_address)];
-                case 5:
-                    _d.sent();
-                    _d.label = 6;
-                case 6:
+                case 11:
+                    _e.sent();
+                    _e.label = 12;
+                case 12:
                     keyPair = KeyPair.fromString(secretKey);
                     keyStore.setKey(networkId, accountId, keyPair);
                     set(APP_KEY_SECRET, secretKey);
