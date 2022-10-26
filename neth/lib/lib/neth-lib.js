@@ -1215,9 +1215,7 @@ var getAppKey = function (_a) {
         var accountId, tryAgain, _b, signer_1, ethAddress, e_13, nethURL, appKeyNonce, _c, _d, publicKey, secretKey, account, accessKeys, keyPair;
         return __generator(this, function (_e) {
             switch (_e.label) {
-                case 0:
-                    console.log('here');
-                    return [4 /*yield*/, (0, exports.getNearMap)(eth_address)];
+                case 0: return [4 /*yield*/, (0, exports.getNearMap)(eth_address)];
                 case 1:
                     accountId = _e.sent();
                     if (!!accountId) return [3 /*break*/, 8];
@@ -1230,14 +1228,12 @@ var getAppKey = function (_a) {
                 case 3:
                     _b = _e.sent(), signer_1 = _b.signer, ethAddress = _b.ethAddress;
                     return [4 /*yield*/, (0, exports.getAppKey)({ signer: signer_1, ethAddress: ethAddress })];
-                case 4:
-                    _e.sent();
-                    return [3 /*break*/, 6];
+                case 4: return [2 /*return*/, _e.sent()];
                 case 5:
                     e_13 = _e.sent();
                     console.warn(e_13);
                     return [3 /*break*/, 6];
-                case 6: return [2 /*return*/, false];
+                case 6: return [2 /*return*/];
                 case 7:
                     nethURL = "https://neardefi.github.io/neth/".concat(networkId === 'testnet' ? '?network=testnet' : '');
                     window.prompt("We couldn't find a NETH account. To set up a NETH account visit", nethURL);

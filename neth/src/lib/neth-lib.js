@@ -940,8 +940,6 @@ const promptValidAccountId = async (msg) => {
 
 export const getAppKey = async ({ signer, ethAddress: eth_address }) => {
 
-	console.log('here')
-
 	let accountId = await getNearMap(eth_address);
 	if (!accountId) {
 
@@ -950,11 +948,11 @@ export const getAppKey = async ({ signer, ethAddress: eth_address }) => {
 		if (tryAgain) {
 			try {
 				const { signer, ethAddress } = await switchEthereum()
-				await getAppKey({ signer, ethAddress })
+				return await getAppKey({ signer, ethAddress })
 			} catch (e) {
 				console.warn(e)
 			}
-			return false
+			return
 		}
 
 		const nethURL = `https://neardefi.github.io/neth/${networkId === 'testnet' ? '?network=testnet' : ''}`

@@ -58,11 +58,7 @@ export function isSignedIn(): boolean;
 export function getAppKey({ signer, ethAddress: eth_address }: {
     signer: any;
     ethAddress: any;
-}): Promise<false | {
-    publicKey: any;
-    secretKey: any;
-    account: nearAPI.Account;
-}>;
+}): any;
 export function signAndSendTransactions({ transactions }: {
     transactions: any;
 }): Promise<any>;
