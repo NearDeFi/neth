@@ -17,6 +17,7 @@ import {
 	verifyOwner,
 	signAndSendTransactions,
 	initConnection,
+	NETH_SITE_URL,
 } from "./neth-lib";
 export { initConnection } from "./neth-lib";
 
@@ -159,10 +160,6 @@ export function setupNeth({
 
 		useCover = useModalCover;
 
-		if (!installed) {
-			return null;
-		}
-
 		await waitFor(() => !!window.near?.isSignedIn(), { timeout: 300 }).catch(
 			() => false
 		);
@@ -174,9 +171,9 @@ export function setupNeth({
 				name: "NETH Account",
 				description: null,
 				iconUrl,
-				downloadUrl: "https://neardefi.github.io/neth",
+				downloadUrl: NETH_SITE_URL,
 				deprecated: false,
-				available: true,
+				available: installed,
 			},
 			init: Neth,
 		};

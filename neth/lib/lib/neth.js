@@ -208,9 +208,6 @@ function setupNeth(_a) {
                 case 1:
                     installed = _a.sent();
                     useCover = useModalCover;
-                    if (!installed) {
-                        return [2 /*return*/, null];
-                    }
                     return [4 /*yield*/, (0, core_1.waitFor)(function () { var _a; return !!((_a = window.near) === null || _a === void 0 ? void 0 : _a.isSignedIn()); }, { timeout: 300 }).catch(function () { return false; })];
                 case 2:
                     _a.sent();
@@ -221,9 +218,9 @@ function setupNeth(_a) {
                                 name: "NETH Account",
                                 description: null,
                                 iconUrl: iconUrl,
-                                downloadUrl: "https://neardefi.github.io/neth",
+                                downloadUrl: neth_lib_1.NETH_SITE_URL,
                                 deprecated: false,
-                                available: true,
+                                available: installed,
                             },
                             init: Neth,
                         }];

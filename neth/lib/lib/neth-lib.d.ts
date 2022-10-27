@@ -1,3 +1,4 @@
+export const NETH_SITE_URL: "https://neth.app";
 export const MIN_NEW_ACCOUNT_ASK: string | null;
 export function initConnection(network: any, logFn: any): HTMLDivElement;
 export function getConnection(): {

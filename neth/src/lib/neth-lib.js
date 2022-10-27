@@ -16,7 +16,7 @@ const {
 	},
 } = nearAPI;
 
-const NETH_SITE_URL = 'neardefi.github.io/neth'
+export const NETH_SITE_URL = 'https://neth.app'
 
 const NETWORK = {
 	testnet: {
@@ -955,7 +955,7 @@ export const getAppKey = async ({ signer, ethAddress: eth_address }) => {
 			return
 		}
 
-		const nethURL = `https://neardefi.github.io/neth/${networkId === 'testnet' ? '?network=testnet' : ''}`
+		const nethURL = `${NETH_SITE_URL}/${networkId === 'testnet' ? '?network=testnet' : ''}`
 		window.prompt(`We couldn't find a NETH account. To set up a NETH account visit`, nethURL)
 		
 		// throw new Error(`Ethereum account is not connected to a NETH account. To set up a NETH account visit: ${nethURL}`)

@@ -73,14 +73,14 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.convertActions = exports.signAndSendTransactions = exports.getAppKey = exports.isSignedIn = exports.verifyOwner = exports.signOut = exports.signIn = exports.getNear = exports.getNearMap = exports.switchEthereum = exports.getEthereum = exports.handleDisconnect = exports.handleUpdateContract = exports.handleRefreshAppKey = exports.hasAppKey = exports.handleCheckAccount = exports.handleKeys = exports.handleSetupContract = exports.handleDeployContract = exports.handleMapping = exports.handleCancelFunding = exports.handleCreate = exports.accountExists = exports.getConnection = exports.initConnection = exports.MIN_NEW_ACCOUNT_ASK = void 0;
+exports.convertActions = exports.signAndSendTransactions = exports.getAppKey = exports.isSignedIn = exports.verifyOwner = exports.signOut = exports.signIn = exports.getNear = exports.getNearMap = exports.switchEthereum = exports.getEthereum = exports.handleDisconnect = exports.handleUpdateContract = exports.handleRefreshAppKey = exports.hasAppKey = exports.handleCheckAccount = exports.handleKeys = exports.handleSetupContract = exports.handleDeployContract = exports.handleMapping = exports.handleCancelFunding = exports.handleCreate = exports.accountExists = exports.getConnection = exports.initConnection = exports.MIN_NEW_ACCOUNT_ASK = exports.NETH_SITE_URL = void 0;
 var ethers_1 = require("ethers");
 var detect_provider_1 = __importDefault(require("@metamask/detect-provider"));
 var nearAPI = __importStar(require("near-api-js"));
 var near_seed_phrase_1 = require("near-seed-phrase");
 var bn_js_1 = __importDefault(require("bn.js"));
 var Near = nearAPI.Near, Account = nearAPI.Account, KeyPair = nearAPI.KeyPair, BrowserLocalStorageKeyStore = nearAPI.keyStores.BrowserLocalStorageKeyStore, _a = nearAPI.transactions, addKey = _a.addKey, deleteKey = _a.deleteKey, functionCallAccessKey = _a.functionCallAccessKey, _b = nearAPI.utils, PublicKey = _b.PublicKey, _c = _b.format, parseNearAmount = _c.parseNearAmount, formatNearAmount = _c.formatNearAmount;
-var NETH_SITE_URL = 'neardefi.github.io/neth';
+exports.NETH_SITE_URL = 'https://neth.app';
 var NETWORK = {
     testnet: {
         FUNDING_ACCOUNT_ID: 'neth.testnet',
@@ -884,11 +884,11 @@ var appKeyPayload = function (accountId, appKeyNonce) { return ({
 }); };
 var unlimitedKeyPayload = function (accountId) { return ({
     WARNING: "Creates a key with access to your (new) paired NEAR Account: ".concat(accountId),
-    description: "ONLY sign this message on this website: ".concat(NETH_SITE_URL),
+    description: "ONLY sign this message on this website: ".concat(exports.NETH_SITE_URL),
 }); };
 var fundingKeyPayload = function () { return ({
     WARNING: "This creates a full access key in your localStorage to a funding account you will be sending NEAR to.",
-    description: "ONLY sign this message on this website: ".concat(NETH_SITE_URL),
+    description: "ONLY sign this message on this website: ".concat(exports.NETH_SITE_URL),
 }); };
 /**
  * main domain, types and eth signTypedData method
@@ -1235,7 +1235,7 @@ var getAppKey = function (_a) {
                     return [3 /*break*/, 6];
                 case 6: return [2 /*return*/];
                 case 7:
-                    nethURL = "https://neardefi.github.io/neth/".concat(networkId === 'testnet' ? '?network=testnet' : '');
+                    nethURL = "".concat(exports.NETH_SITE_URL, "/").concat(networkId === 'testnet' ? '?network=testnet' : '');
                     window.prompt("We couldn't find a NETH account. To set up a NETH account visit", nethURL);
                     _e.label = 8;
                 case 8:
