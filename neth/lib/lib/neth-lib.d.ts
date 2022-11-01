@@ -1,6 +1,10 @@
 export const NETH_SITE_URL: "https://neth.app";
 export const MIN_NEW_ACCOUNT_ASK: string | null;
-export function initConnection(network: any, logFn: any): HTMLDivElement;
+export function initConnection({ network, gas: _gas, logFn }: {
+    network: any;
+    gas?: string | undefined;
+    logFn?: ((args: any) => void) | undefined;
+}): HTMLDivElement;
 export function getConnection(): {
     near: any;
     connection: any;

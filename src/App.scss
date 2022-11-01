@@ -58,10 +58,27 @@ header {
 }
 
 .tos {
-	height: 200px;
+	height: 400px;
 	overflow: hidden;
 	overflow-y: scroll;
 	margin-bottom: 16px;
+	padding-bottom: 32px;
+	> div {
+		display: flex;
+		align-items: center;
+		> p {
+			margin: 0 !important;
+			font-size: 0.8rem;
+		}
+		> input {
+			padding: 0 !important;
+			height: 32px !important;
+			flex: 0 0 32px;
+			margin-left: 16px;
+			margin-right: 8px;
+		}
+	}
+	
 }
 
 .github-corner:hover .octo-arm {

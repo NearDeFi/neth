@@ -98,7 +98,7 @@ var ATTEMPT_ACCOUNT_ID = '__ATTEMPT_ACCOUNT_ID';
 var ATTEMPT_ETH_ADDRESS = '__ATTEMPT_ETH_ADDRESS';
 var APP_KEY_SECRET = '__APP_KEY_SECRET';
 var APP_KEY_ACCOUNT_ID = '__APP_KEY_ACCOUNT_ID';
-var gas = '200000000000000';
+var defaultGas = '200000000000000';
 var half_gas = '50000000000000';
 /// this is the new account amount 0.21 for account name, keys, contract and 0.01 for mapping contract storage cost
 var MIN_NEW_ACCOUNT = parseNearAmount('0.4');
@@ -124,8 +124,10 @@ var set = function (k, v) { return localStorage.setItem(k, typeof v === "string"
 var del = function (k) { return localStorage.removeItem(k); };
 var defaultLogger = function (args) { return console.log.apply(console, args); };
 /// NEAR setup
-var near, keyStore, logger, connection, networkId, contractAccount, accountSuffix;
-var initConnection = function (network, logFn) {
+var near, gas, keyStore, logger, connection, networkId, contractAccount, accountSuffix;
+var initConnection = function (_a) {
+    var network = _a.network, _b = _a.gas, _gas = _b === void 0 ? defaultGas : _b, _c = _a.logFn, logFn = _c === void 0 ? defaultLogger : _c;
+    gas = _gas;
     keyStore = new BrowserLocalStorageKeyStore();
     near = new Near(__assign(__assign({}, network), { deps: { keyStore: keyStore } }));
     logger = function () {
@@ -135,7 +137,6 @@ var initConnection = function (network, logFn) {
         }
         if (logFn)
             logFn(args);
-        defaultLogger(args);
     };
     connection = near.connection;
     networkId = network.networkId;

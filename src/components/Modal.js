@@ -6,17 +6,22 @@ export const Modal = ({
 }) => {
 
 	const {
-		loading, log, dialog, dialogOk, dialogOkDisabledKey,
+		loading, log, dialog, dialogOk, dialogCB, dialogOkKeys,
 	} = state
 
 	if (!loading && !dialog) return null
+
+	const accepted = dialogOkKeys ? dialogOkKeys.reduce((a, c) => a && state[c] || false, true) : false
 
 	return <div className="modal">
 		{(log.length > 0 || dialog) && <div>
 			{
 				dialog && <div className='dialog'>
 					{dialog}
-					{dialogOk && <button disabled={state[dialogOkDisabledKey]} onClick={() => update('dialog', null)}>Ok</button>}
+					{dialogOk && <button disabled={!accepted} onClick={() => {
+						update('dialog', null)
+						if (dialogCB) dialogCB()
+					}}>Ok</button>}
 				</div>
 			}
 			{ (log.length > 0 || loading) && <>

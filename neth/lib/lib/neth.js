@@ -57,12 +57,13 @@ var isInstalled = function () { return __awaiter(void 0, void 0, void 0, functio
     });
 }); };
 var useCover = false;
+var customGas;
 var Neth = function (_a) {
-    var metadata = _a.metadata, logger = _a.logger, options = _a.options, provider = _a.provider;
+    var metadata = _a.metadata, logger = _a.logger, store = _a.store, options = _a.options, provider = _a.provider;
     return __awaiter(void 0, void 0, void 0, function () {
-        var cover, isValidActions, transformActions;
+        var cover, isValidActions, transformActions, signTransactions;
         return __generator(this, function (_b) {
-            cover = (0, neth_lib_1.initConnection)(options.network);
+            cover = (0, neth_lib_1.initConnection)({ network: options.network, gas: customGas });
             isValidActions = function (actions) {
                 return actions.every(function (x) { return x.type === "FunctionCall"; });
             };
@@ -73,11 +74,51 @@ var Neth = function (_a) {
                 }
                 return actions.map(function (x) { return x.params; });
             };
+            signTransactions = function (transactions) { return __awaiter(void 0, void 0, void 0, function () {
+                var contract, transformedTxs, res, e_1;
+                return __generator(this, function (_a) {
+                    switch (_a.label) {
+                        case 0:
+                            logger.log("NETH:signAndSendTransactions", { transactions: transactions });
+                            contract = store.getState().contract;
+                            if (!(0, neth_lib_1.isSignedIn)() || !contract) {
+                                throw new Error("Wallet not signed in");
+                            }
+                            if (useCover) {
+                                cover.style.display = "block";
+                            }
+                            transformedTxs = transactions.map(function (_a) {
+                                var receiverId = _a.receiverId, actions = _a.actions;
+                                return ({
+                                    receiverId: receiverId || contract.contractId,
+                                    actions: transformActions(actions),
+                                });
+                            });
+                            _a.label = 1;
+                        case 1:
+                            _a.trys.push([1, 3, , 4]);
+                            return [4 /*yield*/, (0, neth_lib_1.signAndSendTransactions)({
+                                    transactions: transformedTxs,
+                                })];
+                        case 2:
+                            res = _a.sent();
+                            return [3 /*break*/, 4];
+                        case 3:
+                            e_1 = _a.sent();
+                            return [3 /*break*/, 4];
+                        case 4:
+                            if (useCover) {
+                                cover.style.display = "none";
+                            }
+                            return [2 /*return*/, res];
+                    }
+                });
+            }); };
             // return the wallet interface for wallet-selector
             return [2 /*return*/, {
                     signIn: function () {
                         return __awaiter(this, void 0, void 0, function () {
-                            var account, e_1;
+                            var account, e_2;
                             return __generator(this, function (_a) {
                                 switch (_a.label) {
                                     case 0:
@@ -90,9 +131,9 @@ var Neth = function (_a) {
                                         }
                                         return [3 /*break*/, 3];
                                     case 2:
-                                        e_1 = _a.sent();
-                                        if (!/not connected/.test(e_1.toString())) {
-                                            throw e_1;
+                                        e_2 = _a.sent();
+                                        if (!/not connected/.test(e_2.toString())) {
+                                            throw e_2;
                                         }
                                         return [3 /*break*/, 3];
                                     case 3: return [2 /*return*/, [account]];
@@ -137,61 +178,15 @@ var Neth = function (_a) {
                     },
                     signAndSendTransaction: function (_a) {
                         var receiverId = _a.receiverId, actions = _a.actions;
-                        return __awaiter(this, void 0, void 0, function () {
-                            return __generator(this, function (_b) {
-                                logger.log("NETH:signAndSendTransaction", {
-                                    receiverId: receiverId,
-                                    actions: actions,
-                                });
-                                return [2 /*return*/, (0, neth_lib_1.signAndSendTransactions)({
-                                        transactions: [
-                                            {
-                                                receiverId: receiverId,
-                                                actions: transformActions(actions),
-                                            },
-                                        ],
-                                    })];
-                            });
-                        });
+                        return __awaiter(void 0, void 0, void 0, function () { return __generator(this, function (_b) {
+                            return [2 /*return*/, signTransactions([{ receiverId: receiverId, actions: actions }])];
+                        }); });
                     },
                     signAndSendTransactions: function (_a) {
                         var transactions = _a.transactions;
-                        return __awaiter(this, void 0, void 0, function () {
-                            var transformedTxs, res, e_2;
-                            return __generator(this, function (_b) {
-                                switch (_b.label) {
-                                    case 0:
-                                        logger.log("NETH:signAndSendTransactions", { transactions: transactions });
-                                        if (useCover) {
-                                            cover.style.display = "block";
-                                        }
-                                        transformedTxs = transactions.map(function (_a) {
-                                            var receiverId = _a.receiverId, actions = _a.actions;
-                                            return ({
-                                                receiverId: receiverId,
-                                                actions: transformActions(actions),
-                                            });
-                                        });
-                                        _b.label = 1;
-                                    case 1:
-                                        _b.trys.push([1, 3, , 4]);
-                                        return [4 /*yield*/, (0, neth_lib_1.signAndSendTransactions)({
-                                                transactions: transformedTxs,
-                                            })];
-                                    case 2:
-                                        res = _b.sent();
-                                        return [3 /*break*/, 4];
-                                    case 3:
-                                        e_2 = _b.sent();
-                                        return [3 /*break*/, 4];
-                                    case 4:
-                                        if (useCover) {
-                                            cover.style.display = "none";
-                                        }
-                                        return [2 /*return*/, res];
-                                }
-                            });
-                        });
+                        return __awaiter(void 0, void 0, void 0, function () { return __generator(this, function (_b) {
+                            return [2 /*return*/, signTransactions(transactions)];
+                        }); });
                     },
                 }];
         });
@@ -199,16 +194,18 @@ var Neth = function (_a) {
 };
 function setupNeth(_a) {
     var _this = this;
-    var _b = _a === void 0 ? {} : _a, _c = _b.useModalCover, useModalCover = _c === void 0 ? false : _c, _d = _b.iconUrl, iconUrl = _d === void 0 ? icons_1.nethIcon : _d;
+    var _b = _a === void 0 ? {} : _a, _c = _b.useModalCover, useModalCover = _c === void 0 ? false : _c, gas = _b.gas, _d = _b.iconUrl, iconUrl = _d === void 0 ? icons_1.nethIcon : _d;
     return function () { return __awaiter(_this, void 0, void 0, function () {
         var installed;
         return __generator(this, function (_a) {
             switch (_a.label) {
-                case 0: return [4 /*yield*/, isInstalled()];
+                case 0:
+                    useCover = useModalCover;
+                    customGas = gas;
+                    return [4 /*yield*/, isInstalled()];
                 case 1:
                     installed = _a.sent();
-                    useCover = useModalCover;
-                    return [4 /*yield*/, (0, core_1.waitFor)(function () { var _a; return !!((_a = window.near) === null || _a === void 0 ? void 0 : _a.isSignedIn()); }, { timeout: 300 }).catch(function () { return false; })];
+                    return [4 /*yield*/, (0, core_1.waitFor)(function () { return !!(0, neth_lib_1.isSignedIn)(); }, { timeout: 300 }).catch(function () { return false; })];
                 case 2:
                     _a.sent();
                     return [2 /*return*/, {

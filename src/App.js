@@ -30,28 +30,48 @@ const { Account } = nearAPI
 /// valid accounts
 const ACCOUNT_REGEX = new RegExp('^(([a-z0-9]+[\-_])*[a-z0-9]+\.)*([a-z0-9]+[\-_])*[a-z0-9]+$')
 
-const tosDialog = (update) => update('', {
+const check = (update, e, i) => {
+	update('tosAgreed_' + i, e.target.checked)
+}
+
+const tosDialog = (update, dialogCB) => update('', {
+
 	dialog: <>
-	<h4>DISCLAIMER & RISKS</h4>
+		<h4>
+			Acknowledge Terms & Disclaimer
+		</h4>
 		<div className="tos" onScroll={(e) => {
-			if (e.target.scrollTop > 1000) update('tosUnread', false)
+			if (e.target.scrollTop > 550) update('tosUnread', false)
 		}}>
-			YOU EXPLICITLY ACKNOWLEDGE AND ACCEPT THE FOLLOWING HEIGHTENED RISKS. YOU ACKNOWLEDGE AND AGREE THAT THIS SITE SOLELY PROVIDES INFORMATION ABOUT DATA ON THE BLOCKCHAIN. YOU ACCEPT THAT THE SITE OPERATORS HAVE NO CUSTODY OVER YOUR FUNDS, ABILITY OR DUTY TO TRANSACT ON YOUR BEHALF, OR POWER TO REVERSE YOUR TRANSACTIONS. THE SITE OPERATORS DO NOT ENDORSE OR PROVIDE ANY WARRANTY WITH RESPECT TO ANY TOKENS. YOU REPRESENT THAT YOU ARE FINANCIALLY AND TECHNICALLY SOPHISTICATED ENOUGH TO UNDERSTAND THE INHERENT RISKS ASSOCIATED WITH USING CRYPTOGRAPHIC AND BLOCKCHAIN-BASED SYSTEMS AND UPGRADING YOUR SOFTWARE AND PROCESSES TO ACCOMMODATE PROTOCOL UPGRADES, AND THAT YOU HAVE A WORKING KNOWLEDGE OF THE USAGE AND INTRICACIES OF DIGITAL ASSETS AND OTHER DIGITAL TOKENS.  IN PARTICULAR, YOU UNDERSTAND THAT WE DO NOT OPERATE THE ETHEREUM OR NEAR PROTOCOLS OR ANY OTHER BLOCKCHAIN PROTOCOL, COMMUNICATE OR EXECUTE PROTOCOL UPGRADES, OR APPROVE OR PROCESS BLOCKCHAIN TRANSACTIONS ON BEHALF OF YOU.  YOU FURTHER UNDERSTAND THAT BLOCKCHAIN PROTOCOLS PRESENT THEIR OWN RISKS OF USE, THAT SUPPORTING OR PARTICIPATING IN THE PROTOCOL MAY RESULT IN LOSSES IF YOUR PARTICIPATION VIOLATES CERTAIN PROTOCOL RULES, THAT  BLOCKCHAIN-BASED TRANSACTIONS ARE IRREVERSIBLE, THAT YOUR PRIVATE KEY AND BACKUP SEED PHRASE MUST BE KEPT SECRET AT ALL TIMES, THAT WE WILL NOT STORE A BACKUP OF, NOR WILL BE ABLE TO DISCOVER OR RECOVER, YOUR PRIVATE KEY OR BACKUP SEED PHRASE, AND THAT YOU ARE SOLELY RESPONSIBLE FOR ANY APPROVALS OR PERMISSIONS YOU PROVIDE BY CRYPTOGRAPHICALLY SIGNING BLOCKCHAIN MESSAGES OR TRANSACTIONS. YOU FURTHER UNDERSTAND AND ACCEPT THAT DIGITAL TOKENS PRESENT MARKET VOLATILITY RISK, TECHNICAL SOFTWARE RISKS, REGULATORY RISKS, AND CYBERSECURITY RISKS. YOU ACKNOWLEDGE AND ACCEPT THAT THIS IS EXPERIMENTAL AND UNAUDITED TECHNOLOGY AND THAT YOU COULD LOSE ALL OF YOUR DIGITAL ASSETS.
+			<p>By connecting a wallet, you acknowledge that you have read, understand and agree to the Terms of Use <a href="/tos.pdf" target="_blank">HERE</a>.</p>
+				<ul>
+				<li>You are not a person or company who is a resident of, is located, incorporated, or has a registered agent in a Restricted Territory (as defined in the Terms of Use).</li>
+				<li>You will not in the future access this site while located in the United States of America or a Restricted Territory.</li>
+				<li>You are not using, and will not in the future use, a virtual private network or other means to mask your physical location from a Restricted Territory.</li>
+				<li>You are lawfully permitted to access this site under the laws of the jurisdiction in which you reside and are located.</li>
+				<li>You understand the risks associated with using blockchain technology and that the Site operator has no custody over your funds, no ability or duty to transact on your behalf, and no power to reverse your transactions.</li>
+				</ul>
+				
+			<div>
+				<input type="checkbox" onClick={(e) => check(update, e, 0)} /><p>I agree.</p>
+			</div>
+			
 		</div>
-		{ networkId === 'mainnet' && <>
+		{networkId === 'mainnet' && <>
 			<p>It's <strong>HIGHLY</strong> recommened you switch to <strong>TESTNET</strong> by clicking the button below the disclaimer button.</p>
 			<p>Do NOT fund any account on mainnet with funds you CANNOT afford to lose.</p>
 		</>}
 	</>,
+
 	dialogOk: true,
-	dialogOkDisabledKey: 'tosUnread',
-	tosUnread: true,
+	dialogOkKeys: ['tosAgreed_0'],
+	dialogCB,
+
 })
 
 /// Components
 import { Main, fundingAccountCB, fundingErrorCB, postFundingCB } from './components/Main'
 import { Modal } from './components/Modal'
-import { getAppKey } from '../neth/lib/lib/neth-lib';
 
 const App = () => {
 	const { state, dispatch, update } = useContext(appStore);
@@ -71,17 +91,20 @@ const App = () => {
 	const updateEthState = async () => {
 
 		try {
+			
 			if (!get(TOS_POP)) {
 				set(TOS_POP, true)
-				tosDialog(update)
+				return
 			}
 
 			await initConnection({
-				networkId,
-				nodeUrl,
-				walletUrl,
-				helperUrl,
-			}, logger)
+				network: {
+					networkId,
+					nodeUrl,
+					walletUrl,
+					helperUrl,
+				}, logFn: logger
+			})
 			const { accountSuffix } = getConnection()
 			update('suffix', accountSuffix)
 
@@ -91,6 +114,7 @@ const App = () => {
 			update('ethAddress', ethAddress)
 
 			console.log('ethAddress', ethAddress)
+
 			if (ethAddress) {
 				const accountId = await getNearMap(ethAddress)
 				update('mapAccountId', accountId)
@@ -161,11 +185,11 @@ const App = () => {
 	}
 
 	return <>
-		<Modal {...{state, update}} />
+		<Modal {...{ state, update }} />
 		<header>
 			<div>
-			<img src={Logo} />
-			<img src={Text} />
+				<img src={Logo} />
+				<img src={Text} />
 			</div>
 		</header>
 
@@ -174,18 +198,20 @@ const App = () => {
 			<button onClick={() => tosDialog(update)}>Terms of Service<span>Click to Read</span></button>
 
 			<a href={networkId === 'mainnet' ? window.location.href + '?network=testnet' : window.location.href.split('?')[0]}>
-				<button className='secondary'><span style={{color: '#008800'}}>{networkId}</span>Click to Change</button>
+				<button className='secondary'><span style={{ color: '#008800' }}>{networkId}</span>Click to Change</button>
 			</a>
 
 			{
 				ethAddress.length === 0
 					?
 					<>
-					<h2>Create Account</h2>
-					<button aria-busy={loading} disabled={loading} onClick={handleAction(async () => {
-						await getEthereum()
-						updateEthState()
-					})}>Choose Ethereum Account</button>
+						<h2>Create Account</h2>
+						<button aria-busy={loading} disabled={loading} onClick={handleAction(async () => {
+							tosDialog(update, async () => {
+								await getEthereum()
+								updateEthState()
+							})
+						})}>Choose Ethereum Account</button>
 					</>
 					:
 					<Main {...componentState} />
