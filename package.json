@@ -30,7 +30,7 @@
 		"last 2 Chrome versions"
 	],
 	"scripts": {
-		"gh-pages": "yarn clean && yarn build --public-url ./ && gh-pages -d dist",
+		"gh-pages": "yarn clean && yarn build && gh-pages -d dist",
 		"prebuild": "yarn clean",
 		"build-lib": "cd neth && yarn && npx tsc && cd ..",
 		"build": "yarn build-lib && parcel build src/index.html --public-url ./ --no-source-maps && yarn static",
