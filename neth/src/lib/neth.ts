@@ -27,9 +27,10 @@ import type {
   }
   
   export interface NethParams {
-	useModalCover?: boolean;
-	iconUrl?: string;
-	gas?: string;
+	useModalCover?: boolean; // cover screen with rgba(0, 0, 0, 0.5) mask while signing and awaiting transaction outcome
+	iconUrl?: string; // default NETH icon included
+	gas?: string; // default 200 Tgas for each NETH transaction (bundling can include multiple "inner" transactions)
+	bundle?: boolean; // default true
   }
   
   const isInstalled = async () => {
@@ -37,6 +38,7 @@ import type {
 	return !!window.ethereum;
   };
   
+  let bundle = true;
   let useCover = false;
   let customGas;
   
@@ -44,10 +46,16 @@ import type {
 	metadata,
 	logger,
 	store,
+	storage,
 	options,
 	provider,
   }) => {
-	const cover = initConnection({ network: options.network, gas: customGas });
+	const cover = initConnection({
+	  network: options.network,
+	  gas: customGas,
+	  logger,
+	  storage,
+	});
   
 	const isValidActions = (
 	  actions: Array<Action>
@@ -72,7 +80,7 @@ import type {
   
 	  const { contract } = store.getState();
   
-	  if (!isSignedIn() || !contract) {
+	  if (!(await isSignedIn()) || !contract) {
 		throw new Error("Wallet not signed in");
 	  }
   
@@ -89,10 +97,12 @@ import type {
 	  try {
 		res = await signAndSendTransactions({
 		  transactions: transformedTxs,
+		  bundle,
 		});
 	  } catch (e) {
-		/// user cancelled or near network error
-		// console.warn(e);
+		/// "user rejected signing" or near network error
+		logger.log("NETH:signAndSendTransactions Error", e);
+		throw e;
 	  }
   
 	  if (useCover) {
@@ -126,7 +136,6 @@ import type {
   
 	  async verifyOwner({ message }) {
 		logger.log("NETH:verifyOwner", { message });
-  
 		verifyOwner({ message, provider, account: null });
 	  },
   
@@ -145,12 +154,14 @@ import type {
   
   export function setupNeth({
 	useModalCover = false,
+	bundle: _bundle = true,
 	gas,
 	iconUrl = nethIcon,
   }: NethParams = {}): WalletModuleFactory<InjectedWallet> {
 	return async () => {
 	  useCover = useModalCover;
 	  customGas = gas;
+	  bundle = _bundle;
   
 	  const installed = await isInstalled();
   

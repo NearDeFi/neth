@@ -1,9 +1,17 @@
 export const NETH_SITE_URL: "https://neth.app";
+export const PREV_NETH_SITE_URL: "neardefi.github.io/neth";
 export const MIN_NEW_ACCOUNT_ASK: string | null;
-export function initConnection({ network, gas: _gas, logFn }: {
+export function initConnection({ network, gas: _gas, logger: _logger, storage: _storage, }: {
     network: any;
     gas?: string | undefined;
-    logFn?: ((args: any) => void) | undefined;
+    logger?: {
+        log: (args: any) => void;
+    } | undefined;
+    storage?: {
+        getItem: (k: any) => any;
+        setItem: (k: any, v: any) => void;
+        removeItem: (k: any) => void;
+    } | undefined;
 }): HTMLDivElement;
 export function getConnection(): {
     near: any;
@@ -31,7 +39,7 @@ export function hasAppKey(accessKeys: any): any;
 export function handleRefreshAppKey(signer: any, ethAddress: any): Promise<any>;
 export function handleUpdateContract(signer: any, ethAddress: any): Promise<any>;
 export function handleDisconnect(signer: any, ethAddress: any): Promise<void | {
-    account: nearAPI.Account;
+    account: any;
 }>;
 export function getEthereum(): Promise<void | {
     signer: ethers.providers.JsonRpcSigner;
@@ -59,14 +67,14 @@ export function verifyOwner({ message, provider, account }: {
     publicKey: string;
     keyType: any;
 }>;
-export function isSignedIn(): boolean;
+export function isSignedIn(): Promise<boolean>;
 export function getAppKey({ signer, ethAddress: eth_address }: {
     signer: any;
     ethAddress: any;
 }): any;
-export function signAndSendTransactions({ transactions }: {
+export function signAndSendTransactions({ transactions, bundle }: {
     transactions: any;
-}): Promise<any>;
+    bundle: any;
+}): Promise<any[] | undefined>;
 export function convertActions(actions: any, accountId: any, receiverId: any): any;
-import * as nearAPI from "near-api-js";
 import { ethers } from "ethers";

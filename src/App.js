@@ -86,14 +86,15 @@ const App = () => {
 		ethAddress,
 	} = state
 
-	const logger = (args) => dispatch(pushLog(args))
+	const logger = {
+		log: (args) => dispatch(pushLog(args))
+	}
 
 	const updateEthState = async () => {
 
 		try {
 			
 			if (!get(TOS_POP)) {
-				set(TOS_POP, true)
 				return
 			}
 
@@ -103,7 +104,7 @@ const App = () => {
 					nodeUrl,
 					walletUrl,
 					helperUrl,
-				}, logFn: logger
+				}, logger
 			})
 			const { accountSuffix } = getConnection()
 			update('suffix', accountSuffix)
@@ -207,6 +208,7 @@ const App = () => {
 					<>
 						<h2>Create Account</h2>
 						<button aria-busy={loading} disabled={loading} onClick={handleAction(async () => {
+							set(TOS_POP, true)
 							tosDialog(update, async () => {
 								await getEthereum()
 								updateEthState()

@@ -17,6 +17,7 @@ const {
 } = nearAPI;
 
 export const NETH_SITE_URL = 'https://neth.app'
+export const PREV_NETH_SITE_URL = 'neardefi.github.io/neth'
 
 const NETWORK = {
 	testnet: {
@@ -30,7 +31,9 @@ const NETWORK = {
 	}
 }
 
+const WS_STORAGE_NAMESPACE = 'near-wallet-selector:neth:'
 const REFRESH_MSG = `Please refresh the page and try again.`
+const TX_ARGS_ATTEMPT = '__TX_ARGS_ATTEMPT';
 const ATTEMPT_SECRET_KEY = '__ATTEMPT_SECRET_KEY';
 const ATTEMPT_ACCOUNT_ID = '__ATTEMPT_ACCOUNT_ID';
 const ATTEMPT_ETH_ADDRESS = '__ATTEMPT_ETH_ADDRESS';
@@ -48,33 +51,45 @@ const FUNDING_CHECK_TIMEOUT = 5000;
 const attachedDepositMapping = parseNearAmount('0.05');
 
 /// Helpers
-const get = (k) => {
-	const v = localStorage.getItem(k);
-	if (v?.charAt(0) !== "{") {
-		return v;
-	}
-	try {
-		return JSON.parse(v);
-	} catch (e) {
-		console.warn(e);
-	}
-};
-const set = (k, v) => localStorage.setItem(k, typeof v === "string" ? v : JSON.stringify(v));
-const del = (k) => localStorage.removeItem(k);
-const defaultLogger = (args) => console.log(...args);
+const defaultStorage = (prefix = '') => ({
+	getItem: (k) => {
+		const v = localStorage.getItem(prefix + k);
+		if (v?.charAt(0) !== "{") {
+			return v;
+		}
+		try {
+			return JSON.parse(v);
+		} catch (e) {
+			console.warn(e);
+		}
+	},
+	setItem: (k, v) => localStorage.setItem(prefix + k, typeof v === "string" ? v : JSON.stringify(v)),
+	removeItem: (k) => localStorage.removeItem(prefix + k),
+})
+const defaultLogger = () => ({
+	log: (args) => console.log(...args),
+})
 
 /// NEAR setup
-let near, gas, keyStore, logger, connection, networkId, contractAccount, accountSuffix;
-export const initConnection = ({ network, gas: _gas = defaultGas, logFn = defaultLogger }) => {
+let near, gas, keyStore, logger, storage, connection, networkId, contractAccount, accountSuffix;
+
+export const initConnection = ({
+	network,
+	gas: _gas = defaultGas,
+	logger: _logger = defaultLogger(),
+	storage: _storage = defaultStorage(),
+}) => {
 	gas = _gas
+	logger = _logger
+	storage = _storage
+
+	console.log('storage', storage)
+
 	keyStore = new BrowserLocalStorageKeyStore();
 	near = new Near({
 		...network,
 		deps: { keyStore },
 	});
-	logger = (...args) => {
-		if (logFn) logFn(args)
-	};
 	connection = near.connection;
 	networkId = network.networkId;
 	contractAccount = new Account(connection, networkId === "mainnet" ? "near" : networkId);
@@ -89,6 +104,10 @@ export const initConnection = ({ network, gas: _gas = defaultGas, logFn = defaul
 	cover.style.top = '0';
 	cover.style.background = 'rgba(0, 0, 0, 0.5)';
 	document.body.appendChild(cover);
+
+	/// recovery from unbundled TXs that haven't been broadcast yet
+	broadcastTXs()
+
 	return cover;
 };
 export const getConnection = () => {
@@ -141,9 +160,9 @@ export const handleCreate = async (signer, ethAddress, newAccountId, fundingAcco
 		fundingKeyPayload(),
 	);
 	/// store attempt in localStorage so we can recover and retry / resume contract deployment
-	set(ATTEMPT_ACCOUNT_ID, newAccountId);
-	set(ATTEMPT_SECRET_KEY, new_secret_key);
-	set(ATTEMPT_ETH_ADDRESS, ethAddress);
+	await storage.setItem(ATTEMPT_ACCOUNT_ID, newAccountId);
+	await storage.setItem(ATTEMPT_SECRET_KEY, new_secret_key);
+	await storage.setItem(ATTEMPT_ETH_ADDRESS, ethAddress);
 
 	return await createAccount({ signer, newAccountId, fundingAccountPubKey, fundingAccountCB, fundingErrorCB, postFundingCB });
 };
@@ -157,7 +176,7 @@ const createAccount = async ({ signer, newAccountId, fundingAccountPubKey, fundi
 
 	/// wait for implicit funding here and then continue to createAccount
 	const checkImplicitFunded = async () => {
-		logger('checking for funding of implicit account', implicitAccountId)
+		logger.log('checking for funding of implicit account', implicitAccountId)
 		const account = new Account(connection, implicitAccountId)
 		try {
 			const balance = await account.getAccountBalance()
@@ -171,7 +190,7 @@ const createAccount = async ({ signer, newAccountId, fundingAccountPubKey, fundi
 			}
 		} catch (e) {
 			if (!/does not exist/gi.test(e.toString())) throw e
-			logger('not funded, checking again')
+			logger.log('not funded, checking again')
 			await new Promise((r) => setTimeout(r, FUNDING_CHECK_TIMEOUT))
 			return await checkImplicitFunded()
 		}
@@ -179,11 +198,11 @@ const createAccount = async ({ signer, newAccountId, fundingAccountPubKey, fundi
 	}
 	/// if not funded properly, return and reload
 	if (!(await checkImplicitFunded())) return window.location.reload()
-	logger('implicit account funded', implicitAccountId)
+	logger.log('implicit account funded', implicitAccountId)
 
 	if (postFundingCB) postFundingCB()
 
-	const { account, ethAddress } = setupFromStorage(implicitAccountId);
+	const { account, ethAddress } = await setupFromStorage(implicitAccountId);
 
 	/// final checks, last chance to cancel funding if they fail
 	if (await accountExists(newAccountId, ethAddress)) {
@@ -198,10 +217,10 @@ const createAccount = async ({ signer, newAccountId, fundingAccountPubKey, fundi
 		signer,
 		unlimitedKeyPayload(newAccountId, ethAddress),
 	);
-	set(ATTEMPT_SECRET_KEY, new_secret_key);
+	await storage.setItem(ATTEMPT_SECRET_KEY, new_secret_key);
 	// remove any existing app key
-	del(APP_KEY_ACCOUNT_ID);
-	del(APP_KEY_SECRET);
+	await storage.removeItem(APP_KEY_ACCOUNT_ID);
+	await storage.removeItem(APP_KEY_SECRET);
 
 	try {
 		const res = await account.functionCall({
@@ -222,9 +241,9 @@ const createAccount = async ({ signer, newAccountId, fundingAccountPubKey, fundi
 	}
 	/// check
 	if (!(await accountExists(newAccountId))) {
-		return logger(`Account ${newAccountId} could NOT be created. Please refresh the page and try again.`);
+		return logger.log(`Account ${newAccountId} could NOT be created. Please refresh the page and try again.`);
 	}
-	logger(`Account ${newAccountId} created successfully.`);
+	logger.log(`Account ${newAccountId} created successfully.`);
 	/// drain implicit
 	await account.deleteAccount(newAccountId);
 
@@ -232,7 +251,7 @@ const createAccount = async ({ signer, newAccountId, fundingAccountPubKey, fundi
 };
 
 export const handleCancelFunding = async (fundingAccountId) => {
-	const { account } = setupFromStorage(fundingAccountId);
+	const { account } = await setupFromStorage(fundingAccountId);
 	const refundAccountId = window.prompt(`There was an error creating the account. You need to refund and try again. Please enter the account you funded from. MAKE SURE IT IS CORRECT. THIS CANNOT BE UNDONE.`)
 	/// drain implicit
 	try {
@@ -241,14 +260,14 @@ export const handleCancelFunding = async (fundingAccountId) => {
 		console.warn('Cannot delete implicit')
 	} finally {
 		/// delete attempt
-		del(ATTEMPT_ACCOUNT_ID);
-		del(ATTEMPT_SECRET_KEY);
-		del(ATTEMPT_ETH_ADDRESS);
+		await storage.removeItem(ATTEMPT_ACCOUNT_ID);
+		await storage.removeItem(ATTEMPT_SECRET_KEY);
+		await storage.removeItem(ATTEMPT_ETH_ADDRESS);
 	}
 }
 
 export const handleMapping = async () => {
-	const { account, ethAddress } = setupFromStorage();
+	const { account, ethAddress } = await setupFromStorage();
 	try {
 		const res = await account.functionCall({
 			contractId: NETWORK[networkId].MAP_ACCOUNT_ID,
@@ -258,39 +277,39 @@ export const handleMapping = async () => {
 			attachedDeposit: attachedDepositMapping,
 		});
 		if (res?.status?.SuccessValue !== "") {
-			return logger(`Account mapping failed`);
+			return logger.log(`Account mapping failed`);
 		}
-		logger(`Account mapping successful`);
+		logger.log(`Account mapping successful`);
 	} catch (e) {
 		console.warn(e);
-		return logger(`Account mapping failed`);
+		return logger.log(`Account mapping failed`);
 	}
 	return await handleDeployContract();
 };
 
 export const handleDeployContract = async () => {
-	const { account } = setupFromStorage();
+	const { account } = await setupFromStorage();
 
 	const contractPath = window?.contractPath;
-	// logger(contractPath)
+	// logger.log(contractPath)
 	const contractBytes = new Uint8Array(await fetch(contractPath).then((res) => res.arrayBuffer()));
-	// logger("contractBytes.length", contractBytes.length);
+	// logger.log("contractBytes.length", contractBytes.length);
 	try {
 		const res = await account.deployContract(contractBytes);
 		if (res?.status?.SuccessValue !== "") {
-			return logger(`Contract deployment failed. ${REFRESH_MSG}`);
+			return logger.log(`Contract deployment failed. ${REFRESH_MSG}`);
 		}
-		logger(`Contract deployed successfully.`);
+		logger.log(`Contract deployed successfully.`);
 	} catch(e) {
 		console.warn(e);
-		return logger(`Contract deploy failed`);
+		return logger.log(`Contract deploy failed`);
 	}
 	
 	return await handleSetupContract();
 };
 
 export const handleSetupContract = async () => {
-	const { account, ethAddress } = setupFromStorage();
+	const { account, ethAddress } = await setupFromStorage();
 
 	try {
 		const res = await account.functionCall({
@@ -300,19 +319,19 @@ export const handleSetupContract = async () => {
 			gas,
 		});
 		if (res?.status?.SuccessValue !== "") {
-			return logger(`Contract setup failed. ${REFRESH_MSG}`);
+			return logger.log(`Contract setup failed. ${REFRESH_MSG}`);
 		}
-		logger(`Contract setup successfully.`);
+		logger.log(`Contract setup successfully.`);
 	} catch(e) {
 		console.warn(e);
-		return logger(`Contract setup failed. ${REFRESH_MSG}`);
+		return logger.log(`Contract setup failed. ${REFRESH_MSG}`);
 	}
 
 	return await handleKeys();
 };
 
 export const handleKeys = async () => {
-	const { account, newAccountId, ethAddress } = setupFromStorage();
+	const { account, newAccountId, ethAddress } = await setupFromStorage();
 	const accessKeys = await account.getAccessKeys();
 	// keys are done
 	if (accessKeys.length !== 1 || accessKeys[0]?.access_key?.permission !== "FullAccess") return;
@@ -329,12 +348,12 @@ export const handleKeys = async () => {
 			actions,
 		});
 		if (res?.status?.SuccessValue !== "") {
-			return logger(`Key rotation failed. ${REFRESH_MSG}`);
+			return logger.log(`Key rotation failed. ${REFRESH_MSG}`);
 		}
-		logger(`Key rotation successful.`);
+		logger.log(`Key rotation successful.`);
 	} catch (e) {
 		console.warn(e)
-		return logger(`Key rotation failed. ${REFRESH_MSG}`);
+		return logger.log(`Key rotation failed. ${REFRESH_MSG}`);
 	}
 	return await handleCheckAccount({ ethAddress });
 };
@@ -344,17 +363,17 @@ export const handleKeys = async () => {
 export const handleCheckAccount = async ({
 	signer, ethAddress, fundingAccountCB, fundingErrorCB, postFundingCB
 }) => {
-	let { newAccountId, newSecretKey } = setupFromStorage();
+	let { newAccountId, newSecretKey } = await setupFromStorage();
 
 	const mapAccountId = await getNearMap(ethAddress);
 	if (!mapAccountId) {
 		// alert("create account first");
-		logger("No account mapping exists.");
+		logger.log("No account mapping exists.");
 	} else {
 		newAccountId = mapAccountId;
 	}
 
-	logger("Checking account created.");
+	logger.log("Checking account created.");
 	if (!(await accountExists(newAccountId))) {
 		const keyPair = KeyPair.fromString(newSecretKey);
 		return createAccount({
@@ -369,7 +388,7 @@ export const handleCheckAccount = async ({
 
 	const account = new Account(connection, newAccountId);
 
-	logger("Checking account address mapping.");
+	logger.log("Checking account address mapping.");
 	const mapRes = await account.viewFunction(NETWORK[networkId].MAP_ACCOUNT_ID, "get_eth", {
 		account_id: newAccountId,
 	});
@@ -377,13 +396,13 @@ export const handleCheckAccount = async ({
 		return handleMapping(account, ethAddress);
 	}
 
-	logger("Checking contract deployed.");
+	logger.log("Checking contract deployed.");
 	const state = await account.state();
 	if (state.code_hash === "11111111111111111111111111111111") {
 		return handleDeployContract();
 	}
 
-	logger("Checking contract setup.");
+	logger.log("Checking contract setup.");
 	try {
 		const ethRes = await account.viewFunction(newAccountId, "get_address");
 		// any reason the address wasn't set properly
@@ -396,20 +415,20 @@ export const handleCheckAccount = async ({
 		return handleSetupContract();
 	}
 
-	logger("Checking access keys.");
+	logger.log("Checking access keys.");
 	const accessKeys = await account.getAccessKeys();
 	if (accessKeys.length === 1 && accessKeys[0]?.access_key?.permission === "FullAccess") {
 		return handleKeys(account);
 	}
 
-	logger("Account created.");
-	logger("Contract deployed and setup.");
-	logger("Mapping added.");
-	logger("Keys rotated.");
+	logger.log("Account created.");
+	logger.log("Contract deployed and setup.");
+	logger.log("Mapping added.");
+	logger.log("Keys rotated.");
 
-	del(ATTEMPT_ACCOUNT_ID);
-	del(ATTEMPT_SECRET_KEY);
-	del(ATTEMPT_ETH_ADDRESS);
+	await storage.removeItem(ATTEMPT_ACCOUNT_ID);
+	await storage.removeItem(ATTEMPT_SECRET_KEY);
+	await storage.removeItem(ATTEMPT_ETH_ADDRESS);
 
 	return { account };
 };
@@ -432,7 +451,7 @@ export const handleRefreshAppKey = async (signer, ethAddress) => {
 	const nonce = parseInt(await account.viewFunction(accountId, "get_nonce"), 16).toString();
 	// new public key based on current nonce which will become the app_key_nonce in contract after this TX
 	const { publicKey, secretKey } = await keyPairFromEthSig(signer, appKeyPayload(accountId, nonce));
-	// logger(publicKey);
+	// logger.log(publicKey);
 	const public_key = pub2hex(publicKey);
 	const actions = [
 		{
@@ -479,10 +498,10 @@ export const handleRefreshAppKey = async (signer, ethAddress) => {
 	});
 
 	if (res?.status?.SuccessValue !== "") {
-		return logger(`App key rotation unsuccessful. ${REFRESH_MSG}`);
+		return logger.log(`App key rotation unsuccessful. ${REFRESH_MSG}`);
 	}
-	del(APP_KEY_SECRET);
-	del(APP_KEY_ACCOUNT_ID);
+	await storage.removeItem(APP_KEY_SECRET);
+	await storage.removeItem(APP_KEY_ACCOUNT_ID);
 	return { publicKey: public_key, secretKey };
 };
 
@@ -513,7 +532,7 @@ export const handleUpdateContract = async (signer, ethAddress) => {
 		gas,
 	});
 	if (res?.status?.SuccessValue !== "") {
-		return logger(`Redeply contract unsuccessful. ${REFRESH_MSG}`);
+		return logger.log(`Redeply contract unsuccessful. ${REFRESH_MSG}`);
 	}
 };
 
@@ -613,9 +632,9 @@ export const handleDisconnect = async (signer, ethAddress) => {
 			args: {},
 			gas,
 		});
-		logger(res);
+		logger.log(res);
 		if (res?.status?.SuccessValue !== "") {
-			logger("account mapping removal failed");
+			logger.log("account mapping removal failed");
 		}
 	} catch (e) {
 		console.warn(e);
@@ -626,10 +645,10 @@ export const handleDisconnect = async (signer, ethAddress) => {
 
 /// helpers for account creation and connection domain
 
-const setupFromStorage = (accountId) => {
-	const newAccountId = accountId || get(ATTEMPT_ACCOUNT_ID);
-	const newSecretKey = get(ATTEMPT_SECRET_KEY);
-	const ethAddress = get(ATTEMPT_ETH_ADDRESS);
+const setupFromStorage = async (accountId) => {
+	const newAccountId = accountId || await storage.getItem(ATTEMPT_ACCOUNT_ID);
+	const newSecretKey = await storage.getItem(ATTEMPT_SECRET_KEY);
+	const ethAddress = await storage.getItem(ATTEMPT_ETH_ADDRESS);
 	const account = new Account(connection, newAccountId);
 	let keyPair;
 	if (newSecretKey) {
@@ -639,9 +658,9 @@ const setupFromStorage = (accountId) => {
 	return { newAccountId, newSecretKey, ethAddress, account, keyPair };
 };
 
-const getUnlimitedKeyAccount = async (signer, ethAddress) => {
+const getUnlimitedKeyAccount = async (signer, ethAddress, tryPrevUrl = false) => {
 	let accountId,
-		secretKey = get(ATTEMPT_SECRET_KEY);
+		secretKey = await storage.getItem(ATTEMPT_SECRET_KEY);
 	// if unlimited allowance access key is not in localStorage user will have to sign to generate it
 	if (!secretKey) {
 		// TODO remove dep on near-utils
@@ -649,14 +668,21 @@ const getUnlimitedKeyAccount = async (signer, ethAddress) => {
 		accountId = await getNearMap(ethAddress);
 		const { secretKey: _secretKey } = await keyPairFromEthSig(
 			signer,
-			unlimitedKeyPayload(accountId, ethAddress),
+			unlimitedKeyPayload(accountId, tryPrevUrl),
 		);
 		secretKey = _secretKey;
 	} else {
-		accountId = get(ATTEMPT_ACCOUNT_ID);
+		accountId = await storage.getItem(ATTEMPT_ACCOUNT_ID);
 	}
 	const account = new Account(connection, accountId);
 	const keyPair = KeyPair.fromString(secretKey);
+	const publicKey = keyPair.publicKey.toString();
+	/// check if access key matches
+	const accessKeys = await account.getAccessKeys()
+	if (!accessKeys.some(({ public_key }) => publicKey === public_key)) {
+		return await getUnlimitedKeyAccount(signer, ethAddress, true)
+	}
+
 	keyStore.setKey(networkId, accountId, keyPair);
 	return { account, accountId, secretKey };
 };
@@ -671,9 +697,9 @@ const appKeyPayload = (accountId, appKeyNonce) => ({
 	description: `ONLY sign this on apps you trust! This key CAN use up to 1 N for transactions.`,
 });
 
-const unlimitedKeyPayload = (accountId) => ({
+const unlimitedKeyPayload = (accountId, tryPrevUrl) => ({
 	WARNING: `Creates a key with access to your (new) paired NEAR Account: ${accountId}`,
-	description: `ONLY sign this message on this website: ${NETH_SITE_URL}`,
+	description: `ONLY sign this message on this website: ${tryPrevUrl ? PREV_NETH_SITE_URL : NETH_SITE_URL}`,
 });
 
 const fundingKeyPayload = () => ({
@@ -766,7 +792,7 @@ const ethSignJson = async (signer, json) => {
 		sig,
 		msg: json,
 	};
-	// logger('\nargs\n', JSON.stringify(args, null, 4), '\n');
+	// logger.log('\nargs\n', JSON.stringify(args, null, 4), '\n');
 	return args;
 };
 
@@ -788,7 +814,7 @@ export const getEthereum = async () => {
 	const provider = await detectEthereumProvider()
 
 	if (!provider) {
-		return alert('Please install MetaMask and try again.')
+		return alert('Please install/activate MetaMask and try again.')
 	}
 
 	try {
@@ -847,8 +873,8 @@ export const getNearMap = async (eth_address) => {
 };
 
 export const getNear = async () => {
-	const secretKey = get(APP_KEY_SECRET);
-	const accountId = get(APP_KEY_ACCOUNT_ID);
+	const secretKey = await storage.getItem(APP_KEY_SECRET);
+	const accountId = await storage.getItem(APP_KEY_ACCOUNT_ID);
 	if (!secretKey || !accountId) {
 		const res = await getAppKey(await getEthereum());
 		if (!res) return false
@@ -857,18 +883,19 @@ export const getNear = async () => {
 	const account = new Account(connection, accountId);
 	const keyPair = KeyPair.fromString(secretKey);
 	keyStore.setKey(networkId, accountId, keyPair);
+		
 	return { account, accountId, keyPair, secretKey };
 };
 
 export const signIn = getNear;
 
 export const signOut = async () => {
-	const accountId = get(APP_KEY_ACCOUNT_ID);
+	const accountId = await storage.getItem(APP_KEY_ACCOUNT_ID);
 	if (!accountId) {
 		return console.warn("already signed out");
 	}
-	del(APP_KEY_SECRET);
-	del(APP_KEY_ACCOUNT_ID);
+	await storage.removeItem(APP_KEY_SECRET);
+	await storage.removeItem(APP_KEY_ACCOUNT_ID);
 	return { accountId };
 };
 
@@ -913,8 +940,10 @@ export const verifyOwner = async ({ message, provider, account }) => {
 	};
 }
 
-export const isSignedIn = () => {
-	return !!get(APP_KEY_SECRET) || !!get(APP_KEY_ACCOUNT_ID);
+export const isSignedIn = async () => {
+	/// init defaultStorage here because it's not initialized until initConnection
+	const storage = defaultStorage(WS_STORAGE_NAMESPACE)
+	return !!await storage.getItem(APP_KEY_SECRET) || !!await storage.getItem(APP_KEY_ACCOUNT_ID);
 };
 
 const promptValidAccountId = async (msg) => {
@@ -941,6 +970,7 @@ const promptValidAccountId = async (msg) => {
 export const getAppKey = async ({ signer, ethAddress: eth_address }) => {
 
 	let accountId = await getNearMap(eth_address);
+
 	if (!accountId) {
 
 		const tryAgain = window.confirm(`Ethereum account ${eth_address} is not connected to a NETH account. Would you like to try another Ethereum account?`)
@@ -982,12 +1012,38 @@ export const getAppKey = async ({ signer, ethAddress: eth_address }) => {
 	}
 	const keyPair = KeyPair.fromString(secretKey);
 	keyStore.setKey(networkId, accountId, keyPair);
-	set(APP_KEY_SECRET, secretKey);
-	set(APP_KEY_ACCOUNT_ID, account.accountId);
+	await storage.setItem(APP_KEY_SECRET, secretKey);
+	await storage.setItem(APP_KEY_ACCOUNT_ID, account.accountId);
 	return { publicKey, secretKey, account };
 };
 
-export const signAndSendTransactions = async ({ transactions }) => {
+const broadcastTXs = async () => {
+	const { account, accountId } = await getNear();
+	let args = await storage.getItem(TX_ARGS_ATTEMPT)
+	if (!args || args.length === 0) return
+
+	let res = []
+	while (args.length > 0) {
+		const currentArgs = args.shift()
+		logger.log("NETH: broadcasting tx", currentArgs);
+		try {
+			const tx = await account.functionCall({
+				contractId: accountId,
+				methodName: "execute",
+				args: currentArgs,
+				gas,
+			})
+			await storage.setItem(TX_ARGS_ATTEMPT, args)
+			res.push(tx);
+		} catch(e) {
+			logger.log("NETH: ERROR broadcasting tx", e);
+		}
+	}
+	await storage.removeItem(TX_ARGS_ATTEMPT)
+	return res
+}
+
+export const signAndSendTransactions = async ({ transactions, bundle }) => {
 	const { signer } = await getEthereum();
 	const { account, accountId } = await getNear();
 
@@ -996,19 +1052,28 @@ export const signAndSendTransactions = async ({ transactions }) => {
 		actions: convertActions(actions, accountId, receiverId),
 	}));
 
-	const nonce = parseInt(await account.viewFunction(accountId, "get_nonce"), 16).toString();
-	const args = await ethSignJson(signer, {
-		nonce,
-		receivers,
-		transactions: transformedTxs,
-	});
+	const nonce = parseInt(await account.viewFunction(accountId, "get_nonce"), 16);
+	let args = []
+	if (!bundle) {
+        for (let i = 0; i < transformedTxs.length; i++) {
+			args.push(await ethSignJson(signer, {
+				nonce: (nonce + i).toString(),
+				receivers: [receivers[i]],
+				transactions: [transformedTxs[i]],
+			}));
+		}
+	} else {
+		args.push(await ethSignJson(signer, {
+			nonce: nonce.toString(),
+			receivers,
+			transactions: transformedTxs,
+		}));
+	}
 
-	const res = await account.functionCall({
-		contractId: accountId,
-		methodName: "execute",
-		args,
-		gas,
-	});
+	await storage.setItem(TX_ARGS_ATTEMPT, args)
+
+	const res = await broadcastTXs()
+
 	return res;
 };
 

@@ -11,5 +11,6 @@ export interface NethParams {
     useModalCover?: boolean;
     iconUrl?: string;
     gas?: string;
+    bundle?: boolean;
 }
-export declare function setupNeth({ useModalCover, gas, iconUrl, }?: NethParams): WalletModuleFactory<InjectedWallet>;
+export declare function setupNeth({ useModalCover, bundle: _bundle, gas, iconUrl, }?: NethParams): WalletModuleFactory<InjectedWallet>;

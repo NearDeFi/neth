@@ -56,14 +56,20 @@ var isInstalled = function () { return __awaiter(void 0, void 0, void 0, functio
         }
     });
 }); };
+var bundle = true;
 var useCover = false;
 var customGas;
 var Neth = function (_a) {
-    var metadata = _a.metadata, logger = _a.logger, store = _a.store, options = _a.options, provider = _a.provider;
+    var metadata = _a.metadata, logger = _a.logger, store = _a.store, storage = _a.storage, options = _a.options, provider = _a.provider;
     return __awaiter(void 0, void 0, void 0, function () {
         var cover, isValidActions, transformActions, signTransactions;
         return __generator(this, function (_b) {
-            cover = (0, neth_lib_1.initConnection)({ network: options.network, gas: customGas });
+            cover = (0, neth_lib_1.initConnection)({
+                network: options.network,
+                gas: customGas,
+                logger: logger,
+                storage: storage,
+            });
             isValidActions = function (actions) {
                 return actions.every(function (x) { return x.type === "FunctionCall"; });
             };
@@ -81,7 +87,9 @@ var Neth = function (_a) {
                         case 0:
                             logger.log("NETH:signAndSendTransactions", { transactions: transactions });
                             contract = store.getState().contract;
-                            if (!(0, neth_lib_1.isSignedIn)() || !contract) {
+                            return [4 /*yield*/, (0, neth_lib_1.isSignedIn)()];
+                        case 1:
+                            if (!(_a.sent()) || !contract) {
                                 throw new Error("Wallet not signed in");
                             }
                             if (useCover) {
@@ -94,19 +102,22 @@ var Neth = function (_a) {
                                     actions: transformActions(actions),
                                 });
                             });
-                            _a.label = 1;
-                        case 1:
-                            _a.trys.push([1, 3, , 4]);
+                            _a.label = 2;
+                        case 2:
+                            _a.trys.push([2, 4, , 5]);
                             return [4 /*yield*/, (0, neth_lib_1.signAndSendTransactions)({
                                     transactions: transformedTxs,
+                                    bundle: bundle,
                                 })];
-                        case 2:
-                            res = _a.sent();
-                            return [3 /*break*/, 4];
                         case 3:
-                            e_1 = _a.sent();
-                            return [3 /*break*/, 4];
+                            res = _a.sent();
+                            return [3 /*break*/, 5];
                         case 4:
+                            e_1 = _a.sent();
+                            /// "user rejected signing" or near network error
+                            logger.log("NETH:signAndSendTransactions Error", e_1);
+                            throw e_1;
+                        case 5:
                             if (useCover) {
                                 cover.style.display = "none";
                             }
@@ -194,7 +205,7 @@ var Neth = function (_a) {
 };
 function setupNeth(_a) {
     var _this = this;
-    var _b = _a === void 0 ? {} : _a, _c = _b.useModalCover, useModalCover = _c === void 0 ? false : _c, gas = _b.gas, _d = _b.iconUrl, iconUrl = _d === void 0 ? icons_1.nethIcon : _d;
+    var _b = _a === void 0 ? {} : _a, _c = _b.useModalCover, useModalCover = _c === void 0 ? false : _c, _d = _b.bundle, _bundle = _d === void 0 ? true : _d, gas = _b.gas, _e = _b.iconUrl, iconUrl = _e === void 0 ? icons_1.nethIcon : _e;
     return function () { return __awaiter(_this, void 0, void 0, function () {
         var installed;
         return __generator(this, function (_a) {
@@ -202,6 +213,7 @@ function setupNeth(_a) {
                 case 0:
                     useCover = useModalCover;
                     customGas = gas;
+                    bundle = _bundle;
                     return [4 /*yield*/, isInstalled()];
                 case 1:
                     installed = _a.sent();
