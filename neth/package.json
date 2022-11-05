@@ -1,6 +1,6 @@
 {
   "name": "neth",
-  "version": "7.1.1",
+  "version": "7.1.2",
   "description": "control NEAR accounts with ETH accounts",
   "main": "./lib/index.js",
   "scripts": {

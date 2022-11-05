@@ -2,8 +2,10 @@ import type { WalletModuleFactory, InjectedWallet } from "@near-wallet-selector/
 export { initConnection } from "./neth-lib";
 declare global {
     interface Window {
+        contractPath: string | null;
         ethereum: {
             chainId: string;
+            request: any;
         };
     }
 }
