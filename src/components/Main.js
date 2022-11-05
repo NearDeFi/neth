@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React from 'react';
 import {
 	getNear,
 	handleCreate,
@@ -6,6 +6,7 @@ import {
 	handleCheckAccount,
 	getNearMap,
 	handleDisconnect,
+	handleUpdateContract,
 	handleCancelFunding,
 	handleRefreshAppKey,
 	signIn,
@@ -27,12 +28,12 @@ window.contractPath = contractPath
 const isMobile = (() => {
 	let check = false;
 	(function (a) {
-	  if (
-		/(android|bb\d+|meego).+mobile|avantgo|bada\/|blackberry|blazer|compal|elaine|fennec|hiptop|iemobile|ip(hone|od)|iris|kindle|lge |maemo|midp|mmp|mobile.+firefox|netfront|opera m(ob|in)i|palm( os)?|phone|p(ixi|re)\/|plucker|pocket|psp|series(4|6)0|symbian|treo|up\.(browser|link)|vodafone|wap|windows ce|xda|xiino|android|ipad|playbook|silk/i.test(
-		  a,
+		if (
+			/(android|bb\d+|meego).+mobile|avantgo|bada\/|blackberry|blazer|compal|elaine|fennec|hiptop|iemobile|ip(hone|od)|iris|kindle|lge |maemo|midp|mmp|mobile.+firefox|netfront|opera m(ob|in)i|palm( os)?|phone|p(ixi|re)\/|plucker|pocket|psp|series(4|6)0|symbian|treo|up\.(browser|link)|vodafone|wap|windows ce|xda|xiino|android|ipad|playbook|silk/i.test(
+				a,
+			)
 		)
-	  )
-		check = true;
+			check = true;
 	})(navigator.userAgent || navigator.vendor);
 	return check;
 })();
@@ -262,7 +263,7 @@ export const Main = ({
 								</>)
 							}} /></button>
 
-							<h4>Disconnect Account</h4>
+							<h4>NETH Account Admin</h4>
 
 							<button aria-busy={loading} disabled={loading} onClick={handleAction(async () => {
 
@@ -282,16 +283,19 @@ export const Main = ({
 									<button onClick={closeDialog}>Ok</button>
 								</>)
 							}} /></button>
-							<br />
-							<br />
-							{/* <br />
 							<button aria-busy={loading} disabled={loading} onClick={handleAction(async () => {
-
 								await handleUpdateContract(signer, ethAddress)
 								alert('Contract Updated')
-
-							})}>Update Contract</button>
-							<p>This method will ask the user to approve a contract update to their NEAR account.</p> */}
+							})}>Update Contract <Info onClick={(e) => {
+								e.stopPropagation();
+								update('dialog', <>
+									<p>This will update your NETH account to the latest version of the NETH contract.</p>
+									<button onClick={closeDialog}>Ok</button>
+								</>)
+							}} /></button>
+							<br />
+							<br />
+							<br />
 
 						</>
 					}

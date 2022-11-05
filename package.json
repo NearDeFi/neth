@@ -36,7 +36,7 @@
 		"build": "yarn build-lib && parcel build src/index.html --public-url ./ --no-source-maps && yarn static",
 		"static": "cp -R ./static/* ./dist",
 		"clean": "rimraf ./dist ./.parcel-cache",
-		"start": "parcel src/index.html --open",
+		"start": "yarn static && parcel src/index.html --open",
 		"mainnet": "REACT_APP_NETWORK_ID=mainnet parcel src/index.html --open",
 		"build-account-map": "cd account-map && ./build.sh && cd ..",
 		"deploy-account-map": "yarn build-account-map && near deploy --accountId map.neth.testnet --wasmFile out/account-map.wasm",
@@ -45,7 +45,7 @@
 		"dev-deploy": "rm -rf neardev && (near dev-deploy || exit 0) && yarn patch-config",
 		"test-build": "yarn build-contract && yarn test",
 		"test-deploy": "yarn build-contract && yarn dev-deploy && yarn test",
-		"test": "ava test/contract.test.js -vs --timeout=5m",
+		"test": "REACT_APP_NETWORK_ID=testnet ava test/contract.test.js -vs --timeout=5m",
 		"deploy-app": "yarn clean; yarn build; yarn gh-pages -d dist",
 		"fix": "eslint test/ --fix"
 	}
