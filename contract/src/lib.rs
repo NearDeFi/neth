@@ -14,6 +14,7 @@ const TEMP_REGISTER: u64 = 0;
 const REGISTER_1: u64 = 1;
 /// string literals (improve readability)
 const DOUBLE_QUOTE_BYTE: u8 = b'\"';
+const ZERO_X: &str = "0x";
 const EXECUTE: &str = "execute";
 /// string literals in action payload parsing (improve readability)
 const ARG_PREFIX: &str = "|NETH_";
@@ -320,8 +321,8 @@ pub fn execute() {
 						args = args.replacen(RECEIVER_MARKER, receiver_id, 1);
 					}
 
-					if &args[0..2] == "0x" {
-						let final_args = hex_decode(&args.as_bytes());
+					if &args[0..2] == ZERO_X {
+						let final_args = hex_decode(args.replacen(ZERO_X, "", 1));
 						unsafe {
 							near_sys::promise_batch_action_function_call(
 								id,
@@ -346,7 +347,6 @@ pub fn execute() {
 							)
 						};
 					}
-					
 				}
 				b"DeployContract" => {
 					// type, code
