@@ -262,7 +262,7 @@ var createAccount = function (_a) {
                 case 0:
                     implicitAccountId = Buffer.from(PublicKey.from(fundingAccountPubKey).data).toString("hex");
                     if (fundingAccountCB) {
-                        Buffer.from(fundingAccountCB(PublicKey.from(fundingAccountPubKey).data).toString("hex"));
+                        fundingAccountCB(implicitAccountId);
                     }
                     checkImplicitFunded = function () { return __awaiter(void 0, void 0, void 0, function () {
                         var account, balance, available, diff, e_3;

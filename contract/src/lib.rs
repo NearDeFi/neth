@@ -320,24 +320,33 @@ pub fn execute() {
 						args = args.replacen(RECEIVER_MARKER, receiver_id, 1);
 					}
 
-					let final_args;
 					if &args[0..2] == "0x" {
-						final_args = hex_decode(&args.as_bytes());
+						let final_args = hex_decode(&args.as_bytes());
+						unsafe {
+							near_sys::promise_batch_action_function_call(
+								id,
+								method_name.len() as u64,
+								method_name.as_ptr() as u64,
+								final_args.len() as u64,
+								final_args.as_ptr() as u64,
+								amount.to_le_bytes().as_ptr() as u64,
+								gas,
+							)
+						};
 					} else {
-						final_args = Vec::from(args);
+						unsafe {
+							near_sys::promise_batch_action_function_call(
+								id,
+								method_name.len() as u64,
+								method_name.as_ptr() as u64,
+								args.len() as u64,
+								args.as_ptr() as u64,
+								amount.to_le_bytes().as_ptr() as u64,
+								gas,
+							)
+						};
 					}
-
-					unsafe {
-						near_sys::promise_batch_action_function_call(
-							id,
-							method_name.len() as u64,
-							method_name.as_ptr() as u64,
-							final_args.len() as u64,
-							final_args.as_ptr() as u64,
-							amount.to_le_bytes().as_ptr() as u64,
-							gas,
-						)
-					};
+					
 				}
 				b"DeployContract" => {
 					// type, code
