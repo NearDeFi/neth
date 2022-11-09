@@ -322,7 +322,7 @@ pub fn execute() {
 					}
 
 					if &args[0..2] == ZERO_X {
-						let final_args = hex_decode(args.replacen(ZERO_X, "", 1));
+						let final_args = hex_decode(&args[2..]);
 						unsafe {
 							near_sys::promise_batch_action_function_call(
 								id,
