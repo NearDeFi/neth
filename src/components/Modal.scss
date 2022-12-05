@@ -18,7 +18,7 @@
 	> div {
 		border-radius: 8px;
 		width: calc(100% + 16px);
-		max-width: 416px;
+		max-width: calc(100vw - 32px);
 		padding: 16px;
 		padding-bottom: 0;
 		background: white;
@@ -46,4 +46,29 @@
 			margin-bottom: 16px;
 		}
 	}
+}
+
+.tos {
+	height: auto;
+	max-height: 50vh;
+	overflow: hidden;
+	overflow-y: scroll;
+	margin-bottom: 16px;
+	padding-bottom: 32px;
+	> div {
+		display: flex;
+		align-items: center;
+		> p {
+			margin: 0 !important;
+			font-size: 0.8rem;
+		}
+		> input {
+			padding: 0 !important;
+			height: 32px !important;
+			flex: 0 0 32px;
+			margin-left: 16px;
+			margin-right: 8px;
+		}
+	}
+	
 }

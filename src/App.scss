@@ -1,7 +1,11 @@
 
-body, h1, h2, h3, h4, h5, p, button {
+h1, h2, h3, h4, h5, p, button {
 	font-family: 'Inter', sans-serif !important;
 	margin-bottom: 16px !important;
+}
+
+a {
+	text-decoration: underline;
 }
 
 .container {
@@ -29,12 +33,18 @@ button {
 	> svg {
 		margin-right: -5px;
 	}
-
 	&.secondary {
 		background: none;
 		border-color: #eee;
 		color: var(--primary);
 	}
+}
+
+.app {
+	display: flex;
+	flex-direction: column;
+	justify-content: space-between;
+	height: 100vh;
 }
 
 header {
@@ -57,28 +67,34 @@ header {
 	}
 }
 
-.tos {
-	height: 400px;
-	overflow: hidden;
-	overflow-y: scroll;
-	margin-bottom: 16px;
-	padding-bottom: 32px;
+main {
+	flex: 1;
+}
+
+footer {
+	height: 220px;
+	background: radial-gradient(50% 50% at 50% 50%, #160740 0%, #0A0123 100%);
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	box-shadow: 0 0 16px rgba(0, 0, 0, 0.5);
 	> div {
+		width: 400px;
+		max-width: 400px !important;
 		display: flex;
 		align-items: center;
-		> p {
-			margin: 0 !important;
-			font-size: 0.8rem;
+		justify-content: center;
+		flex-direction: column;
+		> img {
+			margin: 16px 0;
 		}
-		> input {
-			padding: 0 !important;
-			height: 32px !important;
-			flex: 0 0 32px;
-			margin-left: 16px;
-			margin-right: 8px;
+		> button.secondary {
+			width: 100% !important;
+			color: white;
+			border: none;
+			text-decoration: underline;
 		}
 	}
-	
 }
 
 .github-corner:hover .octo-arm {

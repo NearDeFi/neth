@@ -80,6 +80,7 @@ const App = () => {
 
 	const {
 		log,
+		app: { blocked },
 		suffix,
 		loading,
 		accountId,
@@ -176,6 +177,14 @@ const App = () => {
 		}
 	}
 
+	const tosPop = () => {
+		set(TOS_POP, true)
+		tosDialog(update, async () => {
+			await getEthereum()
+			updateEthState()
+		})
+	}
+
 	const componentState = {
 		state,
 		update,
@@ -187,6 +196,9 @@ const App = () => {
 
 	return <>
 		<Modal {...{ state, update }} />
+		
+		<div className="app">
+		
 		<header>
 			<div>
 				<img src={Logo} />
@@ -194,31 +206,49 @@ const App = () => {
 			</div>
 		</header>
 
+		{
+			blocked ?
+
+			<main className="container">
+				<h4>Blocked</h4>
+				<p>
+				Use of neth.app (NETH) is not available to people or companies who are residents of, or are
+            located, incorporated, or have a registered agent in, a restricted
+            territory. VPNs are also blocked.
+			</p>
+			<p>
+			For more information, please see the <a href="#" onClick={handleAction(tosPop)}>terms of service</a>.
+			</p>
+			</main>
+
+	:
 		<main className="container">
 
-			<button onClick={() => tosDialog(update)}>Terms of Service<span>Click to Read</span></button>
+		<a href={networkId === 'mainnet' ? window.location.href + '?network=testnet' : window.location.href.split('?')[0]}>
+			<button className='secondary'><span style={{ color: '#008800' }}>{networkId}</span>Click to Change</button>
+		</a>
 
-			<a href={networkId === 'mainnet' ? window.location.href + '?network=testnet' : window.location.href.split('?')[0]}>
-				<button className='secondary'><span style={{ color: '#008800' }}>{networkId}</span>Click to Change</button>
-			</a>
-
-			{
-				ethAddress.length === 0
-					?
-					<>
-						<h2>Create Account</h2>
-						<button aria-busy={loading} disabled={loading} onClick={handleAction(async () => {
-							set(TOS_POP, true)
-							tosDialog(update, async () => {
-								await getEthereum()
-								updateEthState()
-							})
-						})}>Choose Ethereum Account</button>
-					</>
-					:
-					<Main {...componentState} />
-			}
+		{
+			ethAddress.length === 0
+				?
+				<>
+					<h2>Create Account</h2>
+					<button aria-busy={loading} disabled={loading} onClick={handleAction(tosPop)}>Choose Ethereum Account</button>
+				</>
+				:
+				<Main {...componentState} />
+		}
 		</main>
+
+		}
+
+		<footer>
+			<div>
+		<button className="secondary" onClick={() => tosDialog(update)}>Terms of Service</button>
+		</div>
+		</footer>
+		
+		</div>
 	</>
 };
 

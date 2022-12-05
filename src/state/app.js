@@ -3,7 +3,8 @@ import { State } from '../utils/state';
 // example
 const initialState = {
 	app: {
-		mounted: false
+		mounted: false,
+		blocked: false,
 	},
 	dialogOk: false,
 	dialogOkDisabledKey: null,
@@ -22,7 +23,8 @@ export const { appStore, AppProvider } = State(initialState, 'app');
 
 // example app function
 export const onAppMount = () => async ({ update, getState, dispatch }) => {
-	update('app', { mounted: true });
+    const { blocked } = await fetch("https://brrr.burrow.cash/api/is-blocked").then((r) => r.json());
+	update('app', { blocked, mounted: true });
 };
 
 export const pushLog = (args) => async ({ update, getState }) => {
