@@ -244,7 +244,7 @@ const App = () => {
 
 		<footer>
 			<div>
-		<button className="secondary" onClick={() => tosDialog(update)}>Terms of Service</button>
+		<button className="secondary" onClick={() => tosDialog(update)}>Terms of Use</button>
 		</div>
 		</footer>
 		
