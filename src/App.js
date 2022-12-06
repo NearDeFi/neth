@@ -43,7 +43,7 @@ const tosDialog = (update, dialogCB) => update('', {
 		<div className="tos" onScroll={(e) => {
 			if (e.target.scrollTop > 550) update('tosUnread', false)
 		}}>
-			<p>By connecting a wallet, you acknowledge that you have read, understand and agree to the Terms of Use <a href="/tos.pdf" target="_blank">HERE</a>.</p>
+			<p>By connecting a wallet, you acknowledge that you have read, understand and agree to the <a href="/tos.pdf" target="_blank">Terms of Use (click here to read)</a>.</p>
 				<ul>
 				<li>You are not a person or company who is a resident of, is located, incorporated, or has a registered agent in a Restricted Territory (as defined in the Terms of Use).</li>
 				<li>You will not in the future access this site while located in the United States of America or a Restricted Territory.</li>
