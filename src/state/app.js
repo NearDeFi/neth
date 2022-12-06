@@ -23,7 +23,9 @@ export const { appStore, AppProvider } = State(initialState, 'app');
 
 // example app function
 export const onAppMount = () => async ({ update, getState, dispatch }) => {
-    const { blocked } = await fetch("https://brrr.burrow.cash/api/is-blocked").then((r) => r.json());
+    const res = await fetch('https://vpnapi.near.workers.dev/vpnapi').then((r) => r.json());
+	const { blocked } = res
+	if (typeof blocked != 'boolean') console.warn(res)
 	update('app', { blocked, mounted: true });
 };
 
