@@ -217,7 +217,7 @@ const App = () => {
             territory. VPNs are also blocked.
 			</p>
 			<p>
-			For more information, please see the <a href="#" onClick={handleAction(tosPop)}>terms of service</a>.
+			For more information, please see the <a href="/tos.pdf" target="_blank">Terms of Use (click here to read)</a>.
 			</p>
 			</main>
 
