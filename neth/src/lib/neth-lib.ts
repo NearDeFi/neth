@@ -937,6 +937,7 @@ const keyPairFromEthSig = async (signer, json) => {
 /// ethereum
 
 export const getEthereum = async () => {
+
   const provider = await detectEthereumProvider();
 
   if (!provider) {
@@ -949,7 +950,7 @@ export const getEthereum = async () => {
       params: [{ chainId: "0x" + domain.chainId.toString(16) }],
     });
   } catch (e: any) {
-    logger.log(e);
+    // logger.log(e);
     const code = e?.code || e?.data?.originalError?.code;
     if (code !== 4902) {
       throw e;
@@ -974,7 +975,7 @@ export const getEthereum = async () => {
       });
     } catch (e2) {
       alert(
-        'Error adding chain. Please click "Choose Ethereum Account" and add the Aurora Network to continue.'
+        'Please click on MetaMask and add the Aurora Network to continue.'
       );
       throw e2;
     }
@@ -1165,12 +1166,16 @@ export const getAppKey = async ({ signer, ethAddress: eth_address }) => {
 };
 
 const broadcastTXs = async () => {
-  const { account, accountId } = await getNear();
+
+  /// TODO update order in neth wallet-selector getNear after checking TX attempts
+
   const args = await storage.getItem(TX_ARGS_ATTEMPT);
   if (!args || args.length === 0) {
     return;
   }
 
+  const { account, accountId } = await getNear();
+  
   const res: Array<any> = [];
   while (args.length > 0) {
     const currentArgs = args.shift();

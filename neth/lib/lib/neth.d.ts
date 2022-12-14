@@ -10,9 +10,10 @@ declare global {
     }
 }
 export interface NethParams {
-    useModalCover?: boolean;
     iconUrl?: string;
     gas?: string;
+    useModalCover?: boolean;
     bundle?: boolean;
+    deprecated?: boolean;
 }
-export declare function setupNeth({ useModalCover, bundle: _bundle, gas, iconUrl, }?: NethParams): WalletModuleFactory<InjectedWallet>;
+export declare function setupNeth({ iconUrl, gas, useModalCover, bundle: _bundle, deprecated, }?: NethParams): WalletModuleFactory<InjectedWallet>;

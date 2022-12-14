@@ -87,10 +87,6 @@ const App = () => {
 		ethAddress,
 	} = state
 
-	const logger = {
-		log: (args) => dispatch(pushLog(args))
-	}
-
 	const updateEthState = async () => {
 
 		try {
@@ -105,7 +101,10 @@ const App = () => {
 					nodeUrl,
 					walletUrl,
 					helperUrl,
-				}, logger
+				},
+				logger: {
+					log: (args) => dispatch(pushLog(args))
+				}
 			})
 			const { accountSuffix } = getConnection()
 			update('suffix', accountSuffix)
@@ -180,7 +179,6 @@ const App = () => {
 	const tosPop = () => {
 		set(TOS_POP, true)
 		tosDialog(update, async () => {
-			await getEthereum()
 			updateEthState()
 		})
 	}

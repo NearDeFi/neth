@@ -1135,7 +1135,6 @@ var getEthereum = function () { return __awaiter(void 0, void 0, void 0, functio
                 return [3 /*break*/, 9];
             case 4:
                 e_11 = _d.sent();
-                logger.log(e_11);
                 code = (e_11 === null || e_11 === void 0 ? void 0 : e_11.code) || ((_c = (_b = e_11 === null || e_11 === void 0 ? void 0 : e_11.data) === null || _b === void 0 ? void 0 : _b.originalError) === null || _c === void 0 ? void 0 : _c.code);
                 if (code !== 4902) {
                     throw e_11;
@@ -1164,7 +1163,7 @@ var getEthereum = function () { return __awaiter(void 0, void 0, void 0, functio
                 return [3 /*break*/, 8];
             case 7:
                 e2_1 = _d.sent();
-                alert('Error adding chain. Please click "Choose Ethereum Account" and add the Aurora Network to continue.');
+                alert('Please click on MetaMask and add the Aurora Network to continue.');
                 throw e2_1;
             case 8: return [3 /*break*/, 9];
             case 9:
@@ -1412,18 +1411,18 @@ var getAppKey = function (_a) {
 };
 exports.getAppKey = getAppKey;
 var broadcastTXs = function () { return __awaiter(void 0, void 0, void 0, function () {
-    var _a, account, accountId, args, res, currentArgs, tx, e_13;
+    var args, _a, account, accountId, res, currentArgs, tx, e_13;
     return __generator(this, function (_b) {
         switch (_b.label) {
-            case 0: return [4 /*yield*/, (0, exports.getNear)()];
+            case 0: return [4 /*yield*/, storage.getItem(TX_ARGS_ATTEMPT)];
             case 1:
-                _a = _b.sent(), account = _a.account, accountId = _a.accountId;
-                return [4 /*yield*/, storage.getItem(TX_ARGS_ATTEMPT)];
-            case 2:
                 args = _b.sent();
                 if (!args || args.length === 0) {
                     return [2 /*return*/];
                 }
+                return [4 /*yield*/, (0, exports.getNear)()];
+            case 2:
+                _a = _b.sent(), account = _a.account, accountId = _a.accountId;
                 res = [];
                 _b.label = 3;
             case 3:

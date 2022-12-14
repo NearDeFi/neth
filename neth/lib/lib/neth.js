@@ -205,7 +205,7 @@ var Neth = function (_a) {
 };
 function setupNeth(_a) {
     var _this = this;
-    var _b = _a === void 0 ? {} : _a, _c = _b.useModalCover, useModalCover = _c === void 0 ? false : _c, _d = _b.bundle, _bundle = _d === void 0 ? true : _d, gas = _b.gas, _e = _b.iconUrl, iconUrl = _e === void 0 ? icons_1.nethIcon : _e;
+    var _b = _a === void 0 ? {} : _a, _c = _b.iconUrl, iconUrl = _c === void 0 ? icons_1.nethIcon : _c, gas = _b.gas, _d = _b.useModalCover, useModalCover = _d === void 0 ? false : _d, _e = _b.bundle, _bundle = _e === void 0 ? true : _e, _f = _b.deprecated, deprecated = _f === void 0 ? false : _f;
     return function () { return __awaiter(_this, void 0, void 0, function () {
         var installed;
         return __generator(this, function (_a) {
@@ -231,6 +231,7 @@ function setupNeth(_a) {
                                 deprecated: false,
                                 available: installed,
                             },
+                            deprecated: deprecated,
                             init: Neth,
                         }];
             }
