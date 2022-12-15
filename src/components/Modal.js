@@ -9,9 +9,11 @@ export const Modal = ({
 		loading, log, dialog, dialogOk, dialogCB, dialogOkKeys,
 	} = state
 
+	console.log('dialogOk', dialogOk)
+
 	if (!loading && !dialog) return null
 
-	const accepted = dialogOkKeys ? dialogOkKeys.reduce((a, c) => a && state[c] || false, true) : false
+	const accepted = dialogOkKeys ? dialogOkKeys.reduce((a, c) => a && state[c] || false, true) : true
 
 	return <div className="modal">
 		{(log.length > 0 || dialog) && <div>

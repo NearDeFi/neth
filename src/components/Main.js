@@ -91,7 +91,7 @@ export const Main = ({
 	const AccountStatus = ({ account }) => <>
 		<h4>NETH Status</h4>
 		<p>Account {account.accountId} on NEAR successfully paired with {ethAddress}!</p>
-		<button onClick={closeDialog}>Ok</button>
+		
 	</>
 
 	return <>
@@ -109,7 +109,7 @@ export const Main = ({
 			e.stopPropagation();
 			update('dialog', <>
 				<p>To sign out of your ethereum account completely, go to "Connected Sites" in your wallet (MetaMask) and disconnect this one.</p>
-				<button onClick={closeDialog}>Ok</button>
+				
 			</>)
 		}} /></button>
 		{
@@ -141,7 +141,6 @@ export const Main = ({
 								min 2, max 64<br />
 								.{networkId} is applied automatically
 							</p>
-							<button onClick={closeDialog}>Ok</button>
 						</>)
 					}} /></p>}
 				</>
@@ -160,7 +159,7 @@ export const Main = ({
 						e.stopPropagation();
 						update('dialog', <>
 							<p>This method is in case you closed your browser or had a bad network during account setup. It uses saved key material in localStorage to recover and complete the setup.</p>
-							<button onClick={closeDialog}>Ok</button>
+							
 						</>)
 					}} /></button>
 
@@ -168,7 +167,6 @@ export const Main = ({
 						const { publicKey } = await handleRefreshAppKey(signer, ethAddress)
 						update('dialog', <>
 							<p>New app key (publicKey): {publicKey} was added</p>
-							<button onClick={closeDialog}>Ok</button>
 						</>)
 						updateEthState()
 					})}>Get / Update App Key <Info onClick={(e) => {
@@ -177,7 +175,7 @@ export const Main = ({
 							<p>TLDR; You will be asked for 3-4 signatures</p>
 							<p>1 sig to access an unlimited allowance access key (this domain only); 1 sig for your new app key, (1 sig for if you have an old app key to delete), and 1 sig to execute the transaction.</p>
 							<p>This method will rotate the currently active app key and bump the app key nonce so malicious apps cannot repeatedly drain a new app key allowance (1 N). You should only sign on the setup domain which is why there is a warning in the payload that produces the app key material.</p>
-							<button onClick={closeDialog}>Ok</button>
+							
 						</>)
 					}} /></button>
 
@@ -228,7 +226,7 @@ export const Main = ({
 									<p>
 										A sample app that uses <a href="https://github.com/near/wallet-selector/" target="_blank">wallet-selector</a> and <a href="https://github.com/neardefi/neth" target="_blank">NETH</a> so you can try your account.
 									</p>
-									<button onClick={closeDialog}>Ok</button>
+									
 								</>)
 							}} /></button>
 
@@ -252,14 +250,14 @@ export const Main = ({
 								}
 								update('dialog', <>
 									<p>Transaction success, view on the <a href={`https://explorer.${networkId}.near.org/transactions/${res.transaction.hash}`} target="_blank">explorer</a>.</p>
-									<button onClick={closeDialog}>Ok</button>
+									
 								</>)
 
 							})}>Test Transfer <Info onClick={(e) => {
 								e.stopPropagation();
 								update('dialog', <>
 									<p>Test your NETH account by transferring 1 yocto to yourself.</p>
-									<button onClick={closeDialog}>Ok</button>
+									
 								</>)
 							}} /></button>
 
@@ -271,7 +269,7 @@ export const Main = ({
 
 								update('dialog', <>
 									<p>Account {account.accountId} disconnected from {ethAddress} successfully!</p>
-									<button onClick={closeDialog}>Ok</button>
+									
 								</>)
 
 								update('mapAccountId', (await getNearMap(ethAddress)))
@@ -280,7 +278,7 @@ export const Main = ({
 								update('dialog', <>
 									<p>This will prompt you with a seed phrase. Copy it somewhere safe! Then it will disconnect your NEAR account from your Ethereum Address.</p>
 									<p>You can import your seed phrase into any NEAR wallet e.g. <a href={`https://${networkId === 'testnet' ? networkId : 'app'}.mynearwallet.com`} target="_blank">MyNearWallet</a></p>
-									<button onClick={closeDialog}>Ok</button>
+									
 								</>)
 							}} /></button>
 							<button aria-busy={loading} disabled={loading} onClick={handleAction(async () => {
@@ -290,7 +288,7 @@ export const Main = ({
 								e.stopPropagation();
 								update('dialog', <>
 									<p>This will update your NETH account to the latest version of the NETH contract.</p>
-									<button onClick={closeDialog}>Ok</button>
+									
 								</>)
 							}} /></button>
 							<br />
