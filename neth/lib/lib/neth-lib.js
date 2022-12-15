@@ -120,7 +120,7 @@ var defaultStorage = function (prefix) {
     return ({
         getItem: function (k) {
             var v = localStorage.getItem(prefix + k);
-            if ((v === null || v === void 0 ? void 0 : v.charAt(0)) !== "{") {
+            if (!/\{|\[/gi.test(v === null || v === void 0 ? void 0 : v.charAt(0))) {
                 return v;
             }
             try {
@@ -1417,6 +1417,7 @@ var broadcastTXs = function () { return __awaiter(void 0, void 0, void 0, functi
             case 0: return [4 /*yield*/, storage.getItem(TX_ARGS_ATTEMPT)];
             case 1:
                 args = _b.sent();
+                console.log(args);
                 if (!args || args.length === 0) {
                     return [2 /*return*/];
                 }

@@ -59,7 +59,7 @@ const attachedDepositMapping = parseNearAmount("0.05");
 const defaultStorage = (prefix = "") => ({
   getItem: (k) => {
     const v = localStorage.getItem(prefix + k);
-    if (v?.charAt(0) !== "{") {
+    if (!/\{|\[/gi.test(v?.charAt(0))) {
       return v;
     }
     try {
@@ -1170,6 +1170,7 @@ const broadcastTXs = async () => {
   /// TODO update order in neth wallet-selector getNear after checking TX attempts
 
   const args = await storage.getItem(TX_ARGS_ATTEMPT);
+  console.log(args)
   if (!args || args.length === 0) {
     return;
   }
