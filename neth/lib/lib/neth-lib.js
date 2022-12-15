@@ -1163,7 +1163,7 @@ var getEthereum = function () { return __awaiter(void 0, void 0, void 0, functio
                 return [3 /*break*/, 8];
             case 7:
                 e2_1 = _d.sent();
-                alert('Please click on MetaMask and add the Aurora Network to continue.');
+                alert('Please click "Choose Ethereum Account" and in your MetaMask add the Aurora Network to continue.');
                 throw e2_1;
             case 8: return [3 /*break*/, 9];
             case 9:

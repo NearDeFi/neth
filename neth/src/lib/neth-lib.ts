@@ -975,7 +975,7 @@ export const getEthereum = async () => {
       });
     } catch (e2) {
       alert(
-        'Please click on MetaMask and add the Aurora Network to continue.'
+        'Please click "Choose Ethereum Account" and in your MetaMask add the Aurora Network to continue.'
       );
       throw e2;
     }
