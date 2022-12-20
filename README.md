@@ -14,9 +14,9 @@ https://neardefi.github.io/neth
 GuestBook app with wallet-selector + MetaMask support:
 https://neardefi.github.io/guest-book-wallet-selector/
 
-## Warning 🚨🚨🚨
+## Audit
 
-This is functioning, but unaudited and incomplete.
+The NETH contract has been audited by Otter Sec. Check out the audit here: https://neth.app/audit.pdf
 
 ## Dependencies
 
