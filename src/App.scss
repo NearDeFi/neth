@@ -30,6 +30,7 @@ button {
 	display: flex !important;
 	align-items: center;
 	justify-content: space-between;
+	background: #210E01;
 	> svg {
 		margin-right: -5px;
 	}
@@ -49,7 +50,7 @@ button {
 
 header {
 	height: 220px;
-	background: radial-gradient(50% 50% at 50% 50%, #160740 0%, #0A0123 100%);
+	background: radial-gradient(50% 50% at 50% 50%, #220F02 0%, #000000 100%);
 	margin-bottom: 32px;
 	display: flex;
 	align-items: center;
@@ -74,7 +75,7 @@ main {
 
 footer {
 	height: 220px;
-	background: radial-gradient(50% 50% at 50% 50%, #160740 0%, #0A0123 100%);
+	background: radial-gradient(50% 50% at 50% 50%, #220F02 0%, #000000 100%);
 	display: flex;
 	align-items: center;
 	justify-content: center;
