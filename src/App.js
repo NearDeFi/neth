@@ -243,6 +243,7 @@ const App = () => {
 			<footer>
 				<div>
 					<button className="secondary" onClick={() => tosDialog(update)}>Terms of Use</button>
+					<button className="secondary" onClick={() => window.open('neth-pp.pdf')}>Privacy Policy</button>
 				</div>
 			</footer>
 
