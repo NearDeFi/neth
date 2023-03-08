@@ -6,7 +6,6 @@ import type {
 	FunctionCallAction,
 	WalletBehaviourFactory,
   } from "@near-wallet-selector/core";
-  import { waitFor } from "@near-wallet-selector/core";
   import detectEthereumProvider from "@metamask/detect-provider";
   import { nethIcon } from "../assets/icons";
   import {
@@ -18,7 +17,9 @@ import type {
 	signAndSendTransactions,
 	initConnection,
 	NETH_SITE_URL,
+	VALID_ACTIONS,
   } from "./neth-lib";
+  import isMobile from "is-mobile";
   export { initConnection } from "./neth-lib";
   
   declare global {
@@ -46,7 +47,7 @@ import type {
   }
   
   const isInstalled = async () => {
-	await detectEthereumProvider();
+	await detectEthereumProvider({ timeout: 100 });
 	return !!window.ethereum;
   };
   
@@ -72,7 +73,7 @@ import type {
 	const isValidActions = (
 	  actions: Array<Action>
 	): actions is Array<FunctionCallAction> => {
-	  return actions.every((x) => x.type === "FunctionCall");
+	  return actions.every((x) => VALID_ACTIONS.includes(x.type));
 	};
   
 	const transformActions = (actions: Array<Action>) => {
@@ -148,12 +149,22 @@ import type {
   
 	  async verifyOwner({ message }) {
 		logger.log("NETH:verifyOwner", { message });
-		verifyOwner({ message, provider, account: null });
+		return verifyOwner({ message, provider, account: null });
 	  },
   
 	  async getAccounts() {
-		const { accountId } = await getNear();
-		return [{ accountId }];
+		const { accountId, account } = await getNear();
+		return [
+		  {
+			accountId,
+			publicKey: (
+			  await account.connection.signer.getPublicKey(
+				account.accountId,
+				options.network.networkId
+			  )
+			).toString(),
+		  },
+		];
 	  },
   
 	  signAndSendTransaction: async ({ receiverId, actions }) =>
@@ -176,9 +187,12 @@ import type {
 	  customGas = gas;
 	  bundle = _bundle;
   
-	  const installed = await isInstalled();
+	  const mobile = isMobile();
+	  if (mobile) {
+		return null;
+	  }
   
-	  await waitFor(() => !!isSignedIn(), { timeout: 300 }).catch(() => false);
+	  const installed = await isInstalled();
   
 	  return {
 		id: "neth",
