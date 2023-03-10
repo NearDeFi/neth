@@ -36,7 +36,7 @@ const NETWORK = {
   },
 };
 
-const VALID_ACTIONS = ["AddKey", "DeleteKey", "FunctionCall"];
+export const VALID_ACTIONS = ["AddKey", "DeleteKey", "FunctionCall"];
 const WS_STORAGE_NAMESPACE = "near-wallet-selector:neth:";
 const REFRESH_MSG = `Please refresh the page and try again.`;
 const TX_ARGS_ATTEMPT = "__TX_ARGS_ATTEMPT";

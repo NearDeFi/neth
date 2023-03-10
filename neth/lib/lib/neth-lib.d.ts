@@ -1,5 +1,6 @@
 export declare const NETH_SITE_URL = "https://neth.app";
 export declare const PREV_NETH_SITE_URL = "neardefi.github.io/neth";
+export declare const VALID_ACTIONS: string[];
 export declare const MIN_NEW_ACCOUNT_ASK: any;
 export declare const initConnection: ({ network, gas: _gas, logger: _logger, storage: _storage, }: {
     network: any;

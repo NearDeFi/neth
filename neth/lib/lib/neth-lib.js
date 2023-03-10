@@ -77,7 +77,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.convertActions = exports.signAndSendTransactions = exports.getAppKey = exports.isSignedIn = exports.verifyOwner = exports.signOut = exports.signIn = exports.getNear = exports.getNearMap = exports.switchEthereum = exports.getEthereum = exports.handleDisconnect = exports.handleUpdateContract = exports.handleRefreshAppKey = exports.hasAppKey = exports.handleCheckAccount = exports.handleKeys = exports.handleSetupContract = exports.handleDeployContract = exports.handleMapping = exports.handleCancelFunding = exports.handleCreate = exports.accountExists = exports.getConnection = exports.initConnection = exports.MIN_NEW_ACCOUNT_ASK = exports.PREV_NETH_SITE_URL = exports.NETH_SITE_URL = void 0;
+exports.convertActions = exports.signAndSendTransactions = exports.getAppKey = exports.isSignedIn = exports.verifyOwner = exports.signOut = exports.signIn = exports.getNear = exports.getNearMap = exports.switchEthereum = exports.getEthereum = exports.handleDisconnect = exports.handleUpdateContract = exports.handleRefreshAppKey = exports.hasAppKey = exports.handleCheckAccount = exports.handleKeys = exports.handleSetupContract = exports.handleDeployContract = exports.handleMapping = exports.handleCancelFunding = exports.handleCreate = exports.accountExists = exports.getConnection = exports.initConnection = exports.MIN_NEW_ACCOUNT_ASK = exports.VALID_ACTIONS = exports.PREV_NETH_SITE_URL = exports.NETH_SITE_URL = void 0;
 var ethers_1 = require("ethers");
 var detect_provider_1 = __importDefault(require("@metamask/detect-provider"));
 var nearAPI = __importStar(require("near-api-js"));
@@ -97,7 +97,7 @@ var NETWORK = {
         ROOT_ACCOUNT_ID: "near",
     },
 };
-var VALID_ACTIONS = ["AddKey", "DeleteKey", "FunctionCall"];
+exports.VALID_ACTIONS = ["AddKey", "DeleteKey", "FunctionCall"];
 var WS_STORAGE_NAMESPACE = "near-wallet-selector:neth:";
 var REFRESH_MSG = "Please refresh the page and try again.";
 var TX_ARGS_ATTEMPT = "__TX_ARGS_ATTEMPT";
