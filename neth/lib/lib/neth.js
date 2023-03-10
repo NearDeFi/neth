@@ -40,16 +40,16 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.setupNeth = exports.initConnection = void 0;
-var core_1 = require("@near-wallet-selector/core");
 var detect_provider_1 = __importDefault(require("@metamask/detect-provider"));
 var icons_1 = require("../assets/icons");
 var neth_lib_1 = require("./neth-lib");
+var is_mobile_1 = __importDefault(require("is-mobile"));
 var neth_lib_2 = require("./neth-lib");
 Object.defineProperty(exports, "initConnection", { enumerable: true, get: function () { return neth_lib_2.initConnection; } });
 var isInstalled = function () { return __awaiter(void 0, void 0, void 0, function () {
     return __generator(this, function (_a) {
         switch (_a.label) {
-            case 0: return [4 /*yield*/, (0, detect_provider_1.default)()];
+            case 0: return [4 /*yield*/, (0, detect_provider_1.default)({ timeout: 100 })];
             case 1:
                 _a.sent();
                 return [2 /*return*/, !!window.ethereum];
@@ -71,7 +71,7 @@ var Neth = function (_a) {
                 storage: storage,
             });
             isValidActions = function (actions) {
-                return actions.every(function (x) { return x.type === "FunctionCall"; });
+                return actions.every(function (x) { return neth_lib_1.VALID_ACTIONS.includes(x.type); });
             };
             transformActions = function (actions) {
                 var validActions = isValidActions(actions);
@@ -169,20 +169,27 @@ var Neth = function (_a) {
                         return __awaiter(this, void 0, void 0, function () {
                             return __generator(this, function (_b) {
                                 logger.log("NETH:verifyOwner", { message: message });
-                                (0, neth_lib_1.verifyOwner)({ message: message, provider: provider, account: null });
-                                return [2 /*return*/];
+                                return [2 /*return*/, (0, neth_lib_1.verifyOwner)({ message: message, provider: provider, account: null })];
                             });
                         });
                     },
                     getAccounts: function () {
                         return __awaiter(this, void 0, void 0, function () {
-                            var accountId;
-                            return __generator(this, function (_a) {
-                                switch (_a.label) {
+                            var _a, accountId, account;
+                            var _b;
+                            return __generator(this, function (_c) {
+                                switch (_c.label) {
                                     case 0: return [4 /*yield*/, (0, neth_lib_1.getNear)()];
                                     case 1:
-                                        accountId = (_a.sent()).accountId;
-                                        return [2 /*return*/, [{ accountId: accountId }]];
+                                        _a = _c.sent(), accountId = _a.accountId, account = _a.account;
+                                        _b = {
+                                            accountId: accountId
+                                        };
+                                        return [4 /*yield*/, account.connection.signer.getPublicKey(account.accountId, options.network.networkId)];
+                                    case 2: return [2 /*return*/, [
+                                            (_b.publicKey = (_c.sent()).toString(),
+                                                _b)
+                                        ]];
                                 }
                             });
                         });
@@ -207,19 +214,20 @@ function setupNeth(_a) {
     var _this = this;
     var _b = _a === void 0 ? {} : _a, _c = _b.iconUrl, iconUrl = _c === void 0 ? icons_1.nethIcon : _c, gas = _b.gas, _d = _b.useModalCover, useModalCover = _d === void 0 ? false : _d, _e = _b.bundle, _bundle = _e === void 0 ? true : _e, _f = _b.deprecated, deprecated = _f === void 0 ? false : _f;
     return function () { return __awaiter(_this, void 0, void 0, function () {
-        var installed;
+        var mobile, installed;
         return __generator(this, function (_a) {
             switch (_a.label) {
                 case 0:
                     useCover = useModalCover;
                     customGas = gas;
                     bundle = _bundle;
+                    mobile = (0, is_mobile_1.default)();
+                    if (mobile) {
+                        return [2 /*return*/, null];
+                    }
                     return [4 /*yield*/, isInstalled()];
                 case 1:
                     installed = _a.sent();
-                    return [4 /*yield*/, (0, core_1.waitFor)(function () { return !!(0, neth_lib_1.isSignedIn)(); }, { timeout: 300 }).catch(function () { return false; })];
-                case 2:
-                    _a.sent();
                     return [2 /*return*/, {
                             id: "neth",
                             type: "injected",

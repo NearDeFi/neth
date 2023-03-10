@@ -97,6 +97,7 @@ var NETWORK = {
         ROOT_ACCOUNT_ID: "near",
     },
 };
+var VALID_ACTIONS = ["AddKey", "DeleteKey", "FunctionCall"];
 var WS_STORAGE_NAMESPACE = "near-wallet-selector:neth:";
 var REFRESH_MSG = "Please refresh the page and try again.";
 var TX_ARGS_ATTEMPT = "__TX_ARGS_ATTEMPT";
