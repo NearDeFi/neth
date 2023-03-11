@@ -105,8 +105,9 @@ export const initConnection = ({
   keyStore = new BrowserLocalStorageKeyStore();
   near = new Near({
     ...network,
-    deps: { keyStore },
+    keyStore,
   });
+
   connection = near.connection;
   networkId = network.networkId;
   contractAccount = new Account(

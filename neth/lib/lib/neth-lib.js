@@ -149,7 +149,7 @@ var initConnection = function (_a) {
     logger = _logger;
     storage = _storage;
     keyStore = new BrowserLocalStorageKeyStore();
-    near = new Near(__assign(__assign({}, network), { deps: { keyStore: keyStore } }));
+    near = new Near(__assign(__assign({}, network), { keyStore: keyStore }));
     connection = near.connection;
     networkId = network.networkId;
     contractAccount = new Account(connection, networkId === "mainnet" ? "near" : networkId);

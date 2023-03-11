@@ -1,7 +1,8 @@
+import { ethers } from "ethers";
 export declare const NETH_SITE_URL = "https://neth.app";
 export declare const PREV_NETH_SITE_URL = "neardefi.github.io/neth";
 export declare const VALID_ACTIONS: string[];
-export declare const MIN_NEW_ACCOUNT_ASK: any;
+export declare const MIN_NEW_ACCOUNT_ASK: string | null;
 export declare const initConnection: ({ network, gas: _gas, logger: _logger, storage: _storage, }: {
     network: any;
     gas?: string | undefined;
@@ -44,12 +45,12 @@ export declare const handleDisconnect: (signer: any, ethAddress: any) => Promise
  * Used by apps to signIn and signAndSendTransactions
  */
 export declare const getEthereum: () => Promise<void | {
-    signer: any;
-    ethAddress: any;
+    signer: ethers.providers.JsonRpcSigner;
+    ethAddress: string;
 }>;
 export declare const switchEthereum: () => Promise<{
-    signer: any;
-    ethAddress: any;
+    signer: ethers.providers.JsonRpcSigner;
+    ethAddress: string;
 }>;
 export declare const getNearMap: (eth_address: any) => Promise<any>;
 export declare const getNear: () => any;
@@ -60,11 +61,11 @@ export declare const verifyOwner: ({ message, provider, account }: {
     provider: any;
     account: any;
 }) => Promise<{
-    signature: any;
+    signature: string;
     accountId: any;
     message: any;
     blockId: any;
-    publicKey: any;
+    publicKey: string;
     keyType: any;
 }>;
 export declare const isSignedIn: () => Promise<boolean>;
