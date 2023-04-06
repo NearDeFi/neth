@@ -46,7 +46,7 @@ const tosDialog = (update, dialogCB) => update('', {
 			<p>By connecting a wallet, you acknowledge that you have read, understand and agree to the <a href="/tos.pdf" target="_blank">Terms of Use (click here to read)</a>.</p>
 			<ul>
 				<li>You are not a person or company who is a resident of, is located, incorporated, or has a registered agent in a Restricted Territory (as defined in the Terms of Use).</li>
-				<li>You will not in the future access this site while located in the United States of America or a Restricted Territory.</li>
+				<li>You will not in the future access this site while located in Restricted Territories.</li>
 				<li>You are not using, and will not in the future use, a virtual private network or other means to mask your physical location from a Restricted Territory.</li>
 				<li>You are lawfully permitted to access this site under the laws of the jurisdiction in which you reside and are located.</li>
 				<li>You understand the risks associated with using blockchain technology and that the Site operator has no custody over your funds, no ability or duty to transact on your behalf, and no power to reverse your transactions.</li>
